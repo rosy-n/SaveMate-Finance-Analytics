@@ -17,9 +17,14 @@ const formatKRW = (amount) =>
   (typeof amount === 'number' ? amount : 0).toLocaleString('ko-KR') + '원';
 
 const SaveMateApp = () => {
+  const now = new Date();
+  const today = now.getDate();
+  const realCurrentMonth = now.getMonth() + 1; // 현재 월
+  const currentYear = now.getFullYear();
+
   const [currentPage, setCurrentPage] = useState('home');
-  const [selectedMonth, setSelectedMonth] = useState(9);
-  const [selectedDate, setSelectedDate] = useState(15);
+  const [selectedMonth, setSelectedMonth] = useState(realCurrentMonth);
+  const [selectedDate, setSelectedDate] = useState(today);
 
   // API 응답 구조에 맞춘 홈 화면 데이터
   const homeData = useMemo(
@@ -140,9 +145,8 @@ const SaveMateApp = () => {
     }
   };
 
-  const getDaysInMonth = (month, year = 2024) => new Date(year, month, 0).getDate();
-  const getFirstDayOfMonth = (month, year = 2024) => new Date(year, month - 1, 1).getDay();
-  const today = 20;
+  const getDaysInMonth = (month, year = currentYear) => new Date(year, month, 0).getDate();
+  const getFirstDayOfMonth = (month, year = currentYear) => new Date(year, month - 1, 1).getDay();
 
   const BottomNav = ({ activePage, onNavigate }) => (
     <View style={styles.bottomNavWrapper}>
@@ -211,7 +215,7 @@ const SaveMateApp = () => {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>만족도 기록</Text>
           <Text style={[styles.cardText, { marginBottom: 12 }]}>
-            어제 구매한 '식사'에 대한 만족도를 기록해주세요.
+            어제 구매한 `식사`에 대한 만족도를 기록해주세요.
           </Text>
           <View style={styles.rowCenter}>
             <TouchableOpacity style={styles.btnGhost}>
@@ -234,14 +238,14 @@ const SaveMateApp = () => {
 
   const DetailPage = () => {
     const currentMonthData = monthlyExpenseData[selectedMonth] ?? {
-      year: 2025,
+      year: currentYear,
       month: selectedMonth,
       monthlyTotal: 0,
       dailyExpenses: [],
     };
 
-    const daysInMonth = getDaysInMonth(selectedMonth);
-    const firstDay = getFirstDayOfMonth(selectedMonth);
+    const daysInMonth = getDaysInMonth(selectedMonth, currentYear);
+    const firstDay = getFirstDayOfMonth(selectedMonth, currentYear);
 
     // 선택된 날짜의 거래 내역 찾기
     const selectedDayTransactions =
@@ -309,7 +313,7 @@ const SaveMateApp = () => {
 
               {Array.from({ length: daysInMonth }).map((_, index) => {
                 const dateNum = index + 1;
-                const isToday = dateNum === today;
+                const isToday = dateNum === today && selectedMonth === realCurrentMonth;
                 const isSelected = dateNum === selectedDate;
                 const hasTransaction = transactionsByDate[dateNum];
 
