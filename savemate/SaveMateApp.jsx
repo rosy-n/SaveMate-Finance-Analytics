@@ -7,7 +7,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Modal, 
 } from 'react-native';
+import TransactionInput from './components/TransactionInput';
 
 const NOW = new Date();
 const CURRENT_YEAR = NOW.getFullYear();
@@ -28,8 +30,9 @@ const SaveMateApp = () => {
   const currentYear = now.getFullYear();
 
   const [currentPage, setCurrentPage] = useState('home');
-  const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedDate, setSelectedDate] = useState(TODAY);
+  const [showTransactionInput, setShowTransactionInput] = useState(false);
 
   // API 응답 구조에 맞춘 홈 화면 데이터
   const homeData = useMemo(
@@ -233,7 +236,7 @@ const SaveMateApp = () => {
         </View>
       </ScrollView>
 
-      <TouchableOpacity style={styles.fab}>
+      <TouchableOpacity style={styles.fab} onPress={() => setShowTransactionInput(true)}>
         <Text style={styles.fabPlus}>＋</Text>
       </TouchableOpacity>
 
@@ -425,7 +428,25 @@ const SaveMateApp = () => {
     );
   };
 
-  return currentPage === 'home' ? <HomePage /> : <DetailPage />;
+  return (
+    <>
+      {currentPage === 'home' ? <HomePage /> : <DetailPage />}
+
+      <Modal 
+        visible={showTransactionInput}
+        animatinoType="slide"
+        presentationStyle="fullScreen"
+      >
+        <TransactionInput 
+          onClose={() => setShowTransactionInput(false)}
+          onSave={(amount, type) => {
+            console.log('저장:', amount, type);
+            setShowTransactionInput(false);
+          }}
+        />
+      </Modal>
+    </>
+  );
 };
 
 const styles = StyleSheet.create({
