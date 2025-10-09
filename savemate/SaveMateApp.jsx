@@ -330,7 +330,6 @@ const SaveMateApp = () => {
                         styles.pillText,
                         isToday && styles.pillBlueBg,
                         isSelected && styles.pillPurpleBg,
-                        !isToday && !isSelected && dateNum === 1 && styles.blueText,
                         hasTransaction && styles.boldText,
                       ]}
                       numberOfLines={1}
