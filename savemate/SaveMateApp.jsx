@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef, useCallback } from 'react';
 import {
   SafeAreaView,
   View,
@@ -8,6 +8,9 @@ import {
   ScrollView,
   TextInput,
   Modal,
+  Keyboard,
+  KeyboardAvoidingView,  // 추가
+  Platform,              // 추가
 } from 'react-native';
 import TransactionInput from './components/TransactionInput';
 
@@ -38,6 +41,10 @@ const SaveMateApp = () => {
   const [satisfactionRating, setSatisfactionRating] = useState(null);
   const [selectedReason, setSelectedReason] = useState(null);
   const [satisfactionMemo, setSatisfactionMemo] = useState('');
+
+  // ScrollView ref
+  const scrollViewRef = useRef(null);
+  const scrollYPosition = useRef(0);
 
   // API 응답 구조에 맞춘 홈 화면 데이터
   const homeData = useMemo(
@@ -163,6 +170,7 @@ const SaveMateApp = () => {
     setSatisfactionRating(null);
     setSelectedReason(null);
     setSatisfactionMemo('');
+    scrollYPosition.current = 0;
   };
 
   // 만족도 평가 제출
@@ -298,9 +306,7 @@ const SaveMateApp = () => {
 
       <BottomNav activePage="home" onNavigate={setCurrentPage} />
     </SafeAreaView>
-  );
-
-  const DetailPage = () => {
+  );const DetailPage = () => {
     const currentMonthData = monthlyExpenseData[selectedMonth] ?? {
       year: currentYear,
       month: selectedMonth,
@@ -480,9 +486,56 @@ const SaveMateApp = () => {
       </SafeAreaView>
     );
   };
-
+  
   const SatisfactionPage = () => {
+    const [localMemo, setLocalMemo] = useState(satisfactionMemo);
     const currentReasons = satisfactionRating ? reasonOptions[satisfactionRating] : [];
+
+    // 스크롤 이벤트 핸들러
+    const handleScroll = (event) => {
+      scrollYPosition.current = event.nativeEvent.contentOffset.y;
+    };
+
+    // 만족도 선택 핸들러 - 스크롤 위치 유지
+    const handleRatingSelect = (rating) => {
+      const currentScrollY = scrollYPosition.current;
+      
+      setSatisfactionRating(rating);
+      setSelectedReason(null);
+      setSatisfactionMemo('');
+      setLocalMemo('');
+      
+      setTimeout(() => {
+        scrollViewRef.current?.scrollTo({
+          y: currentScrollY,
+          animated: false,
+        });
+      }, 0);
+    };
+
+    // 이유 선택 핸들러 - 스크롤 위치 유지
+    const handleReasonSelect = (reason) => {
+      const currentScrollY = scrollYPosition.current;
+      
+      setSelectedReason(reason);
+      
+      setTimeout(() => {
+        scrollViewRef.current?.scrollTo({
+          y: currentScrollY,
+          animated: false,
+        });
+      }, 0);
+    };
+
+    // 로컬 메모 변경 - 부모로 전파하지 않음
+    const handleLocalMemoChange = (text) => {
+      setLocalMemo(text);
+    };
+
+    // 페이지를 떠날 때만 부모 state에 반영
+    const syncMemoToParent = () => {
+      setSatisfactionMemo(localMemo);
+    };
 
     return (
       <SafeAreaView style={styles.screen}>
@@ -500,131 +553,153 @@ const SaveMateApp = () => {
           <View style={{ width: 24 }} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.card}>
-            <Text style={styles.satisfactionQuestion}>
-              어제의 '{satisfactionEvaluationData.purchaseItem}' 지출은 어떠셨나요?
-            </Text>
-            
-            <View style={styles.amountBox}>
-              <Text style={styles.satisfactionAmount}>
-                {formatKRW(satisfactionEvaluationData.amount)}
+        <KeyboardAvoidingView 
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+        >
+          <ScrollView 
+            ref={scrollViewRef}
+            contentContainerStyle={styles.content}
+            keyboardShouldPersistTaps="always"
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+          >
+            <View style={styles.card}>
+              <Text style={styles.satisfactionQuestion}>
+                어제의 '{satisfactionEvaluationData.purchaseItem}' 지출은 어떠셨나요?
               </Text>
-              <Text style={styles.satisfactionDate}>
-                {satisfactionEvaluationData.purchaseDate} | {satisfactionEvaluationData.category}
-              </Text>
+              
+              <View style={styles.amountBox}>
+                <Text style={styles.satisfactionAmount}>
+                  {formatKRW(satisfactionEvaluationData.amount)}
+                </Text>
+                <Text style={styles.satisfactionDate}>
+                  {satisfactionEvaluationData.purchaseDate} | {satisfactionEvaluationData.category}
+                </Text>
+              </View>
             </View>
-          </View>
 
-          <View style={styles.card}>
-            <View style={styles.emojiRow}>
-              <TouchableOpacity
-                style={[
-                  styles.emojiButton,
-                  satisfactionRating === 'dissatisfied' && styles.emojiButtonSelected,
-                  satisfactionRating === 'dissatisfied' && styles.emojiButtonDissatisfied,
-                ]}
-                onPress={() => {
-                  setSatisfactionRating('dissatisfied');
-                  setSelectedReason(null);
-                }}
-              >
-                <Text style={styles.emojiIcon}>😡</Text>
-                <Text style={styles.emojiLabel}>불만족</Text>
-              </TouchableOpacity>
+            <View style={styles.card}>
+              <View style={styles.emojiRow}>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  style={[
+                    styles.emojiButton,
+                    satisfactionRating === 'dissatisfied' && styles.emojiButtonSelected,
+                    satisfactionRating === 'dissatisfied' && styles.emojiButtonDissatisfied,
+                  ]}
+                  onPress={() => handleRatingSelect('dissatisfied')}
+                >
+                  <Text style={styles.emojiIcon}>😡</Text>
+                  <Text style={styles.emojiLabel}>불만족</Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[
-                  styles.emojiButton,
-                  satisfactionRating === 'neutral' && styles.emojiButtonSelected,
-                  satisfactionRating === 'neutral' && styles.emojiButtonNeutral,
-                ]}
-                onPress={() => {
-                  setSatisfactionRating('neutral');
-                  setSelectedReason(null);
-                }}
-              >
-                <Text style={styles.emojiIcon}>😐</Text>
-                <Text style={styles.emojiLabel}>보통</Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  style={[
+                    styles.emojiButton,
+                    satisfactionRating === 'neutral' && styles.emojiButtonSelected,
+                    satisfactionRating === 'neutral' && styles.emojiButtonNeutral,
+                  ]}
+                  onPress={() => handleRatingSelect('neutral')}
+                >
+                  <Text style={styles.emojiIcon}>😐</Text>
+                  <Text style={styles.emojiLabel}>보통</Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[
-                  styles.emojiButton,
-                  satisfactionRating === 'satisfied' && styles.emojiButtonSelected,
-                  satisfactionRating === 'satisfied' && styles.emojiButtonSatisfied,
-                ]}
-                onPress={() => {
-                  setSatisfactionRating('satisfied');
-                  setSelectedReason(null);
-                }}
-              >
-                <Text style={styles.emojiIcon}>😆</Text>
-                <Text style={styles.emojiLabel}>만족</Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  style={[
+                    styles.emojiButton,
+                    satisfactionRating === 'satisfied' && styles.emojiButtonSelected,
+                    satisfactionRating === 'satisfied' && styles.emojiButtonSatisfied,
+                  ]}
+                  onPress={() => handleRatingSelect('satisfied')}
+                >
+                  <Text style={styles.emojiIcon}>😆</Text>
+                  <Text style={styles.emojiLabel}>만족</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
 
-          {satisfactionRating && (
-            <>
-              <View style={styles.card}>
-                <Text style={styles.sectionTitle}>어떤 이유인가요?</Text>
-                <View style={styles.reasonGrid}>
-                  {currentReasons.map((reason) => (
-                    <TouchableOpacity
-                      key={reason}
-                      style={[
-                        styles.reasonChip,
-                        selectedReason === reason && styles.reasonChipSelected,
-                      ]}
-                      onPress={() => setSelectedReason(reason)}
-                    >
-                      <Text
+            {satisfactionRating && (
+              <>
+                <View style={styles.card}>
+                  <Text style={styles.sectionTitle}>어떤 이유인가요?</Text>
+                  <View style={styles.reasonGrid}>
+                    {currentReasons.map((reason) => (
+                      <TouchableOpacity
+                        key={reason}
+                        activeOpacity={0.7}
                         style={[
-                          styles.reasonChipText,
-                          selectedReason === reason && styles.reasonChipTextSelected,
+                          styles.reasonChip,
+                          selectedReason === reason && styles.reasonChipSelected,
                         ]}
+                        onPress={() => handleReasonSelect(reason)}
                       >
-                        {reason}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                        <Text
+                          style={[
+                            styles.reasonChipText,
+                            selectedReason === reason && styles.reasonChipTextSelected,
+                          ]}
+                        >
+                          {reason}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
                 </View>
-              </View>
 
-              <View style={styles.card}>
-                <Text style={styles.sectionTitle}>메모</Text>
-                <TextInput
-                  style={styles.memoInput}
-                  placeholder="기록하고 싶은 내용을 입력해주세요."
-                  placeholderTextColor="#9CA3AF"
-                  multiline
-                  value={satisfactionMemo}
-                  onChangeText={setSatisfactionMemo}
-                  textAlignVertical="top"
-                />
-              </View>
-
-              <View style={styles.buttonRow}>
-                <TouchableOpacity
-                  style={styles.btnSecondary}
-                  onPress={() => {
-                    resetSatisfactionForm();
-                    setCurrentPage('home');
-                  }}
-                >
-                  <Text style={styles.btnSecondaryText}>다음에</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.btnPrimaryLarge}
-                  onPress={handleSubmitSatisfaction}
-                >
-                  <Text style={styles.btnPrimaryLargeText}>기록하기</Text>
-                </TouchableOpacity>
-              </View>
-            </>
-          )}
-        </ScrollView>
+                <View style={styles.card}>
+                  <Text style={styles.sectionTitle}>메모</Text>
+                  <TextInput
+                    style={styles.memoInput}
+                    placeholder="기록하고 싶은 내용을 입력해주세요."
+                    placeholderTextColor="#9CA3AF"
+                    multiline={true}
+                    value={localMemo}
+                    onChangeText={handleLocalMemoChange}
+                    textAlignVertical="top"
+                    autoCorrect={false}
+                    autoCapitalize="none"
+                    onFocus={() => {
+                      // 메모 입력창 클릭 시 자동 스크롤
+                      setTimeout(() => {
+                        scrollViewRef.current?.scrollToEnd({ animated: true });
+                      }, 300);
+                    }}
+                  />
+                </View>
+                
+                <View style={styles.buttonRow}>
+                  <TouchableOpacity
+                    style={styles.btnSecondary}
+                    onPress={() => {
+                      Keyboard.dismiss();
+                      resetSatisfactionForm();
+                      setCurrentPage('home');
+                    }}
+                  >
+                    <Text style={styles.btnSecondaryText}>다음에</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.btnPrimaryLarge}
+                    onPress={() => {
+                      Keyboard.dismiss();
+                      syncMemoToParent();
+                      setTimeout(() => {
+                        handleSubmitSatisfaction();
+                      }, 100);
+                    }}
+                  >
+                    <Text style={styles.btnPrimaryLargeText}>기록하기</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </ScrollView>
+        </KeyboardAvoidingView>
 
         <BottomNav activePage="home" onNavigate={setCurrentPage} />
       </SafeAreaView>
@@ -650,9 +725,7 @@ const SaveMateApp = () => {
       </Modal>
     </>
   );
-};
-
-const styles = StyleSheet.create({
+};const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#F9FAFB' },
   header: { backgroundColor: '#FFFFFF', paddingVertical: 16, alignItems: 'center' },
   appTitle: { fontSize: 22, fontWeight: '700', color: '#7C3AED' },
@@ -741,7 +814,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems:'center',
     justifyContent: 'space-between',
   },
   backBtn: { padding: 4 },
