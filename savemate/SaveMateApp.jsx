@@ -9,6 +9,11 @@ import {
   ScrollView,
 } from 'react-native';
 
+const NOW = new Date();
+const CURRENT_YEAR = NOW.getFullYear();
+const CURRENT_MONTH = NOW.getMonth() + 1;
+const TODAY = NOW.getDate();
+
 const WEEK_HEADERS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 const PILL_SIZE = 34;
 const PILL_RADIUS = 12;
@@ -18,8 +23,8 @@ const formatKRW = (amount) =>
 
 const SaveMateApp = () => {
   const [currentPage, setCurrentPage] = useState('home');
-  const [selectedMonth, setSelectedMonth] = useState(9);
-  const [selectedDate, setSelectedDate] = useState(15);
+  const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH);
+  const [selectedDate, setSelectedDate] = useState(TODAY);
 
   // API 응답 구조에 맞춘 홈 화면 데이터
   const homeData = useMemo(
@@ -242,7 +247,7 @@ const SaveMateApp = () => {
 
     const daysInMonth = getDaysInMonth(selectedMonth);
     const firstDay = getFirstDayOfMonth(selectedMonth);
-
+    
     // 선택된 날짜의 거래 내역 찾기
     const selectedDayTransactions =
       currentMonthData.dailyExpenses.find((daily) => {
@@ -260,8 +265,11 @@ const SaveMateApp = () => {
       return map;
     }, [currentMonthData.dailyExpenses]);
 
-    const handlePrevMonth = () => setSelectedMonth((prev) => (prev === 1 ? 12 : prev - 1));
-    const handleNextMonth = () => setSelectedMonth((prev) => (prev === 12 ? 1 : prev + 1));
+    const handlePrevMonth = () => setSelectedMonth((prev) => Math.max(1, prev - 1));
+    const handleNextMonth = () => setSelectedMonth((prev) => Math.min(CURRENT_MONTH, prev + 1));
+
+    const canGoPrev = selectedMonth > 1;
+    const canGoNext = selectedMonth < CURRENT_MONTH;
 
     // 저번 달 대비 비교 메시지
     const comparisonMessage = getComparisonMessage(selectedMonth);
@@ -286,11 +294,34 @@ const SaveMateApp = () => {
             <Text style={styles.comparisonText}>{comparisonMessage}</Text>
 
             <View style={[styles.rowCenter, { justifyContent: 'flex-end', marginBottom: 10 }]}>
-              <TouchableOpacity onPress={handlePrevMonth} style={styles.monthBtn}>
-                <Text style={styles.monthChevron}>‹</Text>
+              <TouchableOpacity
+                onPress={canGoPrev ? handlePrevMonth : undefined}
+                style={styles.monthBtn}
+                disabled={!canGoPrev}
+              >
+                <Text
+                  style={[
+                    styles.monthChevron,
+                    !canGoPrev && styles.monthChevronDisabled, // 회색으로 표시
+                  ]}
+                >
+                  ‹
+                </Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleNextMonth} style={styles.monthBtn}>
-                <Text style={styles.monthChevron}>›</Text>
+
+              <TouchableOpacity
+                onPress={canGoNext ? handleNextMonth : undefined}
+                style={styles.monthBtn}
+                disabled={!canGoNext}
+              >
+                <Text
+                  style={[
+                    styles.monthChevron,
+                    !canGoNext && styles.monthChevronDisabled,
+                  ]}
+                >
+                  ›
+                </Text>
               </TouchableOpacity>
             </View>
 
@@ -501,6 +532,7 @@ const styles = StyleSheet.create({
 
   monthBtn: { paddingHorizontal: 8, paddingVertical: 4 },
   monthChevron: { fontSize: 18, color: '#3B82F6' },
+  monthChevronDisabled: { color: '#D1D5DB' },
   weekHeaderRow: { flexDirection: 'row', marginBottom: 6, marginTop: 4 },
   weekHeaderText: {
     flex: 1,
