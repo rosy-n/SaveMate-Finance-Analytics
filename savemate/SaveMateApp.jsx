@@ -438,8 +438,8 @@ const styles = StyleSheet.create({
 
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 15,
+    padding: 20,
     shadowColor: '#000',
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -462,6 +462,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E7EB',
     borderRadius: 999,
     overflow: 'hidden',
+    marginTop: 20
   },
   progressBarFill: { height: '100%', backgroundColor: '#8B5CF6', borderRadius: 999 },
 
