@@ -11,6 +11,7 @@ import {
   Keyboard,
   KeyboardAvoidingView,  // 추가
   Platform,              // 추가
+  Alert,  // 추가
 } from 'react-native';
 import TransactionInput from './components/TransactionInput';
 
@@ -671,7 +672,7 @@ const SaveMateApp = () => {
                     }}
                   />
                 </View>
-                
+
                 <View style={styles.buttonRow}>
                   <TouchableOpacity
                     style={styles.btnSecondary}
@@ -686,6 +687,16 @@ const SaveMateApp = () => {
                   <TouchableOpacity
                     style={styles.btnPrimaryLarge}
                     onPress={() => {
+                      // 이유 선택 여부 확인
+                      if (!selectedReason) {
+                        Alert.alert(
+                          '이유 선택 필요',
+                          '어떤 이유인지 선택해 주세요.',
+                          [{ text: '확인', style: 'default' }]
+                        );
+                        return;
+                      }
+                      
                       Keyboard.dismiss();
                       syncMemoToParent();
                       setTimeout(() => {
