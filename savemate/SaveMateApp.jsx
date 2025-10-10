@@ -28,11 +28,6 @@ const formatKRW = (amount) =>
   (typeof amount === 'number' ? amount : 0).toLocaleString('ko-KR') + '원';
 
 const SaveMateApp = () => {
-  const now = new Date();
-  const today = now.getDate();
-  const realCurrentMonth = now.getMonth() + 1;
-  const currentYear = now.getFullYear();
-
   const [currentPage, setCurrentPage] = useState('home');
   const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH);
   const [selectedDate, setSelectedDate] = useState(TODAY);
@@ -212,8 +207,8 @@ const SaveMateApp = () => {
     }
   };
 
-  const getDaysInMonth = (month, year = currentYear) => new Date(year, month, 0).getDate();
-  const getFirstDayOfMonth = (month, year = currentYear) => new Date(year, month - 1, 1).getDay();
+  const getDaysInMonth = (month, year = CURRENT_YEAR) => new Date(year, month, 0).getDate();
+  const getFirstDayOfMonth = (month, year = CURRENT_YEAR) => new Date(year, month - 1, 1).getDay();
 
   const BottomNav = ({ activePage, onNavigate }) => (
     <View style={styles.bottomNavWrapper}>
@@ -309,14 +304,14 @@ const SaveMateApp = () => {
     </SafeAreaView>
   );const DetailPage = () => {
     const currentMonthData = monthlyExpenseData[selectedMonth] ?? {
-      year: currentYear,
+      year: CURRENT_YEAR,
       month: selectedMonth,
       monthlyTotal: 0,
       dailyExpenses: [],
     };
 
-    const daysInMonth = getDaysInMonth(selectedMonth, currentYear);
-    const firstDay = getFirstDayOfMonth(selectedMonth, currentYear);
+    const daysInMonth = getDaysInMonth(selectedMonth, CURRENT_YEAR);
+    const firstDay = getFirstDayOfMonth(selectedMonth, CURRENT_YEAR);
 
     const selectedDayTransactions =
       currentMonthData.dailyExpenses.find((daily) => {
@@ -407,7 +402,7 @@ const SaveMateApp = () => {
 
               {Array.from({ length: daysInMonth }).map((_, index) => {
                 const dateNum = index + 1;
-                const isToday = dateNum === today && selectedMonth === realCurrentMonth;
+                const isToday = dateNum === TODAY && selectedMonth === CURRENT_MONTH;
                 const isSelected = dateNum === selectedDate;
                 const hasTransaction = transactionsByDate[dateNum];
 
@@ -442,7 +437,7 @@ const SaveMateApp = () => {
                 {selectedDate}일{' '}
                 {
                   ['일', '월', '화', '수', '목', '금', '토'][
-                    new Date(2024, selectedMonth - 1, selectedDate).getDay()
+                    new Date(CURRENT_YEAR, selectedMonth - 1, selectedDate).getDay()
                   ]
                 }
                 요일
@@ -568,7 +563,7 @@ const SaveMateApp = () => {
           >
             <View style={styles.card}>
               <Text style={styles.satisfactionQuestion}>
-                어제의 '{satisfactionEvaluationData.purchaseItem}' 지출은 어떠셨나요?
+                어제의 `{satisfactionEvaluationData.purchaseItem}`지출은 어떠셨나요?
               </Text>
               
               <View style={styles.amountBox}>
