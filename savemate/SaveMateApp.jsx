@@ -9,11 +9,12 @@ import {
   TextInput,
   Modal,
   Keyboard,
-  KeyboardAvoidingView,  // 추가
-  Platform,              // 추가
-  Alert,  // 추가
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
 } from 'react-native';
 import TransactionInput from './components/TransactionInput';
+import SatisfactionRating from './components/SatisfactionRating';
 
 const NOW = new Date();
 const CURRENT_YEAR = NOW.getFullYear();
@@ -33,15 +34,6 @@ const SaveMateApp = () => {
   const [selectedDate, setSelectedDate] = useState(TODAY);
   const [showTransactionInput, setShowTransactionInput] = useState(false);
   
-  // 만족도 평가 상태
-  const [satisfactionRating, setSatisfactionRating] = useState(null);
-  const [selectedReason, setSelectedReason] = useState(null);
-  const [satisfactionMemo, setSatisfactionMemo] = useState('');
-
-  // ScrollView ref
-  const scrollViewRef = useRef(null);
-  const scrollYPosition = useRef(0);
-
   // API 응답 구조에 맞춘 홈 화면 데이터
   const homeData = useMemo(
     () => ({
@@ -138,52 +130,6 @@ const SaveMateApp = () => {
     }),
     []
   );
-
-  // 만족도 평가 데이터
-  const satisfactionEvaluationData = useMemo(
-    () => ({
-      transactionId: 'txn_005',
-      purchaseItem: '카페',
-      amount: 15600,
-      purchaseDate: '9월 14일',
-      category: '카페',
-    }),
-    []
-  );
-
-  // 만족도별 이유 옵션
-  const reasonOptions = useMemo(
-    () => ({
-      dissatisfied: ['품질 불만', '가격 불만', '과소비 / 불필요', '경제적 / 사회적 압박', '감정 억제 (후회)', '기타'],
-      neutral: ['평범함', '일상적 / 습관적', '대안 없음', '기타'],
-      satisfied: ['필요 충족', '감정 충족', '가성비 만족', '경험 / 성장', '사회적 유대', '기타'],
-    }),
-    []
-  );
-
-  // 만족도 평가 초기화
-  const resetSatisfactionForm = () => {
-    setSatisfactionRating(null);
-    setSelectedReason(null);
-    setSatisfactionMemo('');
-    scrollYPosition.current = 0;
-  };
-
-  // 만족도 평가 제출
-  const handleSubmitSatisfaction = () => {
-    const satisfactionData = {
-      transactionId: satisfactionEvaluationData.transactionId,
-      rating: satisfactionRating,
-      reason: selectedReason,
-      memo: satisfactionMemo,
-      evaluatedAt: new Date().toISOString(),
-    };
-    
-    console.log('만족도 평가 제출:', satisfactionData);
-    
-    resetSatisfactionForm();
-    setCurrentPage('home');
-  };
 
   // 저번 달과의 비교 메시지 생성
   const getComparisonMessage = (currentMonth) => {
@@ -286,7 +232,6 @@ const SaveMateApp = () => {
             <TouchableOpacity 
               style={styles.btnPrimary}
               onPress={() => {
-                resetSatisfactionForm();
                 setCurrentPage('satisfaction');
               }}
             >
@@ -483,245 +428,28 @@ const SaveMateApp = () => {
     );
   };
   
-  const SatisfactionPage = () => {
-    const [localMemo, setLocalMemo] = useState(satisfactionMemo);
-    const currentReasons = satisfactionRating ? reasonOptions[satisfactionRating] : [];
-
-    // 스크롤 이벤트 핸들러
-    const handleScroll = (event) => {
-      scrollYPosition.current = event.nativeEvent.contentOffset.y;
-    };
-
-    // 만족도 선택 핸들러 - 스크롤 위치 유지
-    const handleRatingSelect = (rating) => {
-      const currentScrollY = scrollYPosition.current;
-      
-      setSatisfactionRating(rating);
-      setSelectedReason(null);
-      setSatisfactionMemo('');
-      setLocalMemo('');
-      
-      setTimeout(() => {
-        scrollViewRef.current?.scrollTo({
-          y: currentScrollY,
-          animated: false,
-        });
-      }, 0);
-    };
-
-    // 이유 선택 핸들러 - 스크롤 위치 유지
-    const handleReasonSelect = (reason) => {
-      const currentScrollY = scrollYPosition.current;
-      
-      setSelectedReason(reason);
-      
-      setTimeout(() => {
-        scrollViewRef.current?.scrollTo({
-          y: currentScrollY,
-          animated: false,
-        });
-      }, 0);
-    };
-
-    // 로컬 메모 변경 - 부모로 전파하지 않음
-    const handleLocalMemoChange = (text) => {
-      setLocalMemo(text);
-    };
-
-    // 페이지를 떠날 때만 부모 state에 반영
-    const syncMemoToParent = () => {
-      setSatisfactionMemo(localMemo);
-    };
-
-    return (
-      <SafeAreaView style={styles.screen}>
-        <View style={styles.detailHeader}>
-          <TouchableOpacity 
-            onPress={() => {
-              resetSatisfactionForm();
-              setCurrentPage('home');
-            }} 
-            style={styles.backBtn}
-          >
-            <Text style={styles.backChevron}>‹</Text>
-          </TouchableOpacity>
-          <Text style={styles.detailTitle}>만족도 평가</Text>
-          <View style={{ width: 24 }} />
-        </View>
-
-        <KeyboardAvoidingView 
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
-        >
-          <ScrollView 
-            ref={scrollViewRef}
-            contentContainerStyle={styles.content}
-            keyboardShouldPersistTaps="always"
-            onScroll={handleScroll}
-            scrollEventThrottle={16}
-          >
-            <View style={styles.card}>
-              <Text style={styles.satisfactionQuestion}>
-                어제의 `{satisfactionEvaluationData.purchaseItem}`지출은 어떠셨나요?
-              </Text>
-              
-              <View style={styles.amountBox}>
-                <Text style={styles.satisfactionAmount}>
-                  {formatKRW(satisfactionEvaluationData.amount)}
-                </Text>
-                <Text style={styles.satisfactionDate}>
-                  {satisfactionEvaluationData.purchaseDate} | {satisfactionEvaluationData.category}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.card}>
-              <View style={styles.emojiRow}>
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  style={[
-                    styles.emojiButton,
-                    satisfactionRating === 'dissatisfied' && styles.emojiButtonSelected,
-                    satisfactionRating === 'dissatisfied' && styles.emojiButtonDissatisfied,
-                  ]}
-                  onPress={() => handleRatingSelect('dissatisfied')}
-                >
-                  <Text style={styles.emojiIcon}>😡</Text>
-                  <Text style={styles.emojiLabel}>불만족</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  style={[
-                    styles.emojiButton,
-                    satisfactionRating === 'neutral' && styles.emojiButtonSelected,
-                    satisfactionRating === 'neutral' && styles.emojiButtonNeutral,
-                  ]}
-                  onPress={() => handleRatingSelect('neutral')}
-                >
-                  <Text style={styles.emojiIcon}>😐</Text>
-                  <Text style={styles.emojiLabel}>보통</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  style={[
-                    styles.emojiButton,
-                    satisfactionRating === 'satisfied' && styles.emojiButtonSelected,
-                    satisfactionRating === 'satisfied' && styles.emojiButtonSatisfied,
-                  ]}
-                  onPress={() => handleRatingSelect('satisfied')}
-                >
-                  <Text style={styles.emojiIcon}>😆</Text>
-                  <Text style={styles.emojiLabel}>만족</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {satisfactionRating && (
-              <>
-                <View style={styles.card}>
-                  <Text style={styles.sectionTitle}>어떤 이유인가요?</Text>
-                  <View style={styles.reasonGrid}>
-                    {currentReasons.map((reason) => (
-                      <TouchableOpacity
-                        key={reason}
-                        activeOpacity={0.7}
-                        style={[
-                          styles.reasonChip,
-                          selectedReason === reason && styles.reasonChipSelected,
-                        ]}
-                        onPress={() => handleReasonSelect(reason)}
-                      >
-                        <Text
-                          style={[
-                            styles.reasonChipText,
-                            selectedReason === reason && styles.reasonChipTextSelected,
-                          ]}
-                        >
-                          {reason}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-
-                <View style={styles.card}>
-                  <Text style={styles.sectionTitle}>메모</Text>
-                  <TextInput
-                    style={styles.memoInput}
-                    placeholder="기록하고 싶은 내용을 입력해주세요."
-                    placeholderTextColor="#9CA3AF"
-                    multiline={true}
-                    value={localMemo}
-                    onChangeText={handleLocalMemoChange}
-                    textAlignVertical="top"
-                    autoCorrect={false}
-                    autoCapitalize="none"
-                    onFocus={() => {
-                      // 메모 입력창 클릭 시 자동 스크롤
-                      setTimeout(() => {
-                        scrollViewRef.current?.scrollToEnd({ animated: true });
-                      }, 300);
-                    }}
-                  />
-                </View>
-
-                <View style={styles.buttonRow}>
-                  <TouchableOpacity
-                    style={styles.btnSecondary}
-                    onPress={() => {
-                      Keyboard.dismiss();
-                      resetSatisfactionForm();
-                      setCurrentPage('home');
-                    }}
-                  >
-                    <Text style={styles.btnSecondaryText}>다음에</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.btnPrimaryLarge}
-                    onPress={() => {
-                      // 이유 선택 여부 확인
-                      if (!selectedReason) {
-                        Alert.alert(
-                          '이유 선택 필요',
-                          '어떤 이유인지 선택해 주세요.',
-                          [{ text: '확인', style: 'default' }]
-                        );
-                        return;
-                      }
-                      
-                      Keyboard.dismiss();
-                      syncMemoToParent();
-                      setTimeout(() => {
-                        handleSubmitSatisfaction();
-                      }, 100);
-                    }}
-                  >
-                    <Text style={styles.btnPrimaryLargeText}>기록하기</Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
-          </ScrollView>
-        </KeyboardAvoidingView>
-
-        <BottomNav activePage="home" onNavigate={setCurrentPage} />
-      </SafeAreaView>
-    );
-  };
 
   return (
     <>
-      {currentPage === 'home' ? <HomePage /> : currentPage === 'satisfaction' ? <SatisfactionPage /> : <DetailPage />}
+      {currentPage === 'home' ? (
+        <HomePage />
+      ) : currentPage === 'satisfaction' ? (
+        <SatisfactionRating
+          styles={styles}
+          onBack={() => setCurrentPage('home')}
+          bottomNav={<BottomNav activePage="home" onNavigate={setCurrentPage} />}
+        />
+      ) : (
+        <DetailPage />
+      )}
 
-      <Modal 
+
+      <Modal
         visible={showTransactionInput}
         animationType="slide"
         presentationStyle="fullScreen"
       >
-        <TransactionInput 
+        <TransactionInput
           onClose={() => setShowTransactionInput(false)}
           onSave={(amount, type) => {
             console.log('저장:', amount, type);
@@ -731,6 +459,7 @@ const SaveMateApp = () => {
       </Modal>
     </>
   );
+
 };const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#F9FAFB' },
   header: { backgroundColor: '#FFFFFF', paddingVertical: 16, alignItems: 'center' },
