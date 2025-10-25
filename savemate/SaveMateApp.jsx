@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef, useCallback } from 'react';
+import React, { useMemo, useState, useRef, useCallback, useEffect } from 'react';
 import {
   SafeAreaView,
   View,
@@ -17,6 +17,9 @@ import TransactionInput from './components/TransactionInput';
 import SatisfactionRating from './components/SatisfactionRating';
 import { SaveMateStyles as styles } from './styles/SaveMateStyles';
 
+import { db } from './firebase';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+
 const NOW = new Date();
 const CURRENT_YEAR = NOW.getFullYear();
 const CURRENT_MONTH = NOW.getMonth() + 1;
@@ -32,6 +35,47 @@ const SaveMateApp = () => {
   const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH);
   const [selectedDate, setSelectedDate] = useState(TODAY);
   const [showTransactionInput, setShowTransactionInput] = useState(false);
+  
+  // ✅ Firestore 연결 테스트 useEffect 추가
+  useEffect(() => {
+    (async () => {
+      try {
+        await addDoc(collection(db, 'users'), {
+          name: 'Eunseo',
+          createdAt: serverTimestamp(),
+        });
+        console.log('✅ Firestore 연결 OK');
+      } catch (e) {
+        console.error('❌ Firestore 연결 실패:', e);
+      }
+    })();
+  }, []);
+  
+  
+  const handleSaveTransaction = useCallback(
+  async (amount, type) => {
+    try {
+      // Firestore에 추가 (컬렉션명은 필요에 맞게 바꿔도 됨)
+      await addDoc(collection(db, 'transactions'), {
+        userId: '2314513',          // 로그인 붙이면 auth.uid 사용
+        amount: Number(amount),     // 음수/양수는 type으로 구분
+        type,                       // 'income' | 'expense'
+        category: '기타',            // 입력 화면에서 받게 되면 교체
+        memo: '',
+        date: new Date().toISOString().slice(0,10), // 'YYYY-MM-DD'
+        createdAt: serverTimestamp()
+      });
+      Alert.alert('저장 완료', 'Firestore에 저장했어요 ✅');
+    } catch (e) {
+      Alert.alert('저장 실패', String(e?.message || e));
+      console.error(e);
+    } finally {
+      setShowTransactionInput(false);
+    }
+  },
+  []
+);
+
   
   // API 응답 구조에 맞춘 홈 화면 데이터
   const homeData = useMemo(
@@ -450,11 +494,9 @@ const SaveMateApp = () => {
       >
         <TransactionInput
           onClose={() => setShowTransactionInput(false)}
-          onSave={(amount, type) => {
-            console.log('저장:', amount, type);
-            setShowTransactionInput(false);
-          }}
+          onSave={handleSaveTransaction}
         />
+
       </Modal>
     </>
   );
