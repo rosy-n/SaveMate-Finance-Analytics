@@ -7,7 +7,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyDc9YgKQLVj3Wtn0SFBXiGMe2sGu16XiQQ",
   authDomain: "savemate-db.firebaseapp.com",
   projectId: "savemate-db",
-  storageBucket: "savemate-db.firebasestorage.app",
+  storageBucket: "savemate-db.appspot.com",
   messagingSenderId: "959772330199",
   appId: "1:959772330199:web:c9b88e929c9495e4ab0892",
   measurementId: "G-MFXGJ96HY7"

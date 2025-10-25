@@ -16,6 +16,10 @@ export default function TabLayout() {
         headerShown: false,
         tabBarButton: HapticTab,
       }}>
+        <Tabs.Screen
+          name="test-firestore"
+          options={{ title: 'DB Test' }}
+        />
       <Tabs.Screen
         name="index"
         options={{
