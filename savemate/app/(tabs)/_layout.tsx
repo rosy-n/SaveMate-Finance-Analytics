@@ -15,11 +15,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
         tabBarButton: HapticTab,
-      }}>
-        <Tabs.Screen
-          name="test-firestore"
-          options={{ title: 'DB Test' }}
-        />
+      }}>        
       <Tabs.Screen
         name="index"
         options={{

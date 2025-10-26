@@ -17,8 +17,9 @@ import TransactionInput from './components/TransactionInput';
 import SatisfactionRating from './components/SatisfactionRating';
 import { SaveMateStyles as styles } from './styles/SaveMateStyles';
 
-import { db } from './firebase';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+const API_BASE_URL = 'http://172.20.10.4:3000';
+// 실제로는 나중에 배포 주소 / 내 로컬 IP (예: http://192.168.0.15:3000) 로 바꾸시면 됩니다.
+// Expo로 폰에서 테스트할 경우 'localhost' 대신 PC의 로컬 IP를 넣어야 합니다.
 
 const NOW = new Date();
 const CURRENT_YEAR = NOW.getFullYear();
@@ -35,46 +36,42 @@ const SaveMateApp = () => {
   const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH);
   const [selectedDate, setSelectedDate] = useState(TODAY);
   const [showTransactionInput, setShowTransactionInput] = useState(false);
-  
-  // ✅ Firestore 연결 테스트 useEffect 추가
-  useEffect(() => {
-    (async () => {
-      try {
-        await addDoc(collection(db, 'users'), {
-          name: 'Eunseo',
-          createdAt: serverTimestamp(),
-        });
-        console.log('✅ Firestore 연결 OK');
-      } catch (e) {
-        console.error('❌ Firestore 연결 실패:', e);
-      }
-    })();
-  }, []);
-  
-  
-  const handleSaveTransaction = useCallback(
-  async (amount, type) => {
-    try {
-      // Firestore에 추가 (컬렉션명은 필요에 맞게 바꿔도 됨)
-      await addDoc(collection(db, 'transactions'), {
-        userId: '2314513',          // 로그인 붙이면 auth.uid 사용
-        amount: Number(amount),     // 음수/양수는 type으로 구분
-        type,                       // 'income' | 'expense'
-        category: '기타',            // 입력 화면에서 받게 되면 교체
-        memo: '',
-        date: new Date().toISOString().slice(0,10), // 'YYYY-MM-DD'
-        createdAt: serverTimestamp()
-      });
-      Alert.alert('저장 완료', 'Firestore에 저장했어요 ✅');
-    } catch (e) {
-      Alert.alert('저장 실패', String(e?.message || e));
-      console.error(e);
-    } finally {
-      setShowTransactionInput(false);
+
+const API_BASE_URL = 'http://192.168.0.15:3000'; // ⚠️ 본인 PC의 IP 주소로 변경 필요
+
+const handleSaveTransaction = async (amount, type, pickedDate) => {
+  try {
+    const body = {
+      userId: '2314513', // 로그인 붙이면 교체 가능
+      amount: Number(amount),
+      type, // 'income' | 'expense'
+      category: '기타',
+      memo: '',
+      date: pickedDate
+        ? pickedDate.toISOString().slice(0, 10)
+        : new Date().toISOString().slice(0, 10),
+    };
+
+    const res = await fetch(`${API_BASE_URL}/api/transactions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(errText || '서버 오류');
     }
-  },
-  []
-);
+
+    Alert.alert('저장 완료', '서버에 저장했어요 ✅');
+  } catch (e) {
+    Alert.alert('저장 실패', String(e?.message || e));
+    console.error(e);
+  } finally {
+    setShowTransactionInput(false);
+  }
+};
+
 
   
   // API 응답 구조에 맞춘 홈 화면 데이터
