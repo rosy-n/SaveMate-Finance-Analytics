@@ -18,8 +18,8 @@ import SatisfactionRating from './components/SatisfactionRating';
 import { SaveMateStyles as styles } from './styles/SaveMateStyles';
 
 const API_BASE_URL = 'http://172.20.10.4:3000';
-// 실제로는 나중에 배포 주소 / 내 로컬 IP (예: http://192.168.0.15:3000) 로 바꾸시면 됩니다.
-// Expo로 폰에서 테스트할 경우 'localhost' 대신 PC의 로컬 IP를 넣어야 합니다.
+// 실제로는 나중에 배포 주소 / 본인 로컬 IP (예: http://192.168.0.15:3000)로 수정
+// Expo로 폰에서 테스트할 경우 'localhost' 대신 PC의 로컬 IP를 입력
 
 const NOW = new Date();
 const CURRENT_YEAR = NOW.getFullYear();
@@ -37,7 +37,7 @@ const SaveMateApp = () => {
   const [selectedDate, setSelectedDate] = useState(TODAY);
   const [showTransactionInput, setShowTransactionInput] = useState(false);
 
-const API_BASE_URL = 'http://192.168.0.15:3000'; // ⚠️ 본인 PC의 IP 주소로 변경 필요
+const API_BASE_URL = 'http://192.168.0.15:3000'; // ⚠️ 본인 PC의 IP 주소로 변경(수정) 필요
 
 const handleSaveTransaction = async (amount, type, pickedDate) => {
   try {
@@ -71,10 +71,8 @@ const handleSaveTransaction = async (amount, type, pickedDate) => {
     setShowTransactionInput(false);
   }
 };
-
-
-  
-  // API 응답 구조에 맞춘 홈 화면 데이터
+ 
+  // 홈 화면 데이터
   const homeData = useMemo(
     () => ({
       userName: '유은서',
@@ -95,7 +93,7 @@ const handleSaveTransaction = async (amount, type, pickedDate) => {
     []
   );
 
-  // DB 스키마에 맞춘 월별 데이터
+  // 월별 데이터
   const monthlyExpenseData = useMemo(
     () => ({
       8: {
