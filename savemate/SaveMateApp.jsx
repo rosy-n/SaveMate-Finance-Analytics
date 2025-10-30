@@ -1,25 +1,24 @@
-import React, { useMemo, useState, useRef, useCallback, useEffect } from 'react';
+// SaveMateApp.jsx
+import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { useWindowDimensions } from 'react-native';
 import {
   SafeAreaView,
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   ScrollView,
-  TextInput,
   Modal,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
   Alert,
+  Animated,    
+  StyleSheet,  
 } from 'react-native';
+
 import TransactionInput from './components/TransactionInput';
 import SatisfactionRating from './components/SatisfactionRating';
+import IncomeDetail from './components/IncomeDetail';
+import ExpenseDetail from './components/ExpenseDetail';
 import { SaveMateStyles as styles } from './styles/SaveMateStyles';
 
-const API_BASE_URL = 'http://172.20.10.4:3000';
-// 실제로는 나중에 배포 주소 / 본인 로컬 IP (예: http://192.168.0.15:3000)로 수정
-// Expo로 폰에서 테스트할 경우 'localhost' 대신 PC의 로컬 IP를 입력
 
 const NOW = new Date();
 const CURRENT_YEAR = NOW.getFullYear();
@@ -27,52 +26,93 @@ const CURRENT_MONTH = NOW.getMonth() + 1;
 const TODAY = NOW.getDate();
 
 const WEEK_HEADERS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-
 const formatKRW = (amount) =>
   (typeof amount === 'number' ? amount : 0).toLocaleString('ko-KR') + '원';
 
-const SaveMateApp = () => {
+const EntryFlow = ({
+  step,               // 'amount' | 'income' | 'expense'
+  onClose,
+  onAmountSave,
+  onIncomeSubmit,
+  onExpenseSubmit,
+  goToAmount,
+  tempIncomeData,
+  tempExpenseData,
+}) => {
+  const progress = useRef(new Animated.Value(0)).current; // 0: amount, 1: income, 2: expense
+  const { width } = useWindowDimensions();
+
+  useEffect(() => {
+    const idx = step === 'amount' ? 0 : step === 'income' ? 1 : 2;
+    Animated.timing(progress, {
+      toValue: idx,
+      duration: 220, // 내부 전환만 살짝 애니메이션
+      useNativeDriver: true,
+    }).start();
+  }, [step]);  
+
+    const translateX = progress.interpolate({
+    inputRange: [0, 1, 2],
+    outputRange: [0, -width, -2 * width],
+  });
+  return (
+    <View style={efStyles.container}>
+      <Animated.View style={[efStyles.track, { width: width * 3, transform: [{ translateX }] }]}>
+        <View style={[efStyles.page, { width }]}>
+          <TransactionInput onClose={onClose} onSave={onAmountSave} />
+        </View>
+        <View style={[efStyles.page, { width }]}>
+          <IncomeDetail onBack={goToAmount} onSubmit={onIncomeSubmit} />
+        </View>
+        <View style={[efStyles.page, { width }]}>
+          <ExpenseDetail
+            onBack={goToAmount}
+            onSubmit={onExpenseSubmit}
+            amount={tempExpenseData?.amount}
+            date={tempExpenseData?.date}
+          />
+        </View>
+      </Animated.View>
+    </View>
+  );
+};
+
+const efStyles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#fff' },
+  track: { flex: 1, flexDirection: 'row' },
+  page: { flex: 1 },
+});
+
+
+export default function SaveMateApp() {
   const [currentPage, setCurrentPage] = useState('home');
   const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH);
   const [selectedDate, setSelectedDate] = useState(TODAY);
-  const [showTransactionInput, setShowTransactionInput] = useState(false);
 
-const API_BASE_URL = 'http://172.20.95.217:3000'; // ⚠️ 본인 PC의 IP 주소로 변경(수정) 필요 
+  const [entryModal, setEntryModal] = useState({ visible: false, step: 'amount' });
+  const [tempIncomeData, setTempIncomeData] = useState(null);
+  const [tempExpenseData, setTempExpenseData] = useState(null);
 
-const handleSaveTransaction = async (amount, type, pickedDate) => {
-  try {
-    const body = {
-      userId: '2314513', // 로그인 붙이면 교체 가능
-      amount: Number(amount),
-      type, // 'income' | 'expense'
-      category: '기타',
-      memo: '',
-      date: pickedDate
-        ? pickedDate.toISOString().slice(0, 10)
-        : new Date().toISOString().slice(0, 10),
-    };
-
-    const res = await fetch(`${API_BASE_URL}/api/transactions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+  const handleSaveTransaction = (amount, type, pickedDate) => {
+  const amt = Number(amount);
+  if (type === 'income') {
+    setTempIncomeData({
+      amount: isNaN(amt) ? 0 : amt,
+      date: pickedDate ?? new Date(),
     });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(errText || '서버 오류');
-    }
-
-    Alert.alert('저장 완료', '서버에 저장했어요 ✅');
-  } catch (e) {
-    Alert.alert('저장 실패', String(e?.message || e));
-    console.error(e);
-  } finally {
-    setShowTransactionInput(false);
+    setEntryModal(prev => ({ ...prev, visible: true, step: 'income' }));
+  } else {
+    // 지출도 수입과 동일하게: 모달 유지 + 내부 화면만 'expense'로 전환
+    setTempExpenseData({
+      amount: isNaN(amt) ? 0 : amt,
+      date: pickedDate ?? new Date(),
+    });
+    setEntryModal(prev => ({ ...prev, visible: true, step: 'expense' }));
   }
 };
- 
-  // 홈 화면 데이터
+
+
+  // --- 이하 홈/디테일/만족도 화면은 기존 그대로 ---
   const homeData = useMemo(
     () => ({
       userName: '유은서',
@@ -93,15 +133,9 @@ const handleSaveTransaction = async (amount, type, pickedDate) => {
     []
   );
 
-  // 월별 데이터
   const monthlyExpenseData = useMemo(
     () => ({
-      8: {
-        year: 2025,
-        month: 8,
-        monthlyTotal: 750000,
-        dailyExpenses: [],
-      },
+      8: { year: 2025, month: 8, monthlyTotal: 750000, dailyExpenses: [] },
       9: {
         year: 2025,
         month: 9,
@@ -159,36 +193,21 @@ const handleSaveTransaction = async (amount, type, pickedDate) => {
           },
         ],
       },
-      10: {
-        year: 2025,
-        month: 10,
-        monthlyTotal: 920000,
-        dailyExpenses: [],
-      },
+      10: { year: 2025, month: 10, monthlyTotal: 920000, dailyExpenses: [] },
     }),
     []
   );
 
-  // 저번 달과의 비교 메시지 생성
   const getComparisonMessage = (currentMonth) => {
     const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
     const currentData = monthlyExpenseData[currentMonth];
     const previousData = monthlyExpenseData[previousMonth];
-
-    if (!currentData || !previousData) {
-      return '';
-    }
-
+    if (!currentData || !previousData) return '';
     const difference = currentData.monthlyTotal - previousData.monthlyTotal;
     const absDifference = Math.abs(difference);
-
-    if (difference > 0) {
-      return `${previousMonth}월보다 ${formatKRW(absDifference)} 더 썼어요`;
-    } else if (difference < 0) {
-      return `${previousMonth}월보다 ${formatKRW(absDifference)} 덜 썼어요`;
-    } else {
-      return `${previousMonth}월과 동일하게 썼어요`;
-    }
+    if (difference > 0) return `${previousMonth}월보다 ${formatKRW(absDifference)} 더 썼어요`;
+    if (difference < 0) return `${previousMonth}월보다 ${formatKRW(absDifference)} 덜 썼어요`;
+    return `${previousMonth}월과 동일하게 썼어요`;
   };
 
   const getDaysInMonth = (month, year = CURRENT_YEAR) => new Date(year, month, 0).getDate();
@@ -197,15 +216,10 @@ const handleSaveTransaction = async (amount, type, pickedDate) => {
   const BottomNav = ({ activePage, onNavigate }) => (
     <View style={styles.bottomNavWrapper}>
       <View style={styles.bottomNav}>
-        <NavButton
-          label="홈"
-          isActive={activePage === 'home'}
-          icon="🏠"
-          onPress={() => onNavigate('home')}
-        />
-        <NavButton label="리포트" isActive={false} icon="📄" onPress={() => {}} />
-        <NavButton label="챌린지" isActive={false} icon="🏆" onPress={() => {}} />
-        <NavButton label="마이페이지" isActive={false} icon="👤" onPress={() => {}} />
+        <NavButton label="홈" icon="🏠" isActive={activePage === 'home'} onPress={() => onNavigate('home')} />
+        <NavButton label="리포트" icon="📄" isActive={false} onPress={() => {}} />
+        <NavButton label="챌린지" icon="🏆" isActive={false} onPress={() => {}} />
+        <NavButton label="마이페이지" icon="👤" isActive={false} onPress={() => {}} />
       </View>
     </View>
   );
@@ -236,25 +250,16 @@ const handleSaveTransaction = async (amount, type, pickedDate) => {
             </Text>
             <Text style={styles.chevron}>›</Text>
           </View>
-          <Text style={styles.totalAmount}>
-            {formatKRW(homeData.expenseSummary.totalExpense)}
-          </Text>
+          <Text style={styles.totalAmount}>{formatKRW(homeData.expenseSummary.totalExpense)}</Text>
         </TouchableOpacity>
 
         <View style={styles.card}>
           <View style={styles.rowBetween}>
             <Text style={styles.cardTitle}>{homeData.challengeProgress.title}</Text>
-            <Text style={styles.progressText}>
-              {homeData.challengeProgress.progressRate}%
-            </Text>
+            <Text style={styles.progressText}>{homeData.challengeProgress.progressRate}%</Text>
           </View>
           <View style={styles.progressBarBg}>
-            <View
-              style={[
-                styles.progressBarFill,
-                { width: `${homeData.challengeProgress.progressRate}%` },
-              ]}
-            />
+            <View style={[styles.progressBarFill, { width: `${homeData.challengeProgress.progressRate}%` }]} />
           </View>
         </View>
 
@@ -267,25 +272,22 @@ const handleSaveTransaction = async (amount, type, pickedDate) => {
             <TouchableOpacity style={styles.btnGhost} onPress={() => setCurrentPage('home')}>
               <Text style={styles.btnGhostText}>나중에</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.btnPrimary}
-              onPress={() => {
-                setCurrentPage('satisfaction');
-              }}
-            >
+            <TouchableOpacity style={styles.btnPrimary} onPress={() => setCurrentPage('satisfaction')}>
               <Text style={styles.btnPrimaryText}>기록하기</Text>
             </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
 
-      <TouchableOpacity style={styles.fab} onPress={() => setShowTransactionInput(true)}>
+      <TouchableOpacity style={styles.fab} onPress={() => setEntryModal({ visible: true, step: 'amount' })}>
         <Text style={styles.fabPlus}>＋</Text>
       </TouchableOpacity>
 
       <BottomNav activePage="home" onNavigate={setCurrentPage} />
     </SafeAreaView>
-  );const DetailPage = () => {
+  );
+
+  const DetailPage = () => {
     const currentMonthData = monthlyExpenseData[selectedMonth] ?? {
       year: CURRENT_YEAR,
       month: selectedMonth,
@@ -316,7 +318,6 @@ const handleSaveTransaction = async (amount, type, pickedDate) => {
 
     const canGoPrev = selectedMonth > 1;
     const canGoNext = selectedMonth < CURRENT_MONTH;
-
     const comparisonMessage = getComparisonMessage(selectedMonth);
 
     return (
@@ -325,16 +326,14 @@ const handleSaveTransaction = async (amount, type, pickedDate) => {
           <TouchableOpacity onPress={() => setCurrentPage('home')} style={styles.backBtn}>
             <Text style={styles.backChevron}>‹</Text>
           </TouchableOpacity>
-          <Text style={styles.detailTitle}>{selectedMonth}월</Text>
+        <Text style={styles.detailTitle}>{selectedMonth}월</Text>
           <View style={{ width: 24 }} />
         </View>
 
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.card}>
             <View style={styles.rowBetween}>
-              <Text style={styles.totalAmount}>
-                {formatKRW(currentMonthData.monthlyTotal)}
-              </Text>
+              <Text style={styles.totalAmount}>{formatKRW(currentMonthData.monthlyTotal)}</Text>
             </View>
             <Text style={styles.comparisonText}>{comparisonMessage}</Text>
 
@@ -465,7 +464,6 @@ const handleSaveTransaction = async (amount, type, pickedDate) => {
       </SafeAreaView>
     );
   };
-  
 
   return (
     <>
@@ -481,21 +479,32 @@ const handleSaveTransaction = async (amount, type, pickedDate) => {
         <DetailPage />
       )}
 
-
       <Modal
-        visible={showTransactionInput}
-        animationType="slide"
+        visible={entryModal.visible}
+        animationType="none"
         presentationStyle="fullScreen"
+        onRequestClose={() => setEntryModal({ visible: false, step: 'amount' })}
       >
-        <TransactionInput
-          onClose={() => setShowTransactionInput(false)}
-          onSave={handleSaveTransaction}
+        <EntryFlow
+          step={entryModal.step}
+          onClose={() => setEntryModal({ visible: false, step: 'amount' })}
+          onAmountSave={handleSaveTransaction}
+          goToAmount={() => setEntryModal(prev => ({ ...prev, step: 'amount' }))}
+          onIncomeSubmit={({ incomeText, incomeMethod }) => {            
+            setEntryModal({ visible: false, step: 'amount' });
+            setCurrentPage('home');
+            Alert.alert('저장 완료', '수입이 기록되었어요 ✅');
+          }}
+          onExpenseSubmit={({ memo, method, category, background }) => {
+            setEntryModal({ visible: false, step: 'amount' });
+            setCurrentPage('home');
+            Alert.alert('저장 완료', '지출이 기록되었어요 ✅');
+          }}
+          tempIncomeData={tempIncomeData}
+          tempExpenseData={tempExpenseData}          
         />
-
       </Modal>
+
     </>
   );
-
-};
-
-export default SaveMateApp;
+}

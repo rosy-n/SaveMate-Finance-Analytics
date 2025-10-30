@@ -57,7 +57,6 @@ const TransactionInput = ({ onClose, onSave }) => {
       const result = eval(expression);
       if (!isNaN(result) && result > 0) {
         onSave?.(result, transactionType, selectedDate);
-        onClose();
       }
     } catch {
       // 계산 오류
