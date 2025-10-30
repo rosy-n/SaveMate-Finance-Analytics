@@ -1,24 +1,18 @@
-import React, { useMemo, useState, useRef, useCallback, useEffect } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import {
   SafeAreaView,
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   ScrollView,
-  TextInput,
   Modal,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
   Alert,
 } from 'react-native';
 import TransactionInput from './components/TransactionInput';
 import SatisfactionRating from './components/SatisfactionRating';
 import { SaveMateStyles as styles } from './styles/SaveMateStyles';
 
-import { db } from './firebase';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { useApi } from './hooks/useApi';
 
 const NOW = new Date();
 const CURRENT_YEAR = NOW.getFullYear();
@@ -36,45 +30,45 @@ const SaveMateApp = () => {
   const [selectedDate, setSelectedDate] = useState(TODAY);
   const [showTransactionInput, setShowTransactionInput] = useState(false);
   
-  // ✅ Firestore 연결 테스트 useEffect 추가
+  // API 헬스체크로 대체 (선택)
+  const api = useApi();
   useEffect(() => {
-    (async () => {
-      try {
-        await addDoc(collection(db, 'users'), {
-          name: 'Eunseo',
-          createdAt: serverTimestamp(),
-        });
-        console.log('✅ Firestore 연결 OK');
-      } catch (e) {
-        console.error('❌ Firestore 연결 실패:', e);
-      }
-    })();
-  }, []);
+    api.get('/api/health')
+        .then(() => console.log('✅ API 연결 OK'))
+        .catch(e => console.error('❌ API 연결 실패:', e));
+  }, [api]);
   
   
   const handleSaveTransaction = useCallback(
-  async (amount, type) => {
-    try {
-      // Firestore에 추가 (컬렉션명은 필요에 맞게 바꿔도 됨)
-      await addDoc(collection(db, 'transactions'), {
-        userId: '2314513',          // 로그인 붙이면 auth.uid 사용
-        amount: Number(amount),     // 음수/양수는 type으로 구분
-        type,                       // 'income' | 'expense'
-        category: '기타',            // 입력 화면에서 받게 되면 교체
-        memo: '',
-        date: new Date().toISOString().slice(0,10), // 'YYYY-MM-DD'
-        createdAt: serverTimestamp()
-      });
-      Alert.alert('저장 완료', 'Firestore에 저장했어요 ✅');
-    } catch (e) {
-      Alert.alert('저장 실패', String(e?.message || e));
-      console.error(e);
-    } finally {
-      setShowTransactionInput(false);
-    }
-  },
-  []
-);
+    async (amount, type, extra = {}) => {
+      try {
+        const amt = Number(amount);
+        if (!Number.isFinite(amt)) {
+          Alert.alert('입력 오류', '금액을 숫자로 입력해 주세요.');
+          return;
+        }
+
+        const payload = {
+          uid: '2314513', 
+          amount: amt,
+          type,                               // 'income' | 'expense'
+          category: extra.category || '기타',
+          memo: extra.memo || '',
+          date: new Date().toISOString().slice(0, 10),
+        };
+
+        await api.post('/api/transactions', payload /* , { token } */);
+        Alert.alert('저장 완료', '서버 → Firestore 저장 성공 ✅');
+      } catch (e) {
+        console.error(e);
+        Alert.alert('저장 실패', String(e?.message || e));
+      } finally {
+        setShowTransactionInput(false);
+      }
+    },
+    [api]
+  );
+
 
   
   // API 응답 구조에 맞춘 홈 화면 데이터
@@ -290,7 +284,8 @@ const SaveMateApp = () => {
 
       <BottomNav activePage="home" onNavigate={setCurrentPage} />
     </SafeAreaView>
-  );const DetailPage = () => {
+  );
+  const DetailPage = () => {
     const currentMonthData = monthlyExpenseData[selectedMonth] ?? {
       year: CURRENT_YEAR,
       month: selectedMonth,
@@ -487,6 +482,7 @@ const SaveMateApp = () => {
       )}
 
 
+      {/* ✅ 거래 입력 모달 */}
       <Modal
         visible={showTransactionInput}
         animationType="slide"
@@ -496,8 +492,9 @@ const SaveMateApp = () => {
           onClose={() => setShowTransactionInput(false)}
           onSave={handleSaveTransaction}
         />
-
       </Modal>
+
+
     </>
   );
 
