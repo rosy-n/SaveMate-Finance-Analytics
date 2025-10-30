@@ -37,7 +37,7 @@ const SaveMateApp = () => {
   const [selectedDate, setSelectedDate] = useState(TODAY);
   const [showTransactionInput, setShowTransactionInput] = useState(false);
 
-const API_BASE_URL = 'http://192.168.0.15:3000'; // ⚠️ 본인 PC의 IP 주소로 변경(수정) 필요
+const API_BASE_URL = 'http://172.20.95.217:3000'; // ⚠️ 본인 PC의 IP 주소로 변경(수정) 필요 
 
 const handleSaveTransaction = async (amount, type, pickedDate) => {
   try {
@@ -232,7 +232,7 @@ const handleSaveTransaction = async (amount, type, pickedDate) => {
         <TouchableOpacity style={styles.card} onPress={() => setCurrentPage('detail')}>
           <View style={styles.rowBetween}>
             <Text style={styles.cardTitle}>
-              {homeData.expenseSummary.currentMonth} 지출 현황
+              {CURRENT_MONTH}월 지출 현황
             </Text>
             <Text style={styles.chevron}>›</Text>
           </View>

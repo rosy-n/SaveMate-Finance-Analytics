@@ -11,6 +11,7 @@ import {
   Platform,
   Keyboard,
   Alert,
+  StyleSheet
 } from 'react-native';
 
 const DEFAULT_REASON_OPTIONS = {
@@ -26,6 +27,23 @@ const DEFAULT_EVALUATION_DATA = {
   purchaseDate: '9월 14일',
   category: '카페',
 };
+
+const localStyles = StyleSheet.create({
+  reasonGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+  },
+  reasonChip: {
+    width: '48%',
+    marginBottom: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resonChipText: {
+    textAlign: 'center',
+  },
+});
 
 export default function SatisfactionRating({
   styles,
@@ -168,15 +186,16 @@ export default function SatisfactionRating({
             <>
               <View style={styles.card}>
                 <Text style={styles.sectionTitle}>어떤 이유인가요?</Text>
-                <View style={styles.reasonGrid}>
-                  {currentReasons.map((reason) => (
+                <View style={[styles.reasonGrid, localStyles.reasonGrid]}>
+                  {currentReasons.map((reason, index) => (
                     <TouchableOpacity
                       key={reason}
                       activeOpacity={0.7}
-                      style={[styles.reasonChip, selectedReason === reason && styles.reasonChipSelected]}
+                      style={[styles.reasonChip, localStyles.reasonChip, selectedReason === reason && styles.reasonChipSelected, index % 2 === 0 && { marginRight: 8 },
+                      ]}
                       onPress={() => handleReasonSelect(reason)}
                     >
-                      <Text style={[styles.reasonChipText, selectedReason === reason && styles.reasonChipTextSelected]}>
+                      <Text style={[styles.reasonChipText, localStyles.reasonChipText, selectedReason === reason && styles.reasonChipTextSelected]}>
                         {reason}
                       </Text>
                     </TouchableOpacity>
