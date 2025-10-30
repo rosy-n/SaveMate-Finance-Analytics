@@ -16,6 +16,7 @@ import {
 import TransactionInput from './components/TransactionInput';
 import SatisfactionRating from './components/SatisfactionRating';
 import IncomeDetail from './components/IncomeDetail';
+import ExpenseDetail from './components/ExpenseDetail';
 import { SaveMateStyles as styles } from './styles/SaveMateStyles';
 
 
@@ -28,52 +29,49 @@ const WEEK_HEADERS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 const formatKRW = (amount) =>
   (typeof amount === 'number' ? amount : 0).toLocaleString('ko-KR') + '원';
 
-const EntryFlow = ({ step, onClose, onAmountSave, onIncomeSubmit, goToAmount }) => {  const progress = useRef(new Animated.Value(0)).current; // 0: amount, 1: income
+const EntryFlow = ({
+  step,               // 'amount' | 'income' | 'expense'
+  onClose,
+  onAmountSave,
+  onIncomeSubmit,
+  onExpenseSubmit,
+  goToAmount,
+  tempIncomeData,
+  tempExpenseData,
+}) => {
+  const progress = useRef(new Animated.Value(0)).current; // 0: amount, 1: income, 2: expense
   const { width } = useWindowDimensions();
 
   useEffect(() => {
+    const idx = step === 'amount' ? 0 : step === 'income' ? 1 : 2;
     Animated.timing(progress, {
-      toValue: step === 'income' ? 1 : 0,
+      toValue: idx,
       duration: 220, // 내부 전환만 살짝 애니메이션
       useNativeDriver: true,
     }).start();
   }, [step]);  
 
-  const amountTranslate = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -width],
+    const translateX = progress.interpolate({
+    inputRange: [0, 1, 2],
+    outputRange: [0, -width, -2 * width],
   });
-  const incomeTranslate = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [width, 0],
-  });
-
   return (
     <View style={efStyles.container}>
-      {/* 금액 입력 화면 (항상 마운트) */}
-      <Animated.View
-        style={[
-          efStyles.page,
-          { transform: [{ translateX: amountTranslate }] },
-        ]}
-      >
-        <TransactionInput
-          onClose={onClose}           // X 버튼 등으로 닫기
-          onSave={onAmountSave}       // 저장 시 step을 'income'으로
-        />
-      </Animated.View>
-
-      {/* 수입 기록 화면 (항상 마운트) */}
-      <Animated.View
-        style={[
-          efStyles.page,
-          { transform: [{ translateX: incomeTranslate }] },
-        ]}
-      >
-        <IncomeDetail
-          onBack={goToAmount}
-          onSubmit={onIncomeSubmit}
-        />
+      <Animated.View style={[efStyles.track, { width: width * 3, transform: [{ translateX }] }]}>
+        <View style={[efStyles.page, { width }]}>
+          <TransactionInput onClose={onClose} onSave={onAmountSave} />
+        </View>
+        <View style={[efStyles.page, { width }]}>
+          <IncomeDetail onBack={goToAmount} onSubmit={onIncomeSubmit} />
+        </View>
+        <View style={[efStyles.page, { width }]}>
+          <ExpenseDetail
+            onBack={goToAmount}
+            onSubmit={onExpenseSubmit}
+            amount={tempExpenseData?.amount}
+            date={tempExpenseData?.date}
+          />
+        </View>
       </Animated.View>
     </View>
   );
@@ -81,9 +79,8 @@ const EntryFlow = ({ step, onClose, onAmountSave, onIncomeSubmit, goToAmount }) 
 
 const efStyles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  page: {
-    ...StyleSheet.absoluteFillObject,
-  },
+  track: { flex: 1, flexDirection: 'row' },
+  page: { flex: 1 },
 });
 
 
@@ -94,6 +91,7 @@ export default function SaveMateApp() {
 
   const [entryModal, setEntryModal] = useState({ visible: false, step: 'amount' });
   const [tempIncomeData, setTempIncomeData] = useState(null);
+  const [tempExpenseData, setTempExpenseData] = useState(null);
 
   const handleSaveTransaction = (amount, type, pickedDate) => {
   const amt = Number(amount);
@@ -102,12 +100,14 @@ export default function SaveMateApp() {
       amount: isNaN(amt) ? 0 : amt,
       date: pickedDate ?? new Date(),
     });
-    // 모달은 유지, 내부 화면만 'income'으로 전환
     setEntryModal(prev => ({ ...prev, visible: true, step: 'income' }));
   } else {
-    // 지출은 바로 저장 후 모달 닫기
-    setEntryModal({ visible: false, step: 'amount' });
-    Alert.alert('저장 완료', '지출이 기록되었어요 ✅');
+    // 지출도 수입과 동일하게: 모달 유지 + 내부 화면만 'expense'로 전환
+    setTempExpenseData({
+      amount: isNaN(amt) ? 0 : amt,
+      date: pickedDate ?? new Date(),
+    });
+    setEntryModal(prev => ({ ...prev, visible: true, step: 'expense' }));
   }
 };
 
@@ -479,7 +479,7 @@ export default function SaveMateApp() {
 
       <Modal
         visible={entryModal.visible}
-        animationType="none"         // ★ 슬라이드 애니메이션 끔 (홈 화면 깜빡임 방지)
+        animationType="none"
         presentationStyle="fullScreen"
         onRequestClose={() => setEntryModal({ visible: false, step: 'amount' })}
       >
@@ -493,6 +493,13 @@ export default function SaveMateApp() {
             setCurrentPage('home');
             Alert.alert('저장 완료', '수입이 기록되었어요 ✅');
           }}
+          onExpenseSubmit={({ memo, method, category, background }) => {
+            setEntryModal({ visible: false, step: 'amount' });
+            setCurrentPage('home');
+            Alert.alert('저장 완료', '지출이 기록되었어요 ✅');
+          }}
+          tempIncomeData={tempIncomeData}
+          tempExpenseData={tempExpenseData}          
         />
       </Modal>
 
