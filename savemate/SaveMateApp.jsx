@@ -1,5 +1,4 @@
-import React, { useMemo, useState, useCallback, useEffect } from 'react';
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { useWindowDimensions } from 'react-native';
 import {
   SafeAreaView,
@@ -9,8 +8,8 @@ import {
   ScrollView,
   Modal,
   Alert,
-  Animated,    
-  StyleSheet,  
+  Animated,
+  StyleSheet,
 } from 'react-native';
 
 import TransactionInput from './components/TransactionInput';
@@ -18,8 +17,8 @@ import SatisfactionRating from './components/SatisfactionRating';
 import IncomeDetail from './components/IncomeDetail';
 import ExpenseDetail from './components/ExpenseDetail';
 import { SaveMateStyles as styles } from './styles/SaveMateStyles';
-
 import { useApi } from './hooks/useApi';
+
 
 const NOW = new Date();
 const CURRENT_YEAR = NOW.getFullYear();
