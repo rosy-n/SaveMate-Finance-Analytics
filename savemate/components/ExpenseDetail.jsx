@@ -49,11 +49,7 @@ export default function ExpenseDetail({
 
   const canSubmit = memo.trim() && method && category && background;
 
-  const handleSubmit = () => {
-    if (!canSubmit) {
-      alert('소비 내역, 지출 수단, 소비 품목, 소비 배경을 모두 입력해 주세요.');
-      return;
-    }
+  const handleSubmit = () => {    
     onSubmit?.({
       memo: memo.trim(),
       method,
@@ -213,9 +209,9 @@ const styles = StyleSheet.create({
     flex: 1, paddingVertical: 12, borderRadius: 10,
     backgroundColor: '#F3F4F6', alignItems: 'center',
   },
-  methodBtnActive: { backgroundColor: '#C7D2FE' },
+  methodBtnActive: { backgroundColor: '#ecdcfcff' },
   methodText: { fontSize: 15, color: '#6B7280', fontWeight: '600' },
-  methodTextActive: { color: '#1E3A8A', fontWeight: '700' },
+  methodTextActive: { color: '#9B59B6', fontWeight: '700' },
 
   selectBox: {
     borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10,

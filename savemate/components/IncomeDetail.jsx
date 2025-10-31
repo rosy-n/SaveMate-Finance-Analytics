@@ -13,11 +13,10 @@ export default function IncomeRecord({ onBack, onSubmit }) {
   const [incomeText, setIncomeText] = useState('');
   const [incomeMethod, setIncomeMethod] = useState(null); // '월급' | '용돈' | '기타'
 
+  const canSubmit = incomeText.trim() && incomeMethod;
+
   const handleSubmit = () => {
-    if (!incomeText || !incomeMethod) {
-      alert('수입 내역과 수입 수단을 모두 입력해 주세요.');
-      return;
-    }
+    
     onSubmit?.({ incomeText, incomeMethod });
   };
 
@@ -59,8 +58,13 @@ export default function IncomeRecord({ onBack, onSubmit }) {
           ))}
         </View>
 
-        <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
-          <Text style={styles.submitText}>다음</Text>
+        <TouchableOpacity
+          style={[styles.submitBtn, !canSubmit && styles.submitBtnDisabled]}
+          disabled={!canSubmit}
+          onPress={() => { if (canSubmit) handleSubmit(); }}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.submitText}>기록하기</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -87,12 +91,15 @@ const styles = StyleSheet.create({
     flex: 1, paddingVertical: 12, borderRadius: 8,
     backgroundColor: '#F3F4F6', alignItems: 'center',
   },
-  methodBtnActive: { backgroundColor: '#C7D2FE' },
+  methodBtnActive: { backgroundColor: '#ecdcfcff' },
   methodText: { fontSize: 16, color: '#6B7280', fontWeight: '600' },
-  methodTextActive: { color: '#1E3A8A', fontWeight: '700' },
+  methodTextActive: { color: '#9B59B6', fontWeight: '700' },
   submitBtn: {
     backgroundColor: '#7C3AED', marginTop: 40, borderRadius: 12,
     paddingVertical: 14, alignItems: 'center',
+  },
+  submitBtnDisabled: {
+    opacity: 0.5,
   },
   submitText: { color: '#fff', fontSize: 18, fontWeight: '700' },
 });

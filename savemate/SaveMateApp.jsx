@@ -1,4 +1,4 @@
-// SaveMateApp.jsx
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useWindowDimensions } from 'react-native';
 import {
@@ -19,6 +19,7 @@ import IncomeDetail from './components/IncomeDetail';
 import ExpenseDetail from './components/ExpenseDetail';
 import { SaveMateStyles as styles } from './styles/SaveMateStyles';
 
+import { useApi } from './hooks/useApi';
 
 const NOW = new Date();
 const CURRENT_YEAR = NOW.getFullYear();
@@ -26,6 +27,7 @@ const CURRENT_MONTH = NOW.getMonth() + 1;
 const TODAY = NOW.getDate();
 
 const WEEK_HEADERS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
 const formatKRW = (amount) =>
   (typeof amount === 'number' ? amount : 0).toLocaleString('ko-KR') + '원';
 
@@ -88,11 +90,53 @@ export default function SaveMateApp() {
   const [currentPage, setCurrentPage] = useState('home');
   const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH);
   const [selectedDate, setSelectedDate] = useState(TODAY);
+  const [showTransactionInput, setShowTransactionInput] = useState(false);
+  
+  // API 헬스체크로 대체 (선택)
+  const api = useApi();
+  useEffect(() => {
+    api.get('/api/health')
+        .then(() => console.log('✅ API 연결 OK'))
+        .catch(e => console.error('❌ API 연결 실패:', e));
+  }, [api]);
+  
+  
+  const handleSaveTransaction = useCallback(
+    async (amount, type, extra = {}) => {
+      try {
+        const amt = Number(amount);
+        if (!Number.isFinite(amt)) {
+          Alert.alert('입력 오류', '금액을 숫자로 입력해 주세요.');
+          return;
+        }
+
+        const payload = {
+          uid: '2314513', 
+          amount: amt,
+          type,                               // 'income' | 'expense'
+          category: extra.category || '기타',
+          memo: extra.memo || '',
+          date: new Date().toISOString().slice(0, 10),
+        };
+
+        await api.post('/api/transactions', payload /* , { token } */);
+        Alert.alert('저장 완료', '서버 → Firestore 저장 성공 ✅');
+      } catch (e) {
+        console.error(e);
+        Alert.alert('저장 실패', String(e?.message || e));
+      } finally {
+        setShowTransactionInput(false);
+      }
+    },
+    [api]
+  );
+
 
   const [entryModal, setEntryModal] = useState({ visible: false, step: 'amount' });
   const [tempIncomeData, setTempIncomeData] = useState(null);
   const [tempExpenseData, setTempExpenseData] = useState(null);
-
+  // 프론트 1차 구현 (madeBy. 지은)
+  /*
   const handleSaveTransaction = (amount, type, pickedDate) => {
   const amt = Number(amount);
   if (type === 'income') {
@@ -109,7 +153,8 @@ export default function SaveMateApp() {
     });
     setEntryModal(prev => ({ ...prev, visible: true, step: 'expense' }));
   }
-};
+
+};*/
 
 
   // --- 이하 홈/디테일/만족도 화면은 기존 그대로 ---
@@ -133,9 +178,15 @@ export default function SaveMateApp() {
     []
   );
 
+  // DB 스키마에 맞춘 월별 데이터
   const monthlyExpenseData = useMemo(
     () => ({
-      8: { year: 2025, month: 8, monthlyTotal: 750000, dailyExpenses: [] },
+      8: {
+        year: 2025,
+        month: 8,
+        monthlyTotal: 750000,
+        dailyExpenses: [],
+      },
       9: {
         year: 2025,
         month: 9,
@@ -193,21 +244,36 @@ export default function SaveMateApp() {
           },
         ],
       },
-      10: { year: 2025, month: 10, monthlyTotal: 920000, dailyExpenses: [] },
+      10: {
+        year: 2025,
+        month: 10,
+        monthlyTotal: 920000,
+        dailyExpenses: [],
+      },
     }),
     []
   );
 
+  // 저번 달과의 비교 메시지 생성
   const getComparisonMessage = (currentMonth) => {
     const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
     const currentData = monthlyExpenseData[currentMonth];
     const previousData = monthlyExpenseData[previousMonth];
-    if (!currentData || !previousData) return '';
+
+    if (!currentData || !previousData) {
+      return '';
+    }
+
     const difference = currentData.monthlyTotal - previousData.monthlyTotal;
     const absDifference = Math.abs(difference);
-    if (difference > 0) return `${previousMonth}월보다 ${formatKRW(absDifference)} 더 썼어요`;
-    if (difference < 0) return `${previousMonth}월보다 ${formatKRW(absDifference)} 덜 썼어요`;
-    return `${previousMonth}월과 동일하게 썼어요`;
+
+    if (difference > 0) {
+      return `${previousMonth}월보다 ${formatKRW(absDifference)} 더 썼어요`;
+    } else if (difference < 0) {
+      return `${previousMonth}월보다 ${formatKRW(absDifference)} 덜 썼어요`;
+    } else {
+      return `${previousMonth}월과 동일하게 썼어요`;
+    }
   };
 
   const getDaysInMonth = (month, year = CURRENT_YEAR) => new Date(year, month, 0).getDate();
@@ -216,10 +282,15 @@ export default function SaveMateApp() {
   const BottomNav = ({ activePage, onNavigate }) => (
     <View style={styles.bottomNavWrapper}>
       <View style={styles.bottomNav}>
-        <NavButton label="홈" icon="🏠" isActive={activePage === 'home'} onPress={() => onNavigate('home')} />
-        <NavButton label="리포트" icon="📄" isActive={false} onPress={() => {}} />
-        <NavButton label="챌린지" icon="🏆" isActive={false} onPress={() => {}} />
-        <NavButton label="마이페이지" icon="👤" isActive={false} onPress={() => {}} />
+        <NavButton
+          label="홈"
+          isActive={activePage === 'home'}
+          icon="🏠"
+          onPress={() => onNavigate('home')}
+        />
+        <NavButton label="리포트" isActive={false} icon="📄" onPress={() => {}} />
+        <NavButton label="챌린지" isActive={false} icon="🏆" onPress={() => {}} />
+        <NavButton label="마이페이지" isActive={false} icon="👤" onPress={() => {}} />
       </View>
     </View>
   );
@@ -250,16 +321,25 @@ export default function SaveMateApp() {
             </Text>
             <Text style={styles.chevron}>›</Text>
           </View>
-          <Text style={styles.totalAmount}>{formatKRW(homeData.expenseSummary.totalExpense)}</Text>
+          <Text style={styles.totalAmount}>
+            {formatKRW(homeData.expenseSummary.totalExpense)}
+          </Text>
         </TouchableOpacity>
 
         <View style={styles.card}>
           <View style={styles.rowBetween}>
             <Text style={styles.cardTitle}>{homeData.challengeProgress.title}</Text>
-            <Text style={styles.progressText}>{homeData.challengeProgress.progressRate}%</Text>
+            <Text style={styles.progressText}>
+              {homeData.challengeProgress.progressRate}%
+            </Text>
           </View>
           <View style={styles.progressBarBg}>
-            <View style={[styles.progressBarFill, { width: `${homeData.challengeProgress.progressRate}%` }]} />
+            <View
+              style={[
+                styles.progressBarFill,
+                { width: `${homeData.challengeProgress.progressRate}%` },
+              ]}
+            />
           </View>
         </View>
 
@@ -272,21 +352,25 @@ export default function SaveMateApp() {
             <TouchableOpacity style={styles.btnGhost} onPress={() => setCurrentPage('home')}>
               <Text style={styles.btnGhostText}>나중에</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.btnPrimary} onPress={() => setCurrentPage('satisfaction')}>
+            <TouchableOpacity 
+              style={styles.btnPrimary}
+              onPress={() => {
+                setCurrentPage('satisfaction');
+              }}
+            >
               <Text style={styles.btnPrimaryText}>기록하기</Text>
             </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
 
-      <TouchableOpacity style={styles.fab} onPress={() => setEntryModal({ visible: true, step: 'amount' })}>
+      <TouchableOpacity style={styles.fab} onPress={() => setShowTransactionInput(true)}>
         <Text style={styles.fabPlus}>＋</Text>
       </TouchableOpacity>
 
       <BottomNav activePage="home" onNavigate={setCurrentPage} />
     </SafeAreaView>
   );
-
   const DetailPage = () => {
     const currentMonthData = monthlyExpenseData[selectedMonth] ?? {
       year: CURRENT_YEAR,
@@ -318,6 +402,7 @@ export default function SaveMateApp() {
 
     const canGoPrev = selectedMonth > 1;
     const canGoNext = selectedMonth < CURRENT_MONTH;
+
     const comparisonMessage = getComparisonMessage(selectedMonth);
 
     return (
@@ -326,14 +411,16 @@ export default function SaveMateApp() {
           <TouchableOpacity onPress={() => setCurrentPage('home')} style={styles.backBtn}>
             <Text style={styles.backChevron}>‹</Text>
           </TouchableOpacity>
-        <Text style={styles.detailTitle}>{selectedMonth}월</Text>
+          <Text style={styles.detailTitle}>{selectedMonth}월</Text>
           <View style={{ width: 24 }} />
         </View>
 
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.card}>
             <View style={styles.rowBetween}>
-              <Text style={styles.totalAmount}>{formatKRW(currentMonthData.monthlyTotal)}</Text>
+              <Text style={styles.totalAmount}>
+                {formatKRW(currentMonthData.monthlyTotal)}
+              </Text>
             </View>
             <Text style={styles.comparisonText}>{comparisonMessage}</Text>
 
@@ -464,6 +551,7 @@ export default function SaveMateApp() {
       </SafeAreaView>
     );
   };
+  
 
   return (
     <>
@@ -479,6 +567,8 @@ export default function SaveMateApp() {
         <DetailPage />
       )}
 
+
+      {/* ✅ 거래 입력 모달 */}
       <Modal
         visible={entryModal.visible}
         animationType="none"
@@ -505,6 +595,8 @@ export default function SaveMateApp() {
         />
       </Modal>
 
+
     </>
   );
-}
+
+};

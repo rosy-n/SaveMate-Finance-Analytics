@@ -52,16 +52,27 @@ const TransactionInput = ({ onClose, onSave }) => {
 
   const handleSave = () => {
     if (expression === '') return;
-    
+
     try {
       const result = eval(expression);
       if (!isNaN(result) && result > 0) {
-        onSave?.(result, transactionType, selectedDate);
+        // 날짜를 문자열로 변환 (YYYY-MM-DD)
+        const iso = new Date(selectedDate).toISOString().slice(0, 10);
+
+        // SaveMateApp이 기대하는 형식에 맞게 전달
+        onSave?.(result, transactionType, {
+          category: '기타',   // 지금은 임시로 '기타', 나중에 카테고리 선택 UI 추가 가능
+          memo: '',           // 추후 메모 입력창 추가 시 수정
+          date: iso,          // 문자열 형태로 전달 (서버 zod 스키마와 일치)
+        });
+
+        onClose();
       }
     } catch {
-      // 계산 오류
+      // 계산 오류 시 아무 일도 안 함
     }
   };
+
 
   const formatAmount = (value) => {
     if (!value) return '0';
