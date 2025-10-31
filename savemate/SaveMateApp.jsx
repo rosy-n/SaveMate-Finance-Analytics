@@ -1,5 +1,4 @@
-import React, { useMemo, useState, useCallback, useEffect } from 'react';
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { useWindowDimensions } from 'react-native';
 import {
   SafeAreaView,
@@ -9,8 +8,8 @@ import {
   ScrollView,
   Modal,
   Alert,
-  Animated,    
-  StyleSheet,  
+  Animated,
+  StyleSheet,
 } from 'react-native';
 
 import TransactionInput from './components/TransactionInput';
@@ -18,8 +17,8 @@ import SatisfactionRating from './components/SatisfactionRating';
 import IncomeDetail from './components/IncomeDetail';
 import ExpenseDetail from './components/ExpenseDetail';
 import { SaveMateStyles as styles } from './styles/SaveMateStyles';
-
 import { useApi } from './hooks/useApi';
+
 
 const NOW = new Date();
 const CURRENT_YEAR = NOW.getFullYear();
@@ -99,65 +98,31 @@ export default function SaveMateApp() {
         .then(() => console.log('✅ API 연결 OK'))
         .catch(e => console.error('❌ API 연결 실패:', e));
   }, [api]);
-  
-  
-  const handleSaveTransaction = useCallback(
-    async (amount, type, extra = {}) => {
-      try {
-        const amt = Number(amount);
-        if (!Number.isFinite(amt)) {
-          Alert.alert('입력 오류', '금액을 숫자로 입력해 주세요.');
-          return;
-        }
-
-        const payload = {
-          uid: '2314513', 
-          amount: amt,
-          type,                               // 'income' | 'expense'
-          category: extra.category || '기타',
-          memo: extra.memo || '',
-          date: new Date().toISOString().slice(0, 10),
-        };
-
-        await api.post('/api/transactions', payload /* , { token } */);
-        Alert.alert('저장 완료', '서버 → Firestore 저장 성공 ✅');
-      } catch (e) {
-        console.error(e);
-        Alert.alert('저장 실패', String(e?.message || e));
-      } finally {
-        setShowTransactionInput(false);
-      }
-    },
-    [api]
-  );
-
-
+    
   const [entryModal, setEntryModal] = useState({ visible: false, step: 'amount' });
   const [tempIncomeData, setTempIncomeData] = useState(null);
   const [tempExpenseData, setTempExpenseData] = useState(null);
-  // 프론트 1차 구현 (madeBy. 지은)
-  /*
+
   const handleSaveTransaction = (amount, type, pickedDate) => {
-  const amt = Number(amount);
-  if (type === 'income') {
-    setTempIncomeData({
-      amount: isNaN(amt) ? 0 : amt,
-      date: pickedDate ?? new Date(),
-    });
-    setEntryModal(prev => ({ ...prev, visible: true, step: 'income' }));
-  } else {
-    // 지출도 수입과 동일하게: 모달 유지 + 내부 화면만 'expense'로 전환
-    setTempExpenseData({
-      amount: isNaN(amt) ? 0 : amt,
-      date: pickedDate ?? new Date(),
-    });
-    setEntryModal(prev => ({ ...prev, visible: true, step: 'expense' }));
-  }
+    const amt = Number(amount);
+    // TransactionInput 이 넘기는 3번째 인자는 { category, memo, date } 객체임.
+    const raw = pickedDate && pickedDate.date !== undefined ? pickedDate.date : pickedDate;
+    const dateObj =
+      raw instanceof Date
+        ? raw
+        : raw
+        ? new Date(raw)
+        : new Date();  
 
-};*/
+    if (type === 'income') {
+      setTempIncomeData({ amount: isNaN(amt) ? 0 : amt, date: dateObj });
+      setEntryModal(prev => ({ ...prev, visible: true, step: 'income' }));  // 모달 유지
+    } else {
+      setTempExpenseData({ amount: isNaN(amt) ? 0 : amt, date: dateObj });
+      setEntryModal(prev => ({ ...prev, visible: true, step: 'expense' })); // 모달 유지
+    }
+  };
 
-
-  // --- 이하 홈/디테일/만족도 화면은 기존 그대로 ---
   const homeData = useMemo(
     () => ({
       userName: '유은서',
@@ -364,9 +329,13 @@ export default function SaveMateApp() {
         </View>
       </ScrollView>
 
-      <TouchableOpacity style={styles.fab} onPress={() => setShowTransactionInput(true)}>
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => setEntryModal({ visible: true, step: 'amount' })}
+      >
         <Text style={styles.fabPlus}>＋</Text>
       </TouchableOpacity>
+
 
       <BottomNav activePage="home" onNavigate={setCurrentPage} />
     </SafeAreaView>
@@ -580,16 +549,17 @@ export default function SaveMateApp() {
           onClose={() => setEntryModal({ visible: false, step: 'amount' })}
           onAmountSave={handleSaveTransaction}
           goToAmount={() => setEntryModal(prev => ({ ...prev, step: 'amount' }))}
-          onIncomeSubmit={({ incomeText, incomeMethod }) => {            
-            setEntryModal({ visible: false, step: 'amount' });
+          onIncomeSubmit={({ incomeText, incomeMethod }) => {
+            setEntryModal({ visible: false, step: 'amount' }); // ✅ 이 시점에만 닫기
             setCurrentPage('home');
             Alert.alert('저장 완료', '수입이 기록되었어요 ✅');
           }}
           onExpenseSubmit={({ memo, method, category, background }) => {
-            setEntryModal({ visible: false, step: 'amount' });
+            setEntryModal({ visible: false, step: 'amount' }); // ✅ 이 시점에만 닫기
             setCurrentPage('home');
             Alert.alert('저장 완료', '지출이 기록되었어요 ✅');
           }}
+
           tempIncomeData={tempIncomeData}
           tempExpenseData={tempExpenseData}          
         />
