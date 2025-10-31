@@ -1,4 +1,4 @@
-// components/IncomeRecord.jsx
+// components/IncomeDetail.jsx
 import React, { useState } from 'react';
 import {
   SafeAreaView,
@@ -9,7 +9,7 @@ import {
   StyleSheet,
 } from 'react-native';
 
-export default function IncomeRecord({ onBack, onSubmit }) {
+export default function IncomeDetail({ onBack, onSubmit }) {
   const [incomeText, setIncomeText] = useState('');
   const [incomeMethod, setIncomeMethod] = useState(null); // '월급' | '용돈' | '기타'
 

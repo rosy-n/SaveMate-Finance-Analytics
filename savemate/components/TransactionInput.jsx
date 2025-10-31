@@ -61,12 +61,11 @@ const TransactionInput = ({ onClose, onSave }) => {
 
         // SaveMateApp이 기대하는 형식에 맞게 전달
         onSave?.(result, transactionType, {
-          category: '기타',   // 지금은 임시로 '기타', 나중에 카테고리 선택 UI 추가 가능
-          memo: '',           // 추후 메모 입력창 추가 시 수정
-          date: iso,          // 문자열 형태로 전달 (서버 zod 스키마와 일치)
+          category: '기타',
+          memo: '',
+          // 다음 탭(Income/Expense)에서 Date 객체로 바로 쓰도록 Date로 전달
+          date: new Date(iso),
         });
-
-        onClose();
       }
     } catch {
       // 계산 오류 시 아무 일도 안 함
