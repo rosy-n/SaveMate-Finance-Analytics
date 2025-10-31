@@ -317,7 +317,7 @@ export default function SaveMateApp() {
         <TouchableOpacity style={styles.card} onPress={() => setCurrentPage('detail')}>
           <View style={styles.rowBetween}>
             <Text style={styles.cardTitle}>
-              {homeData.expenseSummary.currentMonth} 지출 현황
+              {CURRENT_MONTH}월 지출 현황
             </Text>
             <Text style={styles.chevron}>›</Text>
           </View>
