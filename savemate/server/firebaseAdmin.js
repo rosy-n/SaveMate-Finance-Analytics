@@ -1,30 +1,22 @@
-// firebaseAdmin.js
+// server/firebaseAdmin.js
 require('dotenv').config();
 const admin = require('firebase-admin');
+const fs = require('fs');
+const path = require('path');
 
-function init() {
-  if (admin.apps.length) return;
+let credential;
+const jsonPath = path.join(__dirname, 'service-account.json');
 
-  const b64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
-
-  try {
-    if (b64 && b64.trim().length > 0) {
-      const json = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
-      admin.initializeApp({ credential: admin.credential.cert(json) });
-      console.log('✅ Firebase Admin: using BASE64 credentials');
-    } else {
-      // 로컬 개발용 파일 fallback (루트 기준)
-      const sa = require('./service-account.json');
-      admin.initializeApp({ credential: admin.credential.cert(sa) });
-      console.log('✅ Firebase Admin: using ./service-account.json');
-    }
-  } catch (e) {
-    console.error('❌ Firebase Admin init failed:', e.message);
-    throw e;
-  }
+if (fs.existsSync(jsonPath)) {
+  const serviceAccount = require(jsonPath);
+  credential = admin.credential.cert(serviceAccount);
+} else if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
+  const jsonStr = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64, 'base64').toString('utf8');
+  credential = admin.credential.cert(JSON.parse(jsonStr));
+} else {
+  throw new Error('Firebase Admin 자격 정보가 없습니다.');
 }
 
-init();
+admin.initializeApp({ credential });
 
-const db = admin.firestore();
-module.exports = { admin, db };
+module.exports = admin;

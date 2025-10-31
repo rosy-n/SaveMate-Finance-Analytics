@@ -1,15 +1,20 @@
 {
-  "name": "savemate-server",
-  "version": "1.0.0",
-  "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "postinstall": "node -r dotenv/config ../scripts/make-service-account.js dotenv_config_path=./.env",
+    "prestart": "node -r dotenv/config ../scripts/make-service-account.js dotenv_config_path=./.env",
+    "predev": "node -r dotenv/config ../scripts/make-service-account.js dotenv_config_path=./.env",
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
   },
   "dependencies": {
+    "body-parser": "^2.2.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.0.3",
-    "express": "^4.18.2",
-    "firebase-admin": "^11.10.1",
-    "zod": "^3.22.2"
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "firebase-admin": "^13.5.0",
+    "morgan": "^1.10.1"
   }
 }
