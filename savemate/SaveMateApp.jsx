@@ -104,6 +104,27 @@ export default function SaveMateApp() {
       .catch(e => console.error('❌ API 연결 실패:', e));
   }, [api]);
 
+  const handleSatisfactionSubmit = async (payload) => {
+    try {
+      const res = await fetch(`${api.baseURL}/api/satisfaction`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        Alert.alert('저장 완료', '만족도 기록이 저장되었습니다 ✅');
+        setPendingEvaluation(null);
+        setCurrentPage('home');
+      } else {
+        Alert.alert('저장 실패', data.error || '서버 오류');
+      }
+    } catch (e) {
+      console.error(e);
+      Alert.alert('네트워크 오류', '서버에 연결할 수 없습니다.');
+    }
+  };
+
     
   const [entryModal, setEntryModal] = useState({ visible: false, step: 'amount' });
   const [tempIncomeData, setTempIncomeData] = useState(null);
@@ -450,7 +471,18 @@ export default function SaveMateApp() {
       ) : currentPage === 'satisfaction' ? (
         <SatisfactionRating
           styles={styles}
-          onBack={() => setCurrentPage('home')}
+          evaluationData={pendingEvaluation ?? undefined}
+            onBack={() => { setPendingEvaluation(null); setCurrentPage('home'); }}
+            onSubmit={(payloadFromUI) => {
+              // UI가 넘긴 값 + uid를 합쳐서 서버로 전송
+              handleSatisfactionSubmit({
+                uid: homeData.userId,
+                transactionId: payloadFromUI.transactionId,
+                emotion: payloadFromUI.rating, // 'dissatisfied' | 'neutral' | 'satisfied'
+                reason: payloadFromUI.reason,
+                memo: payloadFromUI.memo,
+              });
+            }}
           bottomNav={<BottomNav activePage="home" onNavigate={setCurrentPage} />}
         />
       ) : (
@@ -498,21 +530,31 @@ export default function SaveMateApp() {
           }}
           onExpenseSubmit={async ({ memo, method, category, background }) => {
             try {
-              const payload = {
-                uid: homeData.userId,                      // 사용자 ID (예: '2314513')
+              // tempExpenseData 에서 금액/날짜를 회수
+              const amount = Number(tempExpenseData?.amount || 0);
+              const dateISO = tempExpenseData?.date?.toISOString?.().slice(0,10);
+              const uid = homeData.userId; // 현재 홈 데이터의 사용자 ID 사용
+
+              const body = {
+                uid,
+                amount,
                 type: 'expense',
-                amount: Number(tempExpenseData?.amount || 0),
-                category,                                  // 예: '식비', '카페/간식' ...
-                memo: memo?.trim() || '',
-                date: tempExpenseData?.date?.toISOString?.() ?? new Date().toISOString(),
-                expenseDetail: {                           // 지출 상세(하위 컬렉션용)
-                  paymentMethod: method,                   // 현금/신용카드/체크카드
-                  spendingCategory: category,              // 소비 품목
-                  spendingItem: memo?.trim() || '',        // 메모를 소비 품목명으로 저장
-                  spendingBackground: background           // (스키마 확장 필드)
-                }
+                category,
+                memo,
+                date: dateISO,       // "YYYY-MM-DD"
+                method,
+                background,
               };
-              await api.post('/api/transactions', payload);
+
+              const res = await fetch(`${api.baseURL}/api/transactions`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+              });
+              const data = await res.json();
+              if (!data.ok) throw new Error(data.error || '저장 실패');
+
+              // 모달 닫기
               setEntryModal({ visible: false, step: 'amount' });
               setSelectedMonth((tempExpenseData?.date?.getMonth?.() ?? new Date().getMonth()) + 1);
               setSelectedDate(tempExpenseData?.date?.getDate?.() ?? new Date().getDate());
@@ -520,9 +562,10 @@ export default function SaveMateApp() {
               setCurrentPage('detail');
             } catch (e) {
               console.error(e);
-              Alert.alert('저장 실패', '서버 통신 오류가 발생했습니다.');
+              Alert.alert('저장 실패', e.message || '서버 오류');
             }
-          }}
+         }}
+
           tempIncomeData={tempIncomeData}
           tempExpenseData={tempExpenseData}          
         />
