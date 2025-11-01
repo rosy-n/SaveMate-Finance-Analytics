@@ -18,9 +18,12 @@ const guessBaseURL = () => {
   return `http://${HOST}:${PORT}`;
 };
 
-const BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL ??
-  guessBaseURL();
+// const BASE_URL =
+//   process.env.EXPO_PUBLIC_API_BASE_URL ??
+//   guessBaseURL();
+
+const BASE_URL = 'http://172.20.5.9:8080';
+
 
 export function useApi() {
   return useMemo(() => {

@@ -94,10 +94,12 @@ export default function SaveMateApp() {
   // API 헬스체크로 대체 (선택)
   const api = useApi();
   useEffect(() => {
+    console.log('🔗 BASE_URL:', api.baseURL); // ✅ 추가
     api.get('/api/health')
-        .then(() => console.log('✅ API 연결 OK'))
-        .catch(e => console.error('❌ API 연결 실패:', e));
+      .then(() => console.log('✅ API 연결 OK'))
+      .catch(e => console.error('❌ API 연결 실패:', e));
   }, [api]);
+
     
   const [entryModal, setEntryModal] = useState({ visible: false, step: 'amount' });
   const [tempIncomeData, setTempIncomeData] = useState(null);
@@ -549,17 +551,54 @@ export default function SaveMateApp() {
           onClose={() => setEntryModal({ visible: false, step: 'amount' })}
           onAmountSave={handleSaveTransaction}
           goToAmount={() => setEntryModal(prev => ({ ...prev, step: 'amount' }))}
-          onIncomeSubmit={({ incomeText, incomeMethod }) => {
-            setEntryModal({ visible: false, step: 'amount' }); // ✅ 이 시점에만 닫기
-            setCurrentPage('home');
-            Alert.alert('저장 완료', '수입이 기록되었어요 ✅');
+          onIncomeSubmit={async ({ incomeText, incomeMethod }) => {
+            try {
+              const payload = {
+                uid: homeData.userId,                      // 사용자 ID (예: '2314513')
+                type: 'income',
+                amount: Number(tempIncomeData?.amount || 0),
+                category: incomeMethod,                    // 트랜잭션 카테고리로 수입 수단 사용
+                memo: incomeText?.trim() || '',
+                date: tempIncomeData?.date?.toISOString?.() ?? new Date().toISOString(),
+                incomeDetail: {                            // 수입 상세
+                  incomeSource: incomeMethod,
+                  memo: incomeText?.trim() || ''
+                }
+              };
+              await api.post('/api/transactions', payload);
+              setEntryModal({ visible: false, step: 'amount' });
+              setCurrentPage('home');
+              Alert.alert('저장 완료', '수입이 기록되었어요 ✅');
+            } catch (e) {
+              console.error(e);
+              Alert.alert('저장 실패', '서버 통신 오류가 발생했습니다.');
+            }
           }}
-          onExpenseSubmit={({ memo, method, category, background }) => {
-            setEntryModal({ visible: false, step: 'amount' }); // ✅ 이 시점에만 닫기
-            setCurrentPage('home');
-            Alert.alert('저장 완료', '지출이 기록되었어요 ✅');
+          onExpenseSubmit={async ({ memo, method, category, background }) => {
+            try {
+              const payload = {
+                uid: homeData.userId,                      // 사용자 ID (예: '2314513')
+                type: 'expense',
+                amount: Number(tempExpenseData?.amount || 0),
+                category,                                  // 예: '식비', '카페/간식' ...
+                memo: memo?.trim() || '',
+                date: tempExpenseData?.date?.toISOString?.() ?? new Date().toISOString(),
+                expenseDetail: {                           // 지출 상세(하위 컬렉션용)
+                  paymentMethod: method,                   // 현금/신용카드/체크카드
+                  spendingCategory: category,              // 소비 품목
+                  spendingItem: memo?.trim() || '',        // 메모를 소비 품목명으로 저장
+                  spendingBackground: background           // (스키마 확장 필드)
+                }
+              };
+              await api.post('/api/transactions', payload);
+              setEntryModal({ visible: false, step: 'amount' });
+              setCurrentPage('home');
+              Alert.alert('저장 완료', '지출이 기록되었어요 ✅');
+            } catch (e) {
+              console.error(e);
+              Alert.alert('저장 실패', '서버 통신 오류가 발생했습니다.');
+            }
           }}
-
           tempIncomeData={tempIncomeData}
           tempExpenseData={tempExpenseData}          
         />
