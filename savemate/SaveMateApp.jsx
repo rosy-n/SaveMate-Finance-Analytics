@@ -17,7 +17,10 @@ import SatisfactionRating from './components/SatisfactionRating';
 import IncomeDetail from './components/IncomeDetail';
 import ExpenseDetail from './components/ExpenseDetail';
 import { SaveMateStyles as styles } from './styles/SaveMateStyles';
+
 import { useApi } from './hooks/useApi';
+import useMonthlyTransactionsFromApi from './hooks/useMonthlyTransactionsFromApi';
+
 
 
 const NOW = new Date();
@@ -90,8 +93,8 @@ export default function SaveMateApp() {
   const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH);
   const [selectedDate, setSelectedDate] = useState(TODAY);
   const [showTransactionInput, setShowTransactionInput] = useState(false);
-  const [pendingEvaluation, setPendingEvaluation] = useState(null);
-
+  const [refreshKey, setRefreshKey] = useState(0); // 저장 후 목록 새로고침 트리거
+  
   // API 헬스체크로 대체 (선택)
   const api = useApi();
   useEffect(() => {
@@ -166,104 +169,6 @@ export default function SaveMateApp() {
     }),
     []
   );
-
-  // DB 스키마에 맞춘 월별 데이터
-  const monthlyExpenseData = useMemo(
-    () => ({
-      8: {
-        year: 2025,
-        month: 8,
-        monthlyTotal: 750000,
-        dailyExpenses: [],
-      },
-      9: {
-        year: 2025,
-        month: 9,
-        monthlyTotal: 890000,
-        dailyExpenses: [
-          {
-            date: '2025-09-15',
-            totalAmount: 120000,
-            transactions: [
-              {
-                transactionId: 'txn_001',
-                type: 'expense',
-                amount: -20000,
-                category: '카페',
-                time: '14:30',
-                memo: '스타벅스 라떼',
-              },
-              {
-                transactionId: 'txn_002',
-                type: 'income',
-                amount: 100000,
-                category: '용돈',
-                time: '18:00',
-                memo: '세븐틴',
-              },
-            ],
-          },
-          {
-            date: '2025-09-10',
-            totalAmount: 35000,
-            transactions: [
-              {
-                transactionId: 'txn_003',
-                type: 'expense',
-                amount: -35000,
-                category: '식비',
-                time: '12:30',
-                memo: '점심 회식',
-              },
-            ],
-          },
-          {
-            date: '2025-09-20',
-            totalAmount: 15000,
-            transactions: [
-              {
-                transactionId: 'txn_004',
-                type: 'expense',
-                amount: -15000,
-                category: '교통',
-                time: '22:00',
-                memo: '택시',
-              },
-            ],
-          },
-        ],
-      },
-      10: {
-        year: 2025,
-        month: 10,
-        monthlyTotal: 920000,
-        dailyExpenses: [],
-      },
-    }),
-    []
-  );
-
-  // 저번 달과의 비교 메시지 생성
-  const getComparisonMessage = (currentMonth) => {
-    const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
-    const currentData = monthlyExpenseData[currentMonth];
-    const previousData = monthlyExpenseData[previousMonth];
-
-    if (!currentData || !previousData) {
-      return '';
-    }
-
-    const difference = currentData.monthlyTotal - previousData.monthlyTotal;
-    const absDifference = Math.abs(difference);
-
-    if (difference > 0) {
-      return `${previousMonth}월보다 ${formatKRW(absDifference)} 더 썼어요`;
-    } else if (difference < 0) {
-      return `${previousMonth}월보다 ${formatKRW(absDifference)} 덜 썼어요`;
-    } else {
-      return `${previousMonth}월과 동일하게 썼어요`;
-    }
-  };
 
   const getDaysInMonth = (month, year = CURRENT_YEAR) => new Date(year, month, 0).getDate();
   const getFirstDayOfMonth = (month, year = CURRENT_YEAR) => new Date(year, month - 1, 1).getDay();
@@ -343,38 +248,41 @@ export default function SaveMateApp() {
     </SafeAreaView>
   );
   const DetailPage = () => {
-    const currentMonthData = monthlyExpenseData[selectedMonth] ?? {
-      year: CURRENT_YEAR,
-      month: selectedMonth,
-      monthlyTotal: 0,
-      dailyExpenses: [],
-    };
+    // 1) 현재 월/이전 월 데이터 불러오기
+    const { loading, error, groupedByDay, totalsByDay, monthlyTotals } =
+      useMonthlyTransactionsFromApi({
+        userId: homeData.userId,
+        year: CURRENT_YEAR,
+        month: selectedMonth,
+        refresh: refreshKey,
+      });
+    const { monthlyTotals: prevTotals } =
+      useMonthlyTransactionsFromApi({
+        userId: homeData.userId,
+        year: selectedMonth === 1 ? CURRENT_YEAR - 1 : CURRENT_YEAR,
+        month: selectedMonth === 1 ? 12 : selectedMonth - 1,
+        refresh: refreshKey,
+      });
 
-    const daysInMonth = getDaysInMonth(selectedMonth, CURRENT_YEAR);
-    const firstDay = getFirstDayOfMonth(selectedMonth, CURRENT_YEAR);
+    // 2) 달력 계산(일수/시작요일)
+    const daysInMonth = new Date(CURRENT_YEAR, selectedMonth, 0).getDate();
+    const firstDay = new Date(CURRENT_YEAR, selectedMonth - 1, 1).getDay();
 
-    const selectedDayTransactions =
-      currentMonthData.dailyExpenses.find((daily) => {
-        const dateNum = parseInt(daily.date.split('-')[2]);
-        return dateNum === selectedDate;
-      })?.transactions || [];
+    // 3) 특정 일자 내역
+    const selectedDayTransactions = groupedByDay[selectedDate] || [];
 
+    // 4) 거래 존재 여부 맵
     const transactionsByDate = useMemo(() => {
       const map = {};
-      currentMonthData.dailyExpenses.forEach((daily) => {
-        const dateNum = parseInt(daily.date.split('-')[2]);
-        map[dateNum] = true;
-      });
+      Object.keys(groupedByDay).forEach((k) => { map[Number(k)] = true; });
       return map;
-    }, [currentMonthData.dailyExpenses]);
+    }, [groupedByDay]);
 
     const handlePrevMonth = () => setSelectedMonth((prev) => Math.max(1, prev - 1));
     const handleNextMonth = () => setSelectedMonth((prev) => Math.min(CURRENT_MONTH, prev + 1));
 
     const canGoPrev = selectedMonth > 1;
     const canGoNext = selectedMonth < CURRENT_MONTH;
-
-    const comparisonMessage = getComparisonMessage(selectedMonth);
 
     return (
       <SafeAreaView style={styles.screen}>
@@ -390,10 +298,20 @@ export default function SaveMateApp() {
           <View style={styles.card}>
             <View style={styles.rowBetween}>
               <Text style={styles.totalAmount}>
-                {formatKRW(currentMonthData.monthlyTotal)}
+                {formatKRW(monthlyTotals?.expense || 0)}  {/* 월 총 지출 */}
+              </Text>
+
+              <Text style={styles.comparisonText}>
+                {(() => {
+                  const prevExpense = prevTotals?.expense || 0;
+                  const diff = (monthlyTotals?.expense || 0) - prevExpense;
+                  const abs = Math.abs(diff);
+                  if (diff > 0) return `${selectedMonth===1?12:selectedMonth-1}월보다 ${formatKRW(abs)} 더 썼어요`;
+                  if (diff < 0) return `${selectedMonth===1?12:selectedMonth-1}월보다 ${formatKRW(abs)} 덜 썼어요`;
+                  return `${selectedMonth===1?12:selectedMonth-1}월과 동일하게 썼어요`;
+                })()}
               </Text>
             </View>
-            <Text style={styles.comparisonText}>{comparisonMessage}</Text>
 
             <View style={[styles.rowCenter, { justifyContent: 'flex-end', marginBottom: 10 }]}>
               <TouchableOpacity
@@ -484,12 +402,12 @@ export default function SaveMateApp() {
               </Text>
 
               {selectedDayTransactions.map((transaction, index) => {
-                const isIncome = transaction.type === 'income';
-                const displayAmount = Math.abs(transaction.amount);
+                const isIncome = (transaction.type || '').toLowerCase() === 'income';
+                const displayAmount = Math.abs(Number(transaction.amount)||0);
 
                 return (
                   <View
-                    key={transaction.transactionId}
+                    key={transaction.id}
                     style={[
                       styles.txnRow,
                       index < selectedDayTransactions.length - 1 && styles.txnDivider,
@@ -504,7 +422,7 @@ export default function SaveMateApp() {
                         {displayAmount.toLocaleString()}원
                       </Text>
                       <Text style={styles.txnMeta} numberOfLines={1}>
-                        {transaction.category} | {transaction.memo}
+                        {(transaction.category || (isIncome ? '수입' : '지출'))} | {transaction.memo || ''}
                       </Text>
                     </View>
                   </View>
@@ -576,7 +494,10 @@ export default function SaveMateApp() {
               };
               await api.post('/api/transactions', payload);
               setEntryModal({ visible: false, step: 'amount' });
-              setCurrentPage('home');
+              setSelectedMonth((tempIncomeData?.date?.getMonth?.() ?? new Date().getMonth()) + 1);
+              setSelectedDate(tempIncomeData?.date?.getDate?.() ?? new Date().getDate());
+              setRefreshKey(k => k + 1);
+              setCurrentPage('detail');
               Alert.alert('저장 완료', '수입이 기록되었어요 ✅');
             } catch (e) {
               console.error(e);
@@ -611,22 +532,10 @@ export default function SaveMateApp() {
 
               // 모달 닫기
               setEntryModal({ visible: false, step: 'amount' });
-
-              // 👉 필터 조건: 소비 배경이 '필수/생존'이 아닌 경우에만 만족도 유도
-              if (background !== '필수/생존') {
-                // 만족도 화면에 전달할 평가 데이터 구성
-                setPendingEvaluation({
-                  transactionId: data.id,
-                  purchaseItem: category,
-                  amount,
-                  purchaseDate: dateISO?.replace(/-/g, '.'),
-                  category,
-                });
-                setCurrentPage('satisfaction');
-              } else {
-                setCurrentPage('home');
-                Alert.alert('저장 완료', '지출이 기록되었어요 ✅');
-              }
+              setSelectedMonth((tempExpenseData?.date?.getMonth?.() ?? new Date().getMonth()) + 1);
+              setSelectedDate(tempExpenseData?.date?.getDate?.() ?? new Date().getDate());
+              setRefreshKey(k => k + 1);
+              setCurrentPage('detail');
             } catch (e) {
               console.error(e);
               Alert.alert('저장 실패', e.message || '서버 오류');

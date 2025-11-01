@@ -2,16 +2,9 @@
 import { useMemo } from 'react';
 import { Platform } from 'react-native';
 
-/**
- * BASE URL 우선순위
- * 1) EXPO_PUBLIC_API_BASE_URL (권장)
- * 2) EXPO_PUBLIC_API_HOST + EXPO_PUBLIC_API_PORT
- * 3) 시뮬레이터별 기본값 추정:
- *    - Android 에뮬레이터: http://10.0.2.2:3000
- *    - iOS 시뮬레이터:    http://localhost:3000
- */
+
 const guessBaseURL = () => {
-  const PORT = process.env.EXPO_PUBLIC_API_PORT ?? '3000';
+  const PORT = process.env.EXPO_PUBLIC_API_PORT ?? '8080';
   const HOST =
     process.env.EXPO_PUBLIC_API_HOST ??
     (Platform.OS === 'android' ? '10.0.2.2' : 'localhost');
@@ -22,7 +15,7 @@ const guessBaseURL = () => {
 //   process.env.EXPO_PUBLIC_API_BASE_URL ??
 //   guessBaseURL();
 
-const BASE_URL = 'http://172.20.5.9:8080';
+const BASE_URL = 'http://172.20.6.144:8080';
 
 
 export function useApi() {

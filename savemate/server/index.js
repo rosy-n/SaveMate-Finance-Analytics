@@ -1,27 +1,40 @@
 // server/index.js
 require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
+const morgan = require('morgan');
 
-// 1) app 먼저 생성
+const healthRoutes = require('./routes/health');           // 이미 있다면 유지
+const transactionRoutes = require('./routes/transactions');
+
 const app = express();
 
-// 2) 공통 미들웨어
-app.use(cors());
-app.use(express.json());
+/** 기본 미들웨어 */
+app.use(cors());                 // 모바일(Expo) 접근 허용
+app.use(express.json());         // JSON Body 파싱
+app.use(morgan('dev'));          // 요청 로깅
 
-// 3) 라우트 로드
-const healthRoutes = require('./routes/health');
-const transactionRoutes = require('./routes/transactions');
-const satisfactionRoutes = require('./routes/satisfaction'); // ✅ 새로 추가한 라우트
+/** 라우트 */
+app.use('/api/health', healthRoutes);                  // GET /api/health
+app.use('/api/transactions', transactionRoutes);       // POST/GET /api/transactions
 
-// 4) 라우트 등록
-app.use('/api', healthRoutes);                         // GET /api/health
-app.use('/api/transactions', transactionRoutes);       // POST /api/transactions
-app.use('/api/satisfaction', satisfactionRoutes);      // POST /api/satisfaction
+/** 404 (API 경로) */
+app.use('/api', (_req, res) => {
+  res.status(404).json({ ok: false, error: 'Not Found' });
+});
 
-// 5) 서버 구동
-const port = Number(process.env.PORT || 8080);
-app.listen(port, () => {
-  console.log(`API listening on http://localhost:${port}`);
+/** 에러 핸들러 */
+app.use((err, _req, res, _next) => {
+  console.error('[Express Error]', err);
+  res.status(500).json({ ok: false, error: err.message || 'Server error' });
+});
+
+/** 서버 시작: 폰에서 접속 가능하도록 0.0.0.0 바인딩 */
+const PORT = Number(process.env.PORT || 8080);
+const HOST = process.env.HOST || '0.0.0.0';
+
+app.listen(PORT, HOST, () => {
+  console.log(`API listening on http://${HOST}:${PORT}`);
+  console.log(`Health check: http://localhost:${PORT}/api/health`);
 });
