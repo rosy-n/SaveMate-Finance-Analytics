@@ -268,28 +268,7 @@ export default function SaveMateApp() {
   const getDaysInMonth = (month, year = CURRENT_YEAR) => new Date(year, month, 0).getDate();
   const getFirstDayOfMonth = (month, year = CURRENT_YEAR) => new Date(year, month - 1, 1).getDay();
 
-  const BottomNav = ({ activePage, onNavigate }) => (
-    <View style={styles.bottomNavWrapper}>
-      <View style={styles.bottomNav}>
-        <NavButton
-          label="홈"
-          isActive={activePage === 'home'}
-          icon="🏠"
-          onPress={() => onNavigate('home')}
-        />
-        <NavButton label="리포트" isActive={false} icon="📄" onPress={() => {}} />
-        <NavButton label="챌린지" isActive={false} icon="🏆" onPress={() => {}} />
-        <NavButton label="마이페이지" isActive={false} icon="👤" onPress={() => {}} />
-      </View>
-    </View>
-  );
 
-  const NavButton = ({ label, icon, isActive, onPress }) => (
-    <TouchableOpacity onPress={onPress} style={styles.navBtn}>
-      <Text style={[styles.navIcon, isActive && styles.navActive]}>{icon}</Text>
-      <Text style={[styles.navLabel, isActive && styles.navActive]}>{label}</Text>
-    </TouchableOpacity>
-  );
 
   const HomePage = () => (
     <SafeAreaView style={styles.screen}>
@@ -361,7 +340,6 @@ export default function SaveMateApp() {
       </TouchableOpacity>
 
 
-      <BottomNav activePage="home" onNavigate={setCurrentPage} />
     </SafeAreaView>
   );
   const DetailPage = () => {
@@ -540,7 +518,6 @@ export default function SaveMateApp() {
           )}
         </ScrollView>
 
-        <BottomNav activePage="home" onNavigate={setCurrentPage} />
       </SafeAreaView>
     );
   };
@@ -565,7 +542,6 @@ export default function SaveMateApp() {
                 memo: payloadFromUI.memo,
               });
             }}
-          bottomNav={<BottomNav activePage="home" onNavigate={setCurrentPage} />}
         />
       ) : (
         <DetailPage />
