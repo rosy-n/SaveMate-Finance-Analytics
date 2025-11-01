@@ -5,6 +5,7 @@ import React from 'react';
 import { Platform } from 'react-native';
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { appBus } from '../eventBus';
 // import { SaveMateStyles as styles } from '@/styles/SaveMateStyles'; // 필요 시
 
 const BRAND = {
@@ -55,6 +56,12 @@ export default function TabLayout() {
             // 집 모양 아이콘 (Figma와 유사)
             <IconSymbol size={24} name="house" color={color} />
           ),
+        }}
+        listeners={{
+          tabPress: () => {
+            // ✅ 홈 탭을 누를 때 SaveMateApp에 알림
+            appBus.emit('homeTabPressed');
+          },
         }}
       />
 

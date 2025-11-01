@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { useWindowDimensions } from 'react-native';
+import { appBus } from './app/eventBus';
 import {
   SafeAreaView,
   View,
@@ -124,6 +125,15 @@ export default function SaveMateApp() {
       Alert.alert('네트워크 오류', '서버에 연결할 수 없습니다.');
     }
   };
+
+  useEffect(() => {
+    const onHomePressed = () => {
+      setCurrentPage('home');                 // ✅ 지출 내역(DetailPage) 보이는 상태면 홈으로 전환
+      setEntryModal({ visible: false, step: 'amount' }); // 열려있던 입력 모달도 닫기
+    };
+    appBus.on('homeTabPressed', onHomePressed);
+    return () => appBus.off('homeTabPressed', onHomePressed);
+  }, []);
 
     
   const [entryModal, setEntryModal] = useState({ visible: false, step: 'amount' });
