@@ -3,54 +3,52 @@ const express = require('express');
 const router = express.Router();
 const { db, admin } = require('../firebaseAdmin');
 
-/**
+/** ──────────────────────────────────────────────────────────────
+ * 유틸
+ *  - 월 구간: [start, end)  (다음달 1일 00:00 미만까지)
+ *  - iso10: Date/Timestamp → 'YYYY-MM-DD'
+ * ────────────────────────────────────────────────────────────── */
+const getMonthRange = (year, month) => {
+  const y = Number(year);
+  const m = Number(month); // 1~12
+  const startDate = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0, 0));
+  const endDate   = new Date(Date.UTC(y, m,     1, 0, 0, 0, 0)); // 다음달 1일
+  return {
+    start: admin.firestore.Timestamp.fromDate(startDate),
+    end:   admin.firestore.Timestamp.fromDate(endDate),
+  };
+};
+const iso10 = (d) => new Date(d).toISOString().slice(0, 10);
+
+/** ──────────────────────────────────────────────────────────────
  * POST /api/transactions
- * Body 예:
+ * Body:
  * {
  *   uid: "2314513",
  *   type: "income" | "expense",
  *   amount: 30000,
- *   category: "용돈" | "식비" | ... (선택),
- *   memo: "텍스트 메모" (선택),
- *   date: "YYYY-MM-DD" | ISO 문자열,
- *   // 수입 상세 (수입 탭에서 입력)
- *   incomeDetail: {
- *     incomeSource: "월급|용돈|기타",
- *     memo: "수입 메모"
- *   },
- *   // 지출 상세 (지출 탭에서 입력)
- *   expenseDetail: {
- *     paymentMethod: "현금|신용카드|체크카드",
- *     spendingCategory: "식비|카페/간식|...",
- *     spendingItem: "지출 메모(또는 품목명)",
- *     spendingBackground: "필수/생존|사회/관계|..."
- *   }
+ *   category?: "식비|용돈|...",
+ *   memo?: "메모",
+ *   date: "YYYY-MM-DD" | ISO string,
+ *   incomeDetail?: { incomeSource?: "월급|용돈|기타", memo?: "..." },
+ *   expenseDetail?: { paymentMethod?: "현금|신용카드|체크카드", spendingCategory?: "...", spendingItem?: "...", spendingBackground?: "..." }
  * }
  *
- * 저장 경로:
- *   users/{uid}/transactions/{tid} (기본 거래)
- *   └─ incomeDetails/{detailId}  (type === 'income'일 때)
- *   └─ expenseDetails/{detailId} (type === 'expense'일 때)
- */
+ * 저장 위치:
+ *   users/{uid}/transactions/{tid}
+ *     ├─ incomeDetails/{detailId}   (type === 'income')
+ *     └─ expenseDetails/{detailId}  (type === 'expense')
+ * ────────────────────────────────────────────────────────────── */
 router.post('/', async (req, res) => {
   try {
     const {
-      uid,
-      type,
-      amount,
-      category,
-      memo,
-      date,
-      incomeDetail,
-      expenseDetail,
+      uid, type, amount, category, memo, date,
+      incomeDetail, expenseDetail,
     } = req.body;
 
-    // ------------ 기본 검증 ------------
+    // ---- 검증 ----
     if (!uid || amount == null || !type || !date) {
-      return res.status(400).json({
-        ok: false,
-        error: 'missing fields (uid, amount, type, date)',
-      });
+      return res.status(400).json({ ok: false, error: 'missing fields (uid, amount, type, date)' });
     }
     if (!['income', 'expense'].includes(String(type))) {
       return res.status(400).json({ ok: false, error: 'type must be income|expense' });
@@ -60,8 +58,7 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ ok: false, error: 'amount must be a number' });
     }
 
-    // ------------ 날짜 파싱 ------------
-    // "YYYY-MM-DD" 또는 ISO 문자열 모두 허용
+    // ---- 날짜 ----
     const parsed = new Date(date);
     if (isNaN(parsed.getTime())) {
       return res.status(400).json({ ok: false, error: 'invalid date format' });
@@ -69,13 +66,13 @@ router.post('/', async (req, res) => {
     const ts = admin.firestore.Timestamp.fromDate(parsed);
     const nowServer = admin.firestore.FieldValue.serverTimestamp();
 
-    // ------------ 1) 기본 거래 저장 ------------
+    // ---- 1) 기본 거래 저장 ----
     const baseDoc = {
       amount: _amount,
-      type,                          // 'income' | 'expense'
-      category: category ?? null,    // 수입은 수단, 지출은 소비 품목 등으로 활용 가능
-      memo: memo ?? null,            // 상위 거래 메모(선택)
-      date: ts,                      // 정렬을 위한 Timestamp
+      type,                           // 'income' | 'expense'
+      category: category ?? null,
+      memo: memo ?? null,
+      date: ts,                       // 정렬을 위한 Timestamp
       createdAt: nowServer,
       updatedAt: nowServer,
     };
@@ -86,7 +83,7 @@ router.post('/', async (req, res) => {
       .collection('transactions')
       .add(baseDoc);
 
-    // ------------ 2) 상세(수입/지출) 하위 컬렉션 저장 ------------
+    // ---- 2) 상세 하위 컬렉션 ----
     if (type === 'income' && incomeDetail) {
       const { incomeSource, memo: incomeMemo } = incomeDetail;
       await txnRef.collection('incomeDetails').add({
@@ -98,17 +95,13 @@ router.post('/', async (req, res) => {
 
     if (type === 'expense' && expenseDetail) {
       const {
-        paymentMethod,
-        spendingCategory,
-        spendingItem,
-        spendingBackground,
+        paymentMethod, spendingCategory, spendingItem, spendingBackground,
       } = expenseDetail;
-
       await txnRef.collection('expenseDetails').add({
-        paymentMethod: paymentMethod ?? null,     // 현금/신용카드/체크카드
-        spendingCategory: spendingCategory ?? category ?? null, // 소비 품목
-        spendingItem: spendingItem ?? memo ?? null,             // 품목명/메모
-        spendingBackground: spendingBackground ?? null,         // 소비 배경
+        paymentMethod: paymentMethod ?? null,                 // 현금/신용/체크
+        spendingCategory: spendingCategory ?? category ?? null,
+        spendingItem: spendingItem ?? memo ?? null,
+        spendingBackground: spendingBackground ?? null,
         createdAt: nowServer,
       });
     }
@@ -120,22 +113,50 @@ router.post('/', async (req, res) => {
   }
 });
 
-/**
- * GET /api/transactions?uid=...&limit=20&expand=true
- * 기본 거래 목록을 반환하고, expand=true면 각 거래의 첫 상세(있다면)를 함께 반환
- */
+/** ──────────────────────────────────────────────────────────────
+ * GET /api/transactions
+ * 쿼리:
+ *   uid=필수
+ *   year=선택(월 조회 시 필수)
+ *   month=선택(1~12, 월 조회 시 필수)
+ *   limit=선택(기본 20) — year/month 없을 때만 사용
+ *   expand=true|false (기본 false) — 각 거래의 상세 1건 포함
+ *
+ * 예:
+ *   /api/transactions?uid=2314513&year=2025&month=11&expand=true
+ *   /api/transactions?uid=2314513&limit=50
+ * ────────────────────────────────────────────────────────────── */
 router.get('/', async (req, res) => {
   try {
-    const { uid, limit = 20, expand } = req.query;
+    const { uid, year, month, limit = 20, expand } = req.query;
     if (!uid) return res.status(400).json({ ok: false, error: 'uid is required' });
 
-    const snap = await db
-      .collection('users')
-      .doc(uid)
-      .collection('transactions')
-      .orderBy('date', 'desc')
-      .limit(Number(limit))
-      .get();
+    let ref = db.collection('users').doc(uid).collection('transactions');
+    let order = 'desc';
+    let mode = 'latest';
+
+    if (year && month) {
+      // 월 범위 조회: date ∈ [start, end)
+      const y = Number(year), m = Number(month);
+      if (!Number.isFinite(y) || !Number.isFinite(m) || m < 1 || m > 12) {
+        return res.status(400).json({ ok: false, error: 'invalid year/month' });
+      }
+      const { start, end } = getMonthRange(y, m);
+
+      // ⚠️ 복합 인덱스가 필요할 수 있음 (콘솔 링크로 생성)
+      ref = ref
+        .where('date', '>=', start)
+        .where('date', '<', end)
+        .orderBy('date', 'asc');
+
+      order = 'asc';
+      mode = 'monthly';
+    } else {
+      // 최근 N건
+      ref = ref.orderBy('date', 'desc').limit(Number(limit));
+    }
+
+    const snap = await ref.get();
 
     const items = await Promise.all(
       snap.docs.map(async (d) => {
@@ -143,47 +164,35 @@ router.get('/', async (req, res) => {
         const base = {
           id: d.id,
           ...data,
-          date:
-            data.date && data.date.toDate
-              ? data.date.toDate().toISOString().slice(0, 10)
-              : data.date,
-          createdAt:
-            data.createdAt && data.createdAt.toDate
-              ? data.createdAt.toDate().toISOString()
-              : null,
-          updatedAt:
-            data.updatedAt && data.updatedAt.toDate
-              ? data.updatedAt.toDate().toISOString()
-              : null,
+          date: data.date?.toDate ? iso10(data.date.toDate()) : data.date, // 'YYYY-MM-DD'
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : null,
+          updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : null,
         };
 
         if (String(expand) === 'true') {
-          // 수입 상세 1건
           const incomeSnap = await d.ref
             .collection('incomeDetails')
             .orderBy('createdAt', 'desc')
             .limit(1)
             .get();
-          const incomeDetail =
-            incomeSnap.empty ? null : { id: incomeSnap.docs[0].id, ...incomeSnap.docs[0].data() };
-
-          // 지출 상세 1건
           const expenseSnap = await d.ref
             .collection('expenseDetails')
             .orderBy('createdAt', 'desc')
             .limit(1)
             .get();
-          const expenseDetail =
-            expenseSnap.empty ? null : { id: expenseSnap.docs[0].id, ...expenseSnap.docs[0].data() };
 
-          return { ...base, incomeDetail, expenseDetail };
+          return {
+            ...base,
+            incomeDetail: incomeSnap.empty ? null : { id: incomeSnap.docs[0].id, ...incomeSnap.docs[0].data() },
+            expenseDetail: expenseSnap.empty ? null : { id: expenseSnap.docs[0].id, ...expenseSnap.docs[0].data() },
+          };
         }
 
         return base;
       })
     );
 
-    res.json({ ok: true, count: items.length, items });
+    res.json({ ok: true, mode, order, count: items.length, items });
   } catch (e) {
     console.error('[Firestore GET Error]', e);
     res.status(500).json({ ok: false, error: e.message });
