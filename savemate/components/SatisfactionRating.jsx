@@ -186,16 +186,25 @@ export default function SatisfactionRating({
             <>
               <View style={styles.card}>
                 <Text style={styles.sectionTitle}>어떤 이유인가요?</Text>
-                <View style={[styles.reasonGrid, localStyles.reasonGrid]}>
-                  {currentReasons.map((reason, index) => (
+                <View style={[styles.reasonGrid, { justifyContent: 'space-between' }]}>
+                  {currentReasons.map((reason) => (
                     <TouchableOpacity
                       key={reason}
                       activeOpacity={0.7}
-                      style={[styles.reasonChip, localStyles.reasonChip, selectedReason === reason && styles.reasonChipSelected, index % 2 === 0 && { marginRight: 8 },
+                      style={[
+                        styles.reasonChip,
+                        { width: '48%', alignItems: 'center', justifyContent: 'center' }, // ✅ 2개/줄 배치
+                        selectedReason === reason && styles.reasonChipSelected,
                       ]}
                       onPress={() => handleReasonSelect(reason)}
                     >
-                      <Text style={[styles.reasonChipText, localStyles.reasonChipText, selectedReason === reason && styles.reasonChipTextSelected]}>
+                      <Text
+                        style={[
+                          styles.reasonChipText,
+                          { textAlign: 'center' },
+                          selectedReason === reason && styles.reasonChipTextSelected,
+                        ]}
+                      >
                         {reason}
                       </Text>
                     </TouchableOpacity>
