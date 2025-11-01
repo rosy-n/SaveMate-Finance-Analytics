@@ -1,7 +1,5 @@
 // app/index.jsx
-import React from 'react';
-import SaveMateApp from '../SaveMateApp';
-
+import { Redirect } from 'expo-router';
 export default function Index() {
-  return <SaveMateApp />;
+  return <Redirect href="/(tabs)/home" />;
 }

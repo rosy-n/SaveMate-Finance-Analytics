@@ -1,3 +1,5 @@
+// 앱 최상위(Stack) 레이아웃 + 테마 공급자
+
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
