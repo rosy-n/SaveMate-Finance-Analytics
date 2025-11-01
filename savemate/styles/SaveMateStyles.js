@@ -226,4 +226,135 @@ export const SaveMateStyles = StyleSheet.create({
     alignItems: 'center',
   },
   btnPrimaryLargeText: { fontSize: 15, color: '#7C3AED', fontWeight: '600' },
+  
+  // ===== 챌린지 탭 =====
+  challengeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    backgroundColor: '#FFFFFF',
+  },
+  challengeTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#8B5CF6',
+    textAlign: 'center',
+    flex: 1,
+  },
+  addChallengeButton: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  challengeSubheader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  challengeSubheaderText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  sortButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    backgroundColor: '#F3E8FF',
+  },
+  sortButtonText: {
+    fontSize: 14,
+    color: '#8B5CF6',
+  },
+  challengeList: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  challengeItem: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  challengeItemProgress: {
+    flex: 1,
+    marginRight: 10,
+  },
+  challengeItemTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  challengeItemProgressBar: {
+    height: 6,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 3,
+    marginBottom: 10,
+  },
+  challengeItemProgressFill: {
+    height: 6,
+    backgroundColor: '#8B5CF6',
+    borderRadius: 3,
+  },
+  challengeItemProgressText: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  challengeItemPercentage: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#8B5CF6',
+  },
+  challengeItemMoreButton: {
+    marginLeft: 10,
+  },
+
+  // 새 챌린지 추가 화면
+  challengeTitleInput: {
+    borderWidth: 1,
+    borderColor: '#CCCCCC',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  challengeAmountInput: {
+    borderWidth: 1,
+    borderColor: '#CCCCCC',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  challengePeriodInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  challengePeriodInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#CCCCCC',
+    borderRadius: 8,
+    padding: 12,
+  },
+  challengePeriodSeparator: {
+    marginHorizontal: 8,
+  },
+  addChallengeConfirmButton: {
+    backgroundColor: '#7C3AED',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  addChallengeConfirmButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+
 });
