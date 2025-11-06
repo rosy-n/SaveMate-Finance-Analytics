@@ -1,5 +1,11 @@
-import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
-import { useWindowDimensions } from 'react-native';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import Challenge from './components/Challenge';
+import ChallengeDetail from './components/ChallengeDetail';
+
+const Stack = createStackNavigator();
+
 import {
   SafeAreaView,
   View,
@@ -10,6 +16,7 @@ import {
   Alert,
   Animated,
   StyleSheet,
+  useWindowDimensions,
 } from 'react-native';
 
 import TransactionInput from './components/TransactionInput';
@@ -18,7 +25,6 @@ import IncomeDetail from './components/IncomeDetail';
 import ExpenseDetail from './components/ExpenseDetail';
 import { SaveMateStyles as styles } from './styles/SaveMateStyles';
 import { useApi } from './hooks/useApi';
-
 
 const NOW = new Date();
 const CURRENT_YEAR = NOW.getFullYear();
@@ -122,6 +128,8 @@ export default function SaveMateApp() {
     }
   };
 
+
+  // 이하 홈/디테일/만족도 화면 기존
   const homeData = useMemo(
     () => ({
       userName: '유은서',
@@ -253,7 +261,7 @@ export default function SaveMateApp() {
           onPress={() => onNavigate('home')}
         />
         <NavButton label="리포트" isActive={false} icon="📄" onPress={() => {}} />
-        <NavButton label="챌린지" isActive={false} icon="🏆" onPress={() => {}} />
+        <NavButton label="챌린지" isActive={activePage === 'challenge'} icon="🏆" onPress={() => onNavigate('challenge')} />
         <NavButton label="마이페이지" isActive={false} icon="👤" onPress={() => {}} />
       </View>
     </View>
@@ -522,50 +530,44 @@ export default function SaveMateApp() {
   
 
   return (
-    <>
+  <>
+    <Stack.Navigator>
       {currentPage === 'home' ? (
-        <HomePage />
+        <Stack.Screen name="Home" component={HomePage} />
       ) : currentPage === 'satisfaction' ? (
-        <SatisfactionRating
-          styles={styles}
-          onBack={() => setCurrentPage('home')}
-          bottomNav={<BottomNav activePage="home" onNavigate={setCurrentPage} />}
-        />
-      ) : (
-        <DetailPage />
-      )}
+        <Stack.Screen name="Satisfaction" component={SatisfactionRating} />
+      ) : currentPage === 'detail' ? (
+        <Stack.Screen name="Detail" component={DetailPage} />
+      ) : null}
+      <Stack.Screen name="Challenge" component={Challenge} />
+      <Stack.Screen name="ChallengeDetail" component={ChallengeDetail} />
+    </Stack.Navigator>
 
-
-      {/* ✅ 거래 입력 모달 */}
-      <Modal
-        visible={entryModal.visible}
-        animationType="none"
-        presentationStyle="fullScreen"
-        onRequestClose={() => setEntryModal({ visible: false, step: 'amount' })}
-      >
-        <EntryFlow
-          step={entryModal.step}
-          onClose={() => setEntryModal({ visible: false, step: 'amount' })}
-          onAmountSave={handleSaveTransaction}
-          goToAmount={() => setEntryModal(prev => ({ ...prev, step: 'amount' }))}
-          onIncomeSubmit={({ incomeText, incomeMethod }) => {
-            setEntryModal({ visible: false, step: 'amount' }); // ✅ 이 시점에만 닫기
-            setCurrentPage('home');
-            Alert.alert('저장 완료', '수입이 기록되었어요 ✅');
-          }}
-          onExpenseSubmit={({ memo, method, category, background }) => {
-            setEntryModal({ visible: false, step: 'amount' }); // ✅ 이 시점에만 닫기
-            setCurrentPage('home');
-            Alert.alert('저장 완료', '지출이 기록되었어요 ✅');
-          }}
-
-          tempIncomeData={tempIncomeData}
-          tempExpenseData={tempExpenseData}          
-        />
-      </Modal>
-
-
-    </>
-  );
-
-};
+    {/* ✅ 거래 입력 모달 */}
+    <Modal
+      visible={entryModal.visible}
+      animationType="none"
+      presentationStyle="fullScreen"
+      onRequestClose={() => setEntryModal({ visible: false, step: 'amount' })}
+    >
+      <EntryFlow
+        step={entryModal.step}
+        onClose={() => setEntryModal({ visible: false, step: 'amount' })}
+        onAmountSave={handleSaveTransaction}
+        goToAmount={() => setEntryModal(prev => ({ ...prev, step: 'amount' }))}
+        onIncomeSubmit={({ incomeText, incomeMethod }) => {
+          setEntryModal({ visible: false, step: 'amount' }); // ✅ 이 시점에만 닫기
+          setCurrentPage('home');
+          Alert.alert('저장 완료', '수입이 기록되었어요 ✅');
+        }}
+        onExpenseSubmit={({ memo, method, category, background }) => {
+          setEntryModal({ visible: false, step: 'amount' }); // ✅ 이 시점에만 닫기
+          setCurrentPage('home');
+          Alert.alert('저장 완료', '지출이 기록되었어요 ✅');
+        }}
+        tempIncomeData={tempIncomeData}
+        tempExpenseData={tempExpenseData}          
+      />
+    </Modal>
+  </>
+);
