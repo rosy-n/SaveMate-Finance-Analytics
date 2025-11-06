@@ -88,29 +88,45 @@ export default function SatisfactionRating({
     restoreScroll();
   };
 
-  const submit = () => {
-    if (!rating) {
-      Alert.alert('만족도 선택', '만족도(불만족/보통/만족) 중 하나를 선택해 주세요.');
-      return;
-    }
-    if (!selectedReason) {
-      Alert.alert('이유 선택 필요', '어떤 이유인지 선택해 주세요.', [{ text: '확인' }]);
-      return;
-    }
-    Keyboard.dismiss();
+  const submit = async () => {
+  if (!rating) {
+    Alert.alert('만족도 선택', '만족도(불만족/보통/만족) 중 하나를 선택해 주세요.');
+    return;
+  }
+  if (!selectedReason) {
+    Alert.alert('이유 선택 필요', '어떤 이유인지 선택해 주세요.');
+    return;
+  }
 
-    const payload = {
-      transactionId: evaluationData.transactionId,
-      rating,
-      reason: selectedReason,
-      memo: localMemo,
-      evaluatedAt: new Date().toISOString(),
-    };
+  Keyboard.dismiss();
 
-    // onSubmit을 넘기지 않으면 기본 동작: 뒤로가기
-    if (onSubmit) onSubmit(payload);
-    else onBack?.();
+  const payload = {
+    uid: 'test-user1', // 실제 로그인 사용자 ID로 교체
+    transactionId: evaluationData.transactionId,
+    emotion: rating, // ‘dissatisfied’, ‘neutral’, ‘satisfied’
+    reason: selectedReason,
+    memo: localMemo,
   };
+
+  try {
+    const res = await fetch('http://172.20.5.9:8080/api/satisfaction', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      Alert.alert('저장 완료', '만족도 기록이 저장되었습니다 ✅');
+      onBack?.(); // 홈으로 복귀
+    } else {
+      Alert.alert('저장 실패', data.error || '서버 오류');
+    }
+  } catch (e) {
+    console.error(e);
+    Alert.alert('네트워크 오류', '서버에 연결할 수 없습니다.');
+  }
+};
+
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -186,16 +202,25 @@ export default function SatisfactionRating({
             <>
               <View style={styles.card}>
                 <Text style={styles.sectionTitle}>어떤 이유인가요?</Text>
-                <View style={[styles.reasonGrid, localStyles.reasonGrid]}>
-                  {currentReasons.map((reason, index) => (
+                <View style={[styles.reasonGrid, { justifyContent: 'space-between' }]}>
+                  {currentReasons.map((reason) => (
                     <TouchableOpacity
                       key={reason}
                       activeOpacity={0.7}
-                      style={[styles.reasonChip, localStyles.reasonChip, selectedReason === reason && styles.reasonChipSelected, index % 2 === 0 && { marginRight: 8 },
+                      style={[
+                        styles.reasonChip,
+                        { width: '48%', alignItems: 'center', justifyContent: 'center' }, // ✅ 2개/줄 배치
+                        selectedReason === reason && styles.reasonChipSelected,
                       ]}
                       onPress={() => handleReasonSelect(reason)}
                     >
-                      <Text style={[styles.reasonChipText, localStyles.reasonChipText, selectedReason === reason && styles.reasonChipTextSelected]}>
+                      <Text
+                        style={[
+                          styles.reasonChipText,
+                          { textAlign: 'center' },
+                          selectedReason === reason && styles.reasonChipTextSelected,
+                        ]}
+                      >
                         {reason}
                       </Text>
                     </TouchableOpacity>
