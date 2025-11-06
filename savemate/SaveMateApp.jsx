@@ -111,13 +111,14 @@ export default function SaveMateApp() {
 
   const handleSaveTransaction = (amount, type, pickedDate) => {
     const amt = Number(amount);
-    // pickedDate가 문자열로 오더라도 Date로 정규화
+    // TransactionInput 이 넘기는 3번째 인자는 { category, memo, date } 객체임.
+    const raw = pickedDate && pickedDate.date !== undefined ? pickedDate.date : pickedDate;
     const dateObj =
-      pickedDate instanceof Date
-        ? pickedDate
-        : pickedDate
-        ? new Date(pickedDate)
-        : new Date();
+      raw instanceof Date
+        ? raw
+        : raw
+        ? new Date(raw)
+        : new Date();  
 
     if (type === 'income') {
       setTempIncomeData({ amount: isNaN(amt) ? 0 : amt, date: dateObj });
