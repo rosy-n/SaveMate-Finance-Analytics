@@ -226,6 +226,64 @@ export const SaveMateStyles = StyleSheet.create({
     alignItems: 'center',
   },
   btnPrimaryLargeText: { fontSize: 15, color: '#7C3AED', fontWeight: '600' },
+  
+// ... (기존 스타일 코드)
+
+// ===== 이번달 지출 Worst 3 스타일 (수정됨) =====
+worstBox: {
+  flexDirection: 'row',
+  alignItems: 'center', // 전체 Worst Box의 수직 중앙 정렬
+  justifyContent: 'flex-start', // 요소들이 왼쪽부터 차례로 배치되도록
+  paddingVertical: 8,
+  borderBottomWidth: 1, 
+  borderBottomColor: '#F3F4F6',
+},
+worstLeft: { // 이 스타일은 ReportHome.jsx에서 사용되지 않으므로 사실상 불필요하지만, 기존 스타일에 남아있을 경우를 대비해 제거하거나 주석처리하는 것을 권장합니다.
+  flexDirection: 'column',
+  alignItems: 'center',
+  flex: 1,
+  width: 90, 
+  marginRight: 16,
+},
+
+worstRankBadge: {
+  width: 24,
+  height: 24,
+  borderRadius: 6,
+  backgroundColor: '#7C3AED',
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginRight: 12, // Date/Amount 블록과의 간격
+  flexShrink: 0, 
+},
+worstRankText: {
+  fontSize: 14,
+  fontWeight: '700',
+  color: '#FFFFFF',
+},
+worstDetail: {
+  flexShrink: 1, 
+  flex: 1, // 남은 공간을 모두 차지하도록
+},
+worstTitlePurple: {
+  fontSize: 15,
+  fontWeight: '600',
+  color: '#7C3AED', 
+},
+worstMetaText: {
+  fontSize: 12,
+  color: '#6B7280',
+},
+worstDateText: {
+  fontSize: 12,
+  color: '#9CA3AF',
+  marginBottom: 4, 
+},
+totalAmountSm: {
+  fontSize: 16,
+  fontWeight: '700',
+  color: '#1F2937',
+},
 
   // ===== 챌린지 탭 =====
   challengeHeader: {
