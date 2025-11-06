@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { appBus } from './app/eventBus'; 
+import { appBus } from './app/eventBus';
 import Challenge from './components/Challenge';
 import ChallengeDetail from './components/ChallengeDetail';
 
@@ -93,7 +93,6 @@ const efStyles = StyleSheet.create({
   track: { flex: 1, flexDirection: 'row' },
   page: { flex: 1 },
 });
-
 
 export default function SaveMateApp() {
   const [currentPage, setCurrentPage] = useState('home');

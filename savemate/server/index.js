@@ -7,6 +7,7 @@ const morgan = require('morgan');
 
 const healthRoutes = require('./routes/health');           // 이미 있다면 유지
 const transactionRoutes = require('./routes/transactions');
+const satisfactionRoutes = require('./routes/satisfaction');
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use(morgan('dev'));          // 요청 로깅
 /** 라우트 */
 app.use('/api/health', healthRoutes);                  // GET /api/health
 app.use('/api/transactions', transactionRoutes);       // POST/GET /api/transactions
+app.use('/api/satisfaction', satisfactionRoutes); // POST /api/satisfaction
 
 /** 404 (API 경로) */
 app.use('/api', (_req, res) => {
@@ -36,5 +38,5 @@ const HOST = process.env.HOST || '0.0.0.0';
 
 app.listen(PORT, HOST, () => {
   console.log(`API listening on http://${HOST}:${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/api/health`);
+  console.log(`Health check: http://${HOST}:${PORT}/api/health`);
 });
