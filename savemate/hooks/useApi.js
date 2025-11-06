@@ -2,7 +2,6 @@
 import { useMemo } from 'react';
 import { Platform } from 'react-native';
 
-
 const guessBaseURL = () => {
   const PORT = process.env.EXPO_PUBLIC_API_PORT ?? '8080';
   const HOST =
@@ -15,7 +14,7 @@ const guessBaseURL = () => {
 //   process.env.EXPO_PUBLIC_API_BASE_URL ??
 //   guessBaseURL();
 
-const BASE_URL = 'http://172.20.6.144:8080';
+const BASE_URL = 'http://172.20.94.56:8080';
 
 
 export function useApi() {
