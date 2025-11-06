@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { appBus } from './app/eventBus'; 
 import Challenge from './components/Challenge';
 import ChallengeDetail from './components/ChallengeDetail';
 
@@ -132,12 +133,10 @@ export default function SaveMateApp() {
   };
 
   useEffect(() => {
-    const onHomePressed = () => {
-      setCurrentPage('home');                 // ✅ 지출 내역(DetailPage) 보이는 상태면 홈으로 전환
-      setEntryModal({ visible: false, step: 'amount' }); // 열려있던 입력 모달도 닫기
-    };
-    appBus.on('homeTabPressed', onHomePressed);
-    return () => appBus.off('homeTabPressed', onHomePressed);
+    const off = appBus.on('open-entry-modal', (p) => {
+      setEntryModal({ visible: true, step: p?.step ?? 'amount' });
+    });
+    return off;
   }, []);
 
     
@@ -455,36 +454,42 @@ export default function SaveMateApp() {
 
       </SafeAreaView>
     );
-  };
-  
+  };  
 
   return (
-  <>
-    <Stack.Navigator>
-      {currentPage === 'home' ? (
-        <Stack.Screen name="Home" component={HomePage} />
-      ) : currentPage === 'satisfaction' ? (
-        <SatisfactionRating
-          styles={styles}
-          evaluationData={pendingEvaluation ?? undefined}
-            onBack={() => { setPendingEvaluation(null); setCurrentPage('home'); }}
-            onSubmit={(payloadFromUI) => {
-              // UI가 넘긴 값 + uid를 합쳐서 서버로 전송
-              handleSatisfactionSubmit({
-                uid: homeData.userId,
-                transactionId: payloadFromUI.transactionId,
-                emotion: payloadFromUI.rating, // 'dissatisfied' | 'neutral' | 'satisfied'
-                reason: payloadFromUI.reason,
-                memo: payloadFromUI.memo,
-              });
-            }}
-        />
-      ) : (
-        <DetailPage />
-      )}
+    <>
+      <Stack.Navigator>
+        {currentPage === 'home' ? (
+          <Stack.Screen name="Home">
+            {() => <HomePage />}
+          </Stack.Screen>
+        ) : currentPage === 'satisfaction' ? (
+          <Stack.Screen name="Satisfaction">
+            {() => (
+              <SatisfactionRating
+                styles={styles}
+                evaluationData={pendingEvaluation ?? undefined}
+                onBack={() => { setPendingEvaluation(null); setCurrentPage('home'); }}
+                onSubmit={(payloadFromUI) => {
+                  handleSatisfactionSubmit({
+                    uid: homeData.userId,
+                    transactionId: payloadFromUI.transactionId,
+                    emotion: payloadFromUI.rating,
+                    reason: payloadFromUI.reason,
+                    memo: payloadFromUI.memo,
+                  });
+                }}
+              />
+            )}
+          </Stack.Screen>
+        ) : (
+          <Stack.Screen name="Detail">
+            {() => <DetailPage />}
+          </Stack.Screen>
+        )}
+      </Stack.Navigator>
 
-
-      {/* ✅ 거래 입력 모달 */}
+      {/* 거래 입력 모달 */}
       <Modal
         visible={entryModal.visible}
         animationType="none"
@@ -499,16 +504,13 @@ export default function SaveMateApp() {
           onIncomeSubmit={async ({ incomeText, incomeMethod }) => {
             try {
               const payload = {
-                uid: homeData.userId,                      // 사용자 ID (예: '2314513')
+                uid: homeData.userId,
                 type: 'income',
                 amount: Number(tempIncomeData?.amount || 0),
-                category: incomeMethod,                    // 트랜잭션 카테고리로 수입 수단 사용
+                category: incomeMethod,
                 memo: incomeText?.trim() || '',
                 date: tempIncomeData?.date?.toISOString?.() ?? new Date().toISOString(),
-                incomeDetail: {                            // 수입 상세
-                  incomeSource: incomeMethod,
-                  memo: incomeText?.trim() || ''
-                }
+                incomeDetail: { incomeSource: incomeMethod, memo: incomeText?.trim() || '' }
               };
               await api.post('/api/transactions', payload);
               setEntryModal({ visible: false, step: 'amount' });
@@ -524,22 +526,11 @@ export default function SaveMateApp() {
           }}
           onExpenseSubmit={async ({ memo, method, category, background }) => {
             try {
-              // tempExpenseData 에서 금액/날짜를 회수
               const amount = Number(tempExpenseData?.amount || 0);
               const dateISO = tempExpenseData?.date?.toISOString?.().slice(0,10);
-              const uid = homeData.userId; // 현재 홈 데이터의 사용자 ID 사용
+              const uid = homeData.userId;
 
-              const body = {
-                uid,
-                amount,
-                type: 'expense',
-                category,
-                memo,
-                date: dateISO,       // "YYYY-MM-DD"
-                method,
-                background,
-              };
-
+              const body = { uid, amount, type: 'expense', category, memo, date: dateISO, method, background };
               const res = await fetch(`${api.baseURL}/api/transactions`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -548,7 +539,6 @@ export default function SaveMateApp() {
               const data = await res.json();
               if (!data.ok) throw new Error(data.error || '저장 실패');
 
-              // 모달 닫기
               setEntryModal({ visible: false, step: 'amount' });
               setSelectedMonth((tempExpenseData?.date?.getMonth?.() ?? new Date().getMonth()) + 1);
               setSelectedDate(tempExpenseData?.date?.getDate?.() ?? new Date().getDate());
@@ -558,15 +548,15 @@ export default function SaveMateApp() {
               console.error(e);
               Alert.alert('저장 실패', e.message || '서버 오류');
             }
-         }}
+          }}
 
           tempIncomeData={tempIncomeData}
-          tempExpenseData={tempExpenseData}          
+          tempExpenseData={tempExpenseData}
         />
       </Modal>
-
-
     </>
   );
+
+
 
 };
