@@ -165,18 +165,14 @@ export default function SaveMateApp() {
   };
 
 
-  // 이하 홈/디테일/만족도 화면 기존
+  // 이하 홈/디테일/만족도 화면
   const homeData = useMemo(
     () => ({
-      userName: '유은서',
-      userId: '2314513',
+      userName: '노지은',
+      userId: '2312736',
       motivationalQuote: {
         title: '오늘의 절약팁',
         content: '카페 대신 집에서 커피를 내려 마시면 한 달에 약 5만원을 절약할 수 있어요',
-      },
-      expenseSummary: {
-        currentMonth: '9월',
-        totalExpense: 890000,
       },
       challengeProgress: {
         title: '카페 챌린지',
@@ -189,80 +185,96 @@ export default function SaveMateApp() {
   const getDaysInMonth = (month, year = CURRENT_YEAR) => new Date(year, month, 0).getDate();
   const getFirstDayOfMonth = (month, year = CURRENT_YEAR) => new Date(year, month - 1, 1).getDay();
 
+  const HomePage = () => {
+    // 당월 지출 합계 로드
+    const { loading: homeLoading, error: homeError, monthlyTotals: homeMonthlyTotals } =
+      useMonthlyTransactionsFromApi({
+        userId: homeData.userId,
+        year: CURRENT_YEAR,
+        month: CURRENT_MONTH,
+        refresh: refreshKey,
+      });
+    const totalExpenseThisMonth = homeMonthlyTotals?.expense ?? 0;
 
-
-  const HomePage = () => (
-    <SafeAreaView style={styles.screen}>
-      <View style={styles.header}>
-        <Text style={styles.appTitle}>Save Mate</Text>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>{homeData.motivationalQuote.title}</Text>
-          <Text style={styles.cardText}>{homeData.motivationalQuote.content}</Text>
+    return (
+      <SafeAreaView style={styles.screen}>
+        <View style={styles.header}>
+          <Text style={styles.appTitle}>Save Mate</Text>
         </View>
 
-        <TouchableOpacity style={styles.card} onPress={() => setCurrentPage('detail')}>
-          <View style={styles.rowBetween}>
-            <Text style={styles.cardTitle}>
-              {CURRENT_MONTH}월 지출 현황
-            </Text>
-            <Text style={styles.chevron}>›</Text>
+        <ScrollView contentContainerStyle={styles.content}>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>{homeData.motivationalQuote.title}</Text>
+            <Text style={styles.cardText}>{homeData.motivationalQuote.content}</Text>
           </View>
-          <Text style={styles.totalAmount}>
-            {formatKRW(homeData.expenseSummary.totalExpense)}
-          </Text>
+
+          <TouchableOpacity style={styles.card} onPress={() => setCurrentPage('detail')}>
+            <View style={styles.rowBetween}>
+              <Text style={styles.cardTitle}>
+                {CURRENT_MONTH}월 지출 현황
+              </Text>
+              <Text style={styles.chevron}>›</Text>
+            </View>
+
+            <Text style={styles.totalAmount}>
+              {homeLoading ? '계산 중…' : formatKRW(totalExpenseThisMonth)}
+            </Text>
+
+            {homeError ? (
+              <Text style={[styles.cardText, { marginTop: 6, color: '#B43A22' }]}>
+                합계를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.
+              </Text>
+            ) : null}
+          </TouchableOpacity>
+
+          <View style={styles.card}>
+            <View className={styles.rowBetween}>
+              <Text style={styles.cardTitle}>{homeData.challengeProgress.title}</Text>
+              <Text style={styles.progressText}>
+                {homeData.challengeProgress.progressRate}%
+              </Text>
+            </View>
+            <View style={styles.progressBarBg}>
+              <View
+                style={[
+                  styles.progressBarFill,
+                  { width: `${homeData.challengeProgress.progressRate}%` },
+                ]}
+              />
+            </View>
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>만족도 기록</Text>
+            <Text style={[styles.cardText, { marginBottom: 12 }]}>
+              어제 구매한 `식사`에 대한 만족도를 기록해주세요.
+            </Text>
+            <View style={styles.rowCenter}>
+              <TouchableOpacity style={styles.btnGhost} onPress={() => setCurrentPage('home')}>
+                <Text style={styles.btnGhostText}>나중에</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.btnPrimary}
+                onPress={() => {
+                  setCurrentPage('satisfaction');
+                }}
+              >
+                <Text style={styles.btnPrimaryText}>기록하기</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => setEntryModal({ visible: true, step: 'amount' })}
+        >
+          <Text style={styles.fabPlus}>＋</Text>
         </TouchableOpacity>
+      </SafeAreaView>
+    );
+  };
 
-        <View style={styles.card}>
-          <View style={styles.rowBetween}>
-            <Text style={styles.cardTitle}>{homeData.challengeProgress.title}</Text>
-            <Text style={styles.progressText}>
-              {homeData.challengeProgress.progressRate}%
-            </Text>
-          </View>
-          <View style={styles.progressBarBg}>
-            <View
-              style={[
-                styles.progressBarFill,
-                { width: `${homeData.challengeProgress.progressRate}%` },
-              ]}
-            />
-          </View>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>만족도 기록</Text>
-          <Text style={[styles.cardText, { marginBottom: 12 }]}>
-            어제 구매한 `식사`에 대한 만족도를 기록해주세요.
-          </Text>
-          <View style={styles.rowCenter}>
-            <TouchableOpacity style={styles.btnGhost} onPress={() => setCurrentPage('home')}>
-              <Text style={styles.btnGhostText}>나중에</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.btnPrimary}
-              onPress={() => {
-                setCurrentPage('satisfaction');
-              }}
-            >
-              <Text style={styles.btnPrimaryText}>기록하기</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
-
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => setEntryModal({ visible: true, step: 'amount' })}
-      >
-        <Text style={styles.fabPlus}>＋</Text>
-      </TouchableOpacity>
-
-
-    </SafeAreaView>
-  );
   const DetailPage = () => {
     // 1) 현재 월/이전 월 데이터 불러오기
     const { loading, error, groupedByDay, totalsByDay, monthlyTotals } =
