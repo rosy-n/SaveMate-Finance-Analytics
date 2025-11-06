@@ -226,7 +226,7 @@ export const SaveMateStyles = StyleSheet.create({
     alignItems: 'center',
   },
   btnPrimaryLargeText: { fontSize: 15, color: '#7C3AED', fontWeight: '600' },
-  
+
   // ===== 챌린지 탭 =====
   challengeHeader: {
     flexDirection: 'row',
@@ -306,14 +306,32 @@ export const SaveMateStyles = StyleSheet.create({
     fontSize: 12,
     color: '#6B7280',
   },
+  challengeItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   challengeItemPercentage: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#8B5CF6',
+    marginBottom: 4,
   },
   challengeItemMoreButton: {
-    marginLeft: 10,
+    padding: 4,
   },
+  challengeItemMoreButtonText: {
+    fontSize: 20,
+    color: '#9CA3AF',
+  },
+  failedChallengeTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+
 
   // 새 챌린지 추가 화면
   challengeTitleInput: {
@@ -356,5 +374,4 @@ export const SaveMateStyles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-
 });

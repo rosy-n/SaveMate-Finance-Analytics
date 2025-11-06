@@ -1,6 +1,11 @@
-import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
-import { useWindowDimensions } from 'react-native';
-import { appBus } from './app/eventBus';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import Challenge from './components/Challenge';
+import ChallengeDetail from './components/ChallengeDetail';
+
+const Stack = createStackNavigator();
+
 import {
   SafeAreaView,
   View,
@@ -11,6 +16,7 @@ import {
   Alert,
   Animated,
   StyleSheet,
+  useWindowDimensions,
 } from 'react-native';
 
 import TransactionInput from './components/TransactionInput';
@@ -21,7 +27,6 @@ import { SaveMateStyles as styles } from './styles/SaveMateStyles';
 
 import { useApi } from './hooks/useApi';
 import useMonthlyTransactionsFromApi from './hooks/useMonthlyTransactionsFromApi';
-
 
 
 const NOW = new Date();
@@ -160,6 +165,8 @@ export default function SaveMateApp() {
     }
   };
 
+
+  // 이하 홈/디테일/만족도 화면 기존
   const homeData = useMemo(
     () => ({
       userName: '유은서',
@@ -452,9 +459,10 @@ export default function SaveMateApp() {
   
 
   return (
-    <>
+  <>
+    <Stack.Navigator>
       {currentPage === 'home' ? (
-        <HomePage />
+        <Stack.Screen name="Home" component={HomePage} />
       ) : currentPage === 'satisfaction' ? (
         <SatisfactionRating
           styles={styles}
