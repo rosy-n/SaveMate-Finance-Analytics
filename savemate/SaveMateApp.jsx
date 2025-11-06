@@ -40,6 +40,15 @@ const WEEK_HEADERS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 const formatKRW = (amount) =>
   (typeof amount === 'number' ? amount : 0).toLocaleString('ko-KR') + '원';
 
+// 로컬 기준 YYYY-MM-DD로 포맷팅
+ const toLocalDateString = (d) => {
+    const dt = d instanceof Date ? d : new Date(d);
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    const day = String(dt.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
 const EntryFlow = ({
   step,               // 'amount' | 'income' | 'expense'
   onClose,
@@ -520,7 +529,7 @@ export default function SaveMateApp() {
                 amount: Number(tempIncomeData?.amount || 0),
                 category: incomeMethod,
                 memo: incomeText?.trim() || '',
-                date: tempIncomeData?.date?.toISOString?.() ?? new Date().toISOString(),
+                date: toLocalDateString(tempIncomeData?.date || new Date()),
                 incomeDetail: { incomeSource: incomeMethod, memo: incomeText?.trim() || '' }
               };
               await api.post('/api/transactions', payload);
@@ -538,7 +547,7 @@ export default function SaveMateApp() {
           onExpenseSubmit={async ({ memo, method, category, background }) => {
             try {
               const amount = Number(tempExpenseData?.amount || 0);
-              const dateISO = tempExpenseData?.date?.toISOString?.().slice(0,10);
+              const dateISO = toLocalDateString(tempExpenseData?.date || new Date());
               const uid = homeData.userId;
 
               const body = { uid, amount, type: 'expense', category, memo, date: dateISO, method, background };

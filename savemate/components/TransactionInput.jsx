@@ -56,15 +56,16 @@ const TransactionInput = ({ onClose, onSave }) => {
     try {
       const result = eval(expression);
       if (!isNaN(result) && result > 0) {
-        // 날짜를 문자열로 변환 (YYYY-MM-DD)
-        const iso = new Date(selectedDate).toISOString().slice(0, 10);
-
-        // SaveMateApp이 기대하는 형식에 맞게 전달
+        // 로컬 자정 Date 객체 그대로 전달 (타임존 변환 금지)
+        const localMidnight = new Date(
+          selectedDate.getFullYear(),
+          selectedDate.getMonth(),
+          selectedDate.getDate()
+        );
         onSave?.(result, transactionType, {
           category: '기타',
           memo: '',
-          // 다음 탭(Income/Expense)에서 Date 객체로 바로 쓰도록 Date로 전달
-          date: new Date(iso),
+          date: localMidnight, // 그대로 다음 단계에 전달
         });
       }
     } catch {
