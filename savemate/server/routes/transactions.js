@@ -126,89 +126,77 @@ router.post('/', async (req, res) => {
  *   /api/transactions?uid=2314513&year=2025&month=11&expand=true
  *   /api/transactions?uid=2314513&limit=50
  * ────────────────────────────────────────────────────────────── */
-/** ──────────────────────────────────────────────────────────────
- * GET /api/transactions
- * 쿼리:
- *   uid=필수
- *   year, month=선택(월별 조회 시 필수)
- *   expand=true → expenseDetails 포함
- * ────────────────────────────────────────────────────────────── */
 router.get('/', async (req, res) => {
   try {
-    const { uid, year, month, expand } = req.query;
-    if (!uid) {
-      return res.status(400).json({ ok: false, error: 'uid is required' });
+    const { uid, year, month, limit = 20, expand } = req.query;
+    if (!uid) return res.status(400).json({ ok: false, error: 'uid is required' });
+
+    let ref = db.collection('users').doc(uid).collection('transactions');
+    let order = 'desc';
+    let mode = 'latest';
+
+    if (year && month) {
+      // 월 범위 조회: date ∈ [start, end)
+      const y = Number(year), m = Number(month);
+      if (!Number.isFinite(y) || !Number.isFinite(m) || m < 1 || m > 12) {
+        return res.status(400).json({ ok: false, error: 'invalid year/month' });
+      }
+      const { start, end } = getMonthRange(y, m);
+
+      // ⚠️ 복합 인덱스가 필요할 수 있음 (콘솔 링크로 생성)
+      ref = ref
+        .where('date', '>=', start)
+        .where('date', '<', end)
+        .orderBy('date', 'asc');
+
+      order = 'asc';
+      mode = 'monthly';
+    } else {
+      // 최근 N건
+      ref = ref.orderBy('date', 'desc').limit(Number(limit));
     }
 
-    // getMonthRange는 너 코드 상단에 이미 있음(UTC 기준 Timestamp 반환)
-    const { start, end } = (year && month)
-      ? getMonthRange(year, month)
-      : { start: null, end: null };
+    const snap = await ref.get();
 
-    const result = {
-      summary: { income: 0, expense: 0, count: 0 },
-      items: [],
-    };
+    const items = await Promise.all(
+      snap.docs.map(async (d) => {
+        const data = d.data();
+        const base = {
+          id: d.id,
+          ...data,
+          date: data.date?.toDate ? iso10(data.date.toDate()) : data.date, // 'YYYY-MM-DD'
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : null,
+          updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : null,
+        };
 
-    const txColRef = db.collection('users').doc(uid).collection('transactions');
-    const txSnap = await txColRef.get();
-    if (txSnap.empty) return res.json(result);
+        if (String(expand) === 'true') {
+          const incomeSnap = await d.ref
+            .collection('incomeDetails')
+            .orderBy('createdAt', 'desc')
+            .limit(1)
+            .get();
+          const expenseSnap = await d.ref
+            .collection('expenseDetails')
+            .orderBy('createdAt', 'desc')
+            .limit(1)
+            .get();
 
-    let expenseSum = 0;
-    const items = [];
-
-    // createdAt이 월 범위에 들어오는지 체크
-    const isInRange = (createdAt) => {
-      try {
-        if (!start || !end) return true; // year/month 없으면 전체 허용
-        let d;
-        if (createdAt?.toDate) d = createdAt.toDate();
-        else if (createdAt?._seconds) d = new Date(createdAt._seconds * 1000);
-        else if (typeof createdAt === 'string' || typeof createdAt === 'number') d = new Date(createdAt);
-        else return false;
-        // getMonthRange가 admin.firestore.Timestamp를 반환하므로 toDate() 비교
-        return d >= start.toDate() && d < end.toDate();
-      } catch { return false; }
-    };
-
-    // 모든 transactions 문서를 순회하면서 expenseDetails를 모음
-    await Promise.all(
-      txSnap.docs.map(async (txDoc) => {
-        // 1️⃣ transaction 문서 자체도 포함시킴
-        const base = txDoc.data() || {};
-        if (base.type === 'expense' && isInRange(base.date)) {
-          const amount = Number(base.amount ?? 0);
-          const category = base.category || '기타';
-          const memo = base.memo || '';
-          const paymentMethod = base.paymentMethod || '';
-
-          expenseSum += amount;
-          result.summary.count += 1;
-
-          if (String(expand).toLowerCase() === 'true') {
-            items.push({
-              id: txDoc.id,
-              amount,
-              spendingCategory: category,
-              spendingItem: memo,
-              paymentMethod,
-              createdAt: base.createdAt ?? null,
-            });
-          }
+          return {
+            ...base,
+            incomeDetail: incomeSnap.empty ? null : { id: incomeSnap.docs[0].id, ...incomeSnap.docs[0].data() },
+            expenseDetail: expenseSnap.empty ? null : { id: expenseSnap.docs[0].id, ...expenseSnap.docs[0].data() },
+          };
         }
 
+        return base;
       })
     );
 
-    result.summary.expense = expenseSum;
-    result.items = items;
-
-    return res.json(result);
+    res.json({ ok: true, mode, order, count: items.length, items });
   } catch (e) {
     console.error('[Firestore GET Error]', e);
-    return res.status(500).json({ ok: false, error: e.message });
+    res.status(500).json({ ok: false, error: e.message });
   }
 });
-
 
 module.exports = router;
