@@ -15,7 +15,7 @@ const guessBaseURL = () => {
 //   process.env.EXPO_PUBLIC_API_BASE_URL ??
 //   guessBaseURL();
 
-const BASE_URL = 'http://192.168.0.219:8080';
+const BASE_URL = 'http://172.20.6.144:8080';
 
 
 export function useApi() {
