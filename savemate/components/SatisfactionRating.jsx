@@ -101,7 +101,7 @@ export default function SatisfactionRating({
   Keyboard.dismiss();
 
   const payload = {
-    uid: 'test-user1', // 실제 로그인 사용자 ID로 교체
+    uid: '2316350', // 실제 로그인 사용자 ID로 교체
     transactionId: evaluationData.transactionId,
     emotion: rating, // ‘dissatisfied’, ‘neutral’, ‘satisfied’
     reason: selectedReason,
