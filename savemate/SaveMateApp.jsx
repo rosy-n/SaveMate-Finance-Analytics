@@ -40,6 +40,15 @@ const WEEK_HEADERS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 const formatKRW = (amount) =>
   (typeof amount === 'number' ? amount : 0).toLocaleString('ko-KR') + '원';
 
+// 로컬 기준 YYYY-MM-DD로 포맷팅
+ const toLocalDateString = (d) => {
+    const dt = d instanceof Date ? d : new Date(d);
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    const day = String(dt.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
 const EntryFlow = ({
   step,               // 'amount' | 'income' | 'expense'
   onClose,
@@ -291,19 +300,60 @@ export default function SaveMateApp() {
         refresh: refreshKey,
       });
 
+    // 1-보강) 이 달의 모든 거래(수입/지출)를 직접 한 번 불러와서 day별로 그룹핑
+    const [monthItems, setMonthItems] = useState(null);
+    const [byDay, setByDay] = useState(null);
+    useEffect(() => {
+      (async () => {
+        try {
+          const url = `/api/transactions?uid=${homeData.userId}&year=${CURRENT_YEAR}&month=${selectedMonth}&expand=true`;
+          const res = await fetch(`${api.baseURL}${url}`);
+          const data = await res.json();
+          if (data?.items) {
+            setMonthItems(data.items);
+            // day: 1~31 기준으로 그룹핑
+            const map = {};
+            for (const it of data.items) {
+              const day = Number(it.day ?? (new Date(it.date)).getDate());
+              if (!map[day]) map[day] = [];
+              map[day].push({
+                id: it.id,
+                type: it.type,            // 'income' | 'expense'
+                amount: it.amount,
+                category: it.category,
+                memo: it.memo,
+                date: it.date,
+              });
+            }
+            setByDay(map);
+          } else {
+            setMonthItems([]);
+            setByDay(null);
+          }
+        } catch {
+          // API 실패 시 훅 결과만 사용
+          setMonthItems(null);
+          setByDay(null);
+        }
+      })();
+    }, [selectedMonth, refreshKey, api.baseURL]);
+
+    // 훅이 주는 groupedByDay가 있으면 쓰고, 없으면(byDay 사용)
+    const effectiveGrouped = byDay || groupedByDay || {};
+
     // 2) 달력 계산(일수/시작요일)
     const daysInMonth = new Date(CURRENT_YEAR, selectedMonth, 0).getDate();
     const firstDay = new Date(CURRENT_YEAR, selectedMonth - 1, 1).getDay();
 
     // 3) 특정 일자 내역
-    const selectedDayTransactions = groupedByDay[selectedDate] || [];
+    const selectedDayTransactions = effectiveGrouped[selectedDate] || [];
 
     // 4) 거래 존재 여부 맵
     const transactionsByDate = useMemo(() => {
       const map = {};
-      Object.keys(groupedByDay).forEach((k) => { map[Number(k)] = true; });
+      Object.keys(effectiveGrouped).forEach((k) => { map[Number(k)] = true; });
       return map;
-    }, [groupedByDay]);
+    }, [effectiveGrouped]);
 
     const handlePrevMonth = () => setSelectedMonth((prev) => Math.max(1, prev - 1));
     const handleNextMonth = () => setSelectedMonth((prev) => Math.min(CURRENT_MONTH, prev + 1));
@@ -520,7 +570,7 @@ export default function SaveMateApp() {
                 amount: Number(tempIncomeData?.amount || 0),
                 category: incomeMethod,
                 memo: incomeText?.trim() || '',
-                date: tempIncomeData?.date?.toISOString?.() ?? new Date().toISOString(),
+                date: toLocalDateString(tempIncomeData?.date || new Date()),
                 incomeDetail: { incomeSource: incomeMethod, memo: incomeText?.trim() || '' }
               };
               await api.post('/api/transactions', payload);
@@ -538,7 +588,7 @@ export default function SaveMateApp() {
           onExpenseSubmit={async ({ memo, method, category, background }) => {
             try {
               const amount = Number(tempExpenseData?.amount || 0);
-              const dateISO = tempExpenseData?.date?.toISOString?.().slice(0,10);
+              const dateISO = toLocalDateString(tempExpenseData?.date || new Date());
               const uid = homeData.userId;
 
               const body = { uid, amount, type: 'expense', category, memo, date: dateISO, method, background };

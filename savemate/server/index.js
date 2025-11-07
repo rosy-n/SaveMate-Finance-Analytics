@@ -11,32 +11,31 @@ const satisfactionRoutes = require('./routes/satisfaction');
 
 const app = express();
 
-/** 기본 미들웨어 */
-app.use(cors());                 // 모바일(Expo) 접근 허용
-app.use(express.json());         // JSON Body 파싱
-app.use(morgan('dev'));          // 요청 로깅
+// CORS + JSON
+app.use(cors());
+app.use(express.json());
 
-/** 라우트 */
-app.use('/api/health', healthRoutes);                  // GET /api/health
-app.use('/api/transactions', transactionRoutes);       // POST/GET /api/transactions
-app.use('/api/satisfaction', satisfactionRoutes); // POST /api/satisfaction
-
-/** 404 (API 경로) */
-app.use('/api', (_req, res) => {
-  res.status(404).json({ ok: false, error: 'Not Found' });
+// 304 방지: ETag 끄기 + 캐시 금지 헤더
+app.set('etag', false);
+app.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  res.set('Surrogate-Control', 'no-store');
+  next();
 });
 
-/** 에러 핸들러 */
-app.use((err, _req, res, _next) => {
-  console.error('[Express Error]', err);
-  res.status(500).json({ ok: false, error: err.message || 'Server error' });
+// ✅ 헬스체크 라우트(인라인, 확실하게 잡아주자)
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', time: new Date().toISOString() });
 });
 
-/** 서버 시작: 폰에서 접속 가능하도록 0.0.0.0 바인딩 */
-const PORT = Number(process.env.PORT || 8080);
-const HOST = process.env.HOST || '0.0.0.0';
+// 기존 라우트 마운트 (경로 정확히 /api/transactions)
+app.use('/api/transactions', transactionRoutes);
 
-app.listen(PORT, HOST, () => {
-  console.log(`API listening on http://${HOST}:${PORT}`);
-  console.log(`Health check: http://${HOST}:${PORT}/api/health`);
+const port = Number(process.env.PORT || 8080);
+// 외부(폰) 접근 가능하도록 0.0.0.0 바인딩
+app.listen(port, '0.0.0.0', () => {
+  console.log(`API listening on http://0.0.0.0:${port}`);
+  console.log(`Health check: http://0.0.0.0:${port}/api/health`);
 });

@@ -128,74 +128,83 @@ router.post('/', async (req, res) => {
  * ────────────────────────────────────────────────────────────── */
 router.get('/', async (req, res) => {
   try {
-    const { uid, year, month, limit = 20, expand } = req.query;
-    if (!uid) return res.status(400).json({ ok: false, error: 'uid is required' });
-
-    let ref = db.collection('users').doc(uid).collection('transactions');
-    let order = 'desc';
-    let mode = 'latest';
-
-    if (year && month) {
-      // 월 범위 조회: date ∈ [start, end)
-      const y = Number(year), m = Number(month);
-      if (!Number.isFinite(y) || !Number.isFinite(m) || m < 1 || m > 12) {
-        return res.status(400).json({ ok: false, error: 'invalid year/month' });
-      }
-      const { start, end } = getMonthRange(y, m);
-
-      // ⚠️ 복합 인덱스가 필요할 수 있음 (콘솔 링크로 생성)
-      ref = ref
-        .where('date', '>=', start)
-        .where('date', '<', end)
-        .orderBy('date', 'asc');
-
-      order = 'asc';
-      mode = 'monthly';
-    } else {
-      // 최근 N건
-      ref = ref.orderBy('date', 'desc').limit(Number(limit));
+    const { uid, year, month, expand } = req.query;
+    if (!uid) {
+      return res.status(400).json({ ok: false, error: 'uid is required' });
     }
 
-    const snap = await ref.get();
+    // getMonthRange는 너 코드 상단에 이미 있음(UTC 기준 Timestamp 반환)
+    const { start, end } = (year && month)
+      ? getMonthRange(year, month)
+      : { start: null, end: null };
 
-    const items = await Promise.all(
-      snap.docs.map(async (d) => {
-        const data = d.data();
-        const base = {
-          id: d.id,
-          ...data,
-          date: data.date?.toDate ? iso10(data.date.toDate()) : data.date, // 'YYYY-MM-DD'
-          createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : null,
-          updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : null,
-        };
+    const result = {
+      summary: { income: 0, expense: 0, count: 0 },
+      items: [],
+    };
 
-        if (String(expand) === 'true') {
-          const incomeSnap = await d.ref
-            .collection('incomeDetails')
-            .orderBy('createdAt', 'desc')
-            .limit(1)
-            .get();
-          const expenseSnap = await d.ref
-            .collection('expenseDetails')
-            .orderBy('createdAt', 'desc')
-            .limit(1)
-            .get();
+    const txColRef = db.collection('users').doc(uid).collection('transactions');
+    const txSnap = await txColRef.get();
+    if (txSnap.empty) return res.json(result);
 
-          return {
-            ...base,
-            incomeDetail: incomeSnap.empty ? null : { id: incomeSnap.docs[0].id, ...incomeSnap.docs[0].data() },
-            expenseDetail: expenseSnap.empty ? null : { id: expenseSnap.docs[0].id, ...expenseSnap.docs[0].data() },
-          };
+    let expenseSum = 0;
+    let incomeSum = 0;
+    const items = [];
+
+    // createdAt이 월 범위에 들어오는지 체크
+    const isInRange = (createdAt) => {
+      try {
+        if (!start || !end) return true; // year/month 없으면 전체 허용
+        let d;
+        if (createdAt?.toDate) d = createdAt.toDate();
+        else if (createdAt?._seconds) d = new Date(createdAt._seconds * 1000);
+        else if (typeof createdAt === 'string' || typeof createdAt === 'number') d = new Date(createdAt);
+        else return false;
+        // getMonthRange가 admin.firestore.Timestamp를 반환하므로 toDate() 비교
+        return d >= start.toDate() && d < end.toDate();
+      } catch { return false; }
+    };
+
+    // 모든 transactions 문서를 순회하면서 월 범위 안의 거래(수입/지출)를 모음
+    await Promise.all(
+      txSnap.docs.map(async (txDoc) => {
+        // 1️⃣ transaction 문서 자체를 확인
+        const base = txDoc.data() || {};
+        if (isInRange(base.date)) {
+          const type = String(base.type || '').toLowerCase(); // 'income' | 'expense'
+          const amount = Number(base.amount ?? 0);
+          const category = base.category || (type === 'income' ? '수입' : '지출');
+          const memo = base.memo || '';
+
+          if (type === 'expense') expenseSum += amount;
+          else if (type === 'income') incomeSum += amount;
+          result.summary.count += 1;
+
+          if (String(expand).toLowerCase() === 'true') {
+            let d = base.date?.toDate ? base.date.toDate() : new Date(base.date);
+            items.push({
+              id: txDoc.id,
+              type,
+              amount,
+              category,
+              memo,
+              date: d,             // JS Date
+              day: d.getDate(),    // 1~31
+              createdAt: base.createdAt ?? null,
+            });
+          }
         }
-
-        return base;
       })
     );
 
-    res.json({ ok: true, mode, order, count: items.length, items });
+    result.summary.expense = expenseSum;
+    result.summary.income  = incomeSum;
+    result.items = items;
+
+    return res.json(result);
   } catch (e) {
     console.error('[Firestore GET Error]', e);
-    res.status(500).json({ ok: false, error: e.message });
+    return res.status(500).json({ ok: false, error: e.message });
   }
 });
 
