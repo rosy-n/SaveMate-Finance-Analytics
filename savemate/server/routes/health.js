@@ -1,8 +1,13 @@
 // server/routes/health.js
+
+console.log('[health.js] loaded');
+
+
 const express = require('express');
 const router = express.Router();
 
-router.get('/health', (_req, res) => {
+// ✅ GET /api/health
+router.get('/', (_req, res) => {
   res.json({ ok: true, time: new Date().toISOString() });
 });
 
