@@ -109,7 +109,7 @@ export default function SatisfactionRating({
   };
 
   try {
-    const res = await fetch('http://192.168.0.176:8080/api/satisfaction', {
+    const res = await fetch('http://172.20.5.9:8080/api/satisfaction', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
