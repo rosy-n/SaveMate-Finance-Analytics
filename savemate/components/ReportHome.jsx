@@ -42,13 +42,21 @@ export default function ReportHome() {
     return () => (mounted = false);
   }, [api, uid, year, month]);
 
-  // 카테고리 집계
+  // 카테고리 집계 (지출만 포함)
   const { total, top3, chartData } = useMemo(() => {
     const sums = {};
     let t = 0;
+
     for (const it of items) {
-      const cat = it.spendingCategory || '기타';
-      const amount = Number(it.amount || it.price || it.cost || 0);
+      // 서버 expand=true 응답의 표준 필드:
+      // { type: 'income'|'expense', amount: number, category: string, ... }
+      const type = String(it?.type || '').toLowerCase();
+      if (type !== 'expense') continue;             // 지출만 집계
+
+      const cat = it?.category || it?.spendingCategory || '기타';
+      const amount = Math.abs(Number(it?.amount ?? 0));
+      if (!Number.isFinite(amount) || amount <= 0) continue;
+
       sums[cat] = (sums[cat] || 0) + amount;
       t += amount;
     }
@@ -68,6 +76,7 @@ export default function ReportHome() {
 
     return { total: t, top3: entries.slice(0, 3), chartData: chart };
   }, [items]);
+
     
   // (2) chartData 결과를 기반으로 pieData 생성
 const pieData = useMemo(() => {
