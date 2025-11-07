@@ -167,8 +167,8 @@ export default function SaveMateApp() {
   // 이하 홈/디테일/만족도 화면
   const homeData = useMemo(
     () => ({
-      userName: '노지은',
-      userId: '2312736',
+      userName: '최미나',
+      userId: '2316350',
       motivationalQuote: {
         title: '오늘의 절약팁',
         content: '카페 대신 집에서 커피를 내려 마시면 한 달에 약 5만원을 절약할 수 있어요',

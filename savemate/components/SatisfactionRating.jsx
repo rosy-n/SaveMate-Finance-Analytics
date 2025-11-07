@@ -101,7 +101,7 @@ export default function SatisfactionRating({
   Keyboard.dismiss();
 
   const payload = {
-    uid: 'test-user1', // 실제 로그인 사용자 ID로 교체
+    uid: '2316350', // 실제 로그인 사용자 ID로 교체
     transactionId: evaluationData.transactionId,
     emotion: rating, // ‘dissatisfied’, ‘neutral’, ‘satisfied’
     reason: selectedReason,
@@ -109,7 +109,7 @@ export default function SatisfactionRating({
   };
 
   try {
-    const res = await fetch('http://172.20.5.9:8080/api/satisfaction', {
+    const res = await fetch('http://192.168.0.219:8080/api/satisfaction', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
