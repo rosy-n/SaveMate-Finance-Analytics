@@ -42,13 +42,16 @@ export default function ReportHome() {
     return () => (mounted = false);
   }, [api, uid, year, month]);
 
-  // 카테고리 집계
+  // 카테고리 집계 (지출만, spendingCategory → category 폴백)
   const { total, top3, chartData } = useMemo(() => {
     const sums = {};
     let t = 0;
     for (const it of items) {
-      const cat = it.spendingCategory || '기타';
-      const amount = Number(it.amount || it.price || it.cost || 0);
+      // ⬇️ 지출만 집계
+      if (String(it?.type || '').toLowerCase() !== 'expense') continue;
+      // ⬇️ 서버가 내려주는 base.category까지 폴백
+      const cat = it.spendingCategory || it.category || '기타';
+      const amount = Number(it.amount || 0);
       sums[cat] = (sums[cat] || 0) + amount;
       t += amount;
     }
