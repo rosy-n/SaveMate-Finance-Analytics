@@ -46,9 +46,17 @@ export default function ReportHome() {
   const { total, top3, chartData } = useMemo(() => {
     const sums = {};
     let t = 0;
+
     for (const it of items) {
-      const cat = it.spendingCategory || '기타';
-      const amount = Number(it.amount || it.price || it.cost || 0);
+      // 서버 expand=true 응답의 표준 필드:
+      // { type: 'income'|'expense', amount: number, category: string, ... }
+      const type = String(it?.type || '').toLowerCase();
+      if (type !== 'expense') continue;             // 지출만 집계
+
+      const cat = it?.category || it?.spendingCategory || '기타';
+      const amount = Math.abs(Number(it?.amount ?? 0));
+      if (!Number.isFinite(amount) || amount <= 0) continue;
+
       sums[cat] = (sums[cat] || 0) + amount;
       t += amount;
     }
