@@ -1,11 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SaveMateStyles as styles } from '../styles/SaveMateStyles';
 import { PieChart } from 'react-native-chart-kit';
 import { useApi } from '../hooks/useApi';
-import { ReportStyles as styles } from './styles/ReportStyles';
+import { SaveMateStyles as styles } from '../styles/SaveMateStyles';
+import { ReportStyles as reportStyles } from './styles/ReportStyles';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -86,23 +86,23 @@ const pieData = useMemo(() => {
 
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <View style={styles.header}><Text style={styles.appTitle}>리포트</Text></View>
+    <SafeAreaView style={reportStyles.screen}>
+      <View style={reportStyles.header}><Text style={reportStyles.appTitle}>리포트</Text></View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={reportStyles.content} showsVerticalScrollIndicator={false}>
         {/* ① 원그래프 + 상위 3개 카테고리 */}
-        <View style={styles.card}>
-          <View style={styles.rowBetween}>
-            <Text style={styles.cardTitle}>{year}년 {month}월</Text>
+        <View style={reportStyles.card}>
+          <View style={reportStyles.rowBetween}>
+            <Text style={reportStyles.cardTitle}>{year}년 {month}월</Text>
           </View>
 
           {loading ? (
-            <View style={styles.center}><ActivityIndicator /></View>
+            <View style={reportStyles.center}><ActivityIndicator /></View>
           ) : total === 0 ? (
-            <Text style={[styles.cardText,{marginTop:8}]}>이번 달 지출 데이터가 없어요.</Text>
+            <Text style={[reportStyles.cardText,{marginTop:8}]}>이번 달 지출 데이터가 없어요.</Text>
           ) : (
             <>
-              <View style={styles.chartWrap}>
+              <View style={reportStyles.chartWrap}>
                 <PieChart
                     data={pieData}
                     width={screenWidth - 48}
@@ -126,14 +126,14 @@ const pieData = useMemo(() => {
                     key={cat}
                         activeOpacity={0.9}
                         onPress={() => router.push({ pathname: '/report/categoryDetail', params: { category: cat, year: String(year), month: String(month) } })}
-                        style={styles.catRow}
+                        style={reportStyles.catRow}
                     >
-                        <View style={[styles.dot,{ backgroundColor: CAT_COLORS[cat] || '#CDD1D5'}]} />
+                        <View style={[reportStyles.dot,{ backgroundColor: CAT_COLORS[cat] || '#CDD1D5'}]} />
                         <View style={{ flex:1 }}>
-                            <Text style={styles.listTitle}>{cat}</Text>
-                            <Text style={styles.caption}>{pct(sum,total)}%</Text>
+                            <Text style={reportStyles.listTitle}>{cat}</Text>
+                            <Text style={reportStyles.caption}>{pct(sum,total)}%</Text>
                         </View>
-                        <Text style={styles.totalAmountSm}>{formatKRW(sum)}</Text>
+                        <Text style={reportStyles.totalAmountSm}>{formatKRW(sum)}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
