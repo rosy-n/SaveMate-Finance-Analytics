@@ -41,15 +41,3 @@ app-example
 # generated native folders
 /ios
 /android
-
-# ===== Ignore Environment & Config Files =====
-savemate/.env
-savemate/app.json
-savemate/hooks/useApi.js
-savemate/server/routes/health.js
-
-# ===== Package & Dependency Files =====
-savemate/package-lock.json
-savemate/package.json
-
-
