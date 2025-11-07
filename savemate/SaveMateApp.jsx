@@ -605,6 +605,7 @@ export default function SaveMateApp() {
               setSelectedDate(tempExpenseData?.date?.getDate?.() ?? new Date().getDate());
               setRefreshKey(k => k + 1);
               setCurrentPage('detail');
+              Alert.alert('저장 완료', '지출이 기록되었어요 ✅');
             } catch (e) {
               console.error(e);
               Alert.alert('저장 실패', e.message || '서버 오류');
