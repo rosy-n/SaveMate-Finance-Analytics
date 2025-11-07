@@ -1,9 +1,9 @@
 // hooks/useMonthlyTransactionsFromApi.js
 import { useEffect, useMemo, useState } from 'react';
-
-const BASE = process.env.EXPO_PUBLIC_API_BASE_URL || '';
+import { useApi } from './useApi';   // ✅ 추가: 공통 API 훅 사용
 
 export default function useMonthlyTransactionsFromApi({ userId, year, month, refresh = 0 }) {
+  const api = useApi(); // ✅ baseURL과 공통 get/post 사용
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
   const [items, setItems]     = useState([]);
@@ -16,13 +16,13 @@ export default function useMonthlyTransactionsFromApi({ userId, year, month, ref
         setLoading(true);
         setError(null);
 
-        const url = `${BASE}/api/transactions?uid=${encodeURIComponent(userId)}&year=${year}&month=${month}&expand=true`;
-        console.log('📡 GET', url); // 디버그
+        const path = `/api/transactions?uid=${encodeURIComponent(userId)}&year=${year}&month=${month}&expand=true`;
+        console.log('📡 GET', api.baseURL + path); // 디버그
 
-        const res = await fetch(url);
-        const json = await res.json();
-        if (!res.ok || json.ok === false) {
-          throw new Error(json.error || `HTTP ${res.status}`);
+        // ✅ 공통 훅으로 호출(상대경로 OK)
+        const json = await api.get(path);
+        if (!json || json.ok === false) {
+          throw new Error(json?.error || '응답 형식이 올바르지 않습니다');
         }
 
         if (!mounted) return;
@@ -38,24 +38,30 @@ export default function useMonthlyTransactionsFromApi({ userId, year, month, ref
 
     if (userId && year && month) run();
     return () => { mounted = false; };
-  }, [userId, year, month, refresh]);
+  }, [api, userId, year, month, refresh]); // ✅ api 의존성 추가
+
+  // ✅ 안전한 날짜 파싱 (서버가 Date 객체를 줄 수도 있음)
+  const getDay = (d) => {
+    const dt = d instanceof Date ? d : new Date(d);
+    const day = Number.isFinite(dt.getTime()) ? dt.getDate() : NaN;
+    return day;
+  };
 
   // 날짜별 그룹
   const groupedByDay = useMemo(() => {
     const map = {};
     for (const t of items) {
-      const d = (t.date || '').split('-')[2]; // 'YYYY-MM-DD'
-      const day = Number(d);
+      const day = getDay(t?.date);
       if (!day) continue;
       if (!map[day]) map[day] = [];
       map[day].push(t);
     }
-    // 같은 날짜 안에서 최신순 정렬(선택)
+    // 같은 날짜 안에서 최신순
     Object.values(map).forEach(arr => arr.sort((a,b) => (a.date > b.date ? -1 : 1)));
     return map;
   }, [items]);
 
-  // 날짜별 합계(지출만 음수/양수 규칙 없이 절대값 누적)
+  // 날짜별 합계
   const totalsByDay = useMemo(() => {
     const sums = {};
     for (const [day, arr] of Object.entries(groupedByDay)) {
