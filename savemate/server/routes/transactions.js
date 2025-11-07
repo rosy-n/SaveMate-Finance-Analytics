@@ -130,7 +130,7 @@ router.get('/', async (req, res) => {
   try {
     const { uid, year, month, expand } = req.query;
     if (!uid) {
-      return res.status(400).json({ ok: false, error: 'uid is required' });    
+      return res.status(400).json({ ok: false, error: 'uid is required' });
     }
 
     // getMonthRange는 너 코드 상단에 이미 있음(UTC 기준 Timestamp 반환)
@@ -148,6 +148,7 @@ router.get('/', async (req, res) => {
     if (txSnap.empty) return res.json(result);
 
     let expenseSum = 0;
+    let incomeSum = 0;
     const items = [];
 
     // createdAt이 월 범위에 들어오는지 체크
@@ -164,27 +165,31 @@ router.get('/', async (req, res) => {
       } catch { return false; }
     };
 
-    // 모든 transactions 문서를 순회하면서 expenseDetails를 모음
+    // 모든 transactions 문서를 순회하면서 월 범위 안의 거래(수입/지출)를 모음
     await Promise.all(
       txSnap.docs.map(async (txDoc) => {
-        // 1️⃣ transaction 문서 자체도 포함시킴
+        // 1️⃣ transaction 문서 자체를 확인
         const base = txDoc.data() || {};
-        if (base.type === 'expense' && isInRange(base.date)) {
+        if (isInRange(base.date)) {
+          const type = String(base.type || '').toLowerCase(); // 'income' | 'expense'
           const amount = Number(base.amount ?? 0);
-          const category = base.category || '기타';
+          const category = base.category || (type === 'income' ? '수입' : '지출');
           const memo = base.memo || '';
-          const paymentMethod = base.paymentMethod || '';
 
-          expenseSum += amount;
+          if (type === 'expense') expenseSum += amount;
+          else if (type === 'income') incomeSum += amount;
           result.summary.count += 1;
 
           if (String(expand).toLowerCase() === 'true') {
+            let d = base.date?.toDate ? base.date.toDate() : new Date(base.date);
             items.push({
               id: txDoc.id,
+              type,
               amount,
-              spendingCategory: category,
-              spendingItem: memo,
-              paymentMethod,
+              category,
+              memo,
+              date: d,             // JS Date
+              day: d.getDate(),    // 1~31
               createdAt: base.createdAt ?? null,
             });
           }
@@ -193,6 +198,7 @@ router.get('/', async (req, res) => {
     );
 
     result.summary.expense = expenseSum;
+    result.summary.income  = incomeSum;
     result.items = items;
 
     return res.json(result);
