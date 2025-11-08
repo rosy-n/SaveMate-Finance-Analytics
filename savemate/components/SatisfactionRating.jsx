@@ -13,6 +13,7 @@ import {
   Alert,
   StyleSheet
 } from 'react-native';
+import { useApi } from '../hooks/useApi';
 
 const DEFAULT_REASON_OPTIONS = {
   dissatisfied: ['품질 불만', '가격 불만', '과소비 / 불필요', '경제적 / 사회적 압박', '감정 억제 (후회)', '기타'],
@@ -55,6 +56,9 @@ export default function SatisfactionRating({
 }) {
   const evaluationData = evaluationDataProp ?? DEFAULT_EVALUATION_DATA;
   const reasonOptions = reasonOptionsProp ?? DEFAULT_REASON_OPTIONS;
+
+  const api = useApi();
+  const UID = process.env.EXPO_PUBLIC_UID;
 
   const [rating, setRating] = useState(null);
   const [selectedReason, setSelectedReason] = useState(null);
@@ -101,7 +105,7 @@ export default function SatisfactionRating({
   Keyboard.dismiss();
 
   const payload = {
-    uid: '2316350', // 실제 로그인 사용자 ID로 교체
+    uid: UID, // 실제 로그인 사용자 ID
     transactionId: evaluationData.transactionId,
     emotion: rating, // ‘dissatisfied’, ‘neutral’, ‘satisfied’
     reason: selectedReason,
@@ -109,7 +113,7 @@ export default function SatisfactionRating({
   };
 
   try {
-    const res = await fetch('http://192.168.0.219:8080/api/satisfaction', {
+    const res = await fetch(`${api.baseURL}/api/satisfaction`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),

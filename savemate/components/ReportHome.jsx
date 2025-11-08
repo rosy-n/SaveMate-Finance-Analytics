@@ -23,7 +23,11 @@ export default function ReportHome() {
   const [year, month] = useMemo(() => {
     const now = new Date(); return [now.getFullYear(), now.getMonth() + 1];
   }, []);
-  const uid = process.env.EXPO_PUBLIC_UID || '2312736';
+  const uid = process.env.EXPO_PUBLIC_UID;
+ if (!uid) {
+   // 개발 단계라면 Alert/console.warn 정도만; 배포에선 로그인 연동 권장
+   console.warn('EXPO_PUBLIC_UID가 설정되지 않았습니다. .env를 확인하세요.');
+ }
 
   useEffect(() => {
     let mounted = true;
