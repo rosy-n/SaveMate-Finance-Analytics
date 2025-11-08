@@ -133,72 +133,72 @@ router.get('/', async (req, res) => {
       return res.status(400).json({ ok: false, error: 'uid is required' });
     }
 
-    // getMonthRange는 너 코드 상단에 이미 있음(UTC 기준 Timestamp 반환)
-    const { start, end } = (year && month)
-      ? getMonthRange(year, month)
-      : { start: null, end: null };
+    const wantExpand = String(expand).toLowerCase() === 'true';
+    const txColRef = db.collection('users').doc(uid).collection('transactions');
 
+    // 1) 쿼리 구성: 월 범위가 있으면 범위쿼리, 없으면 최신순 + limit
+    let q = txColRef.orderBy('date', 'desc');
+    if (year && month) {
+      const { start, end } = getMonthRange(year, month); // UTC Timestamp
+      // 범위 쿼리에서는 orderBy('date')가 이미 있으므로 그대로 사용
+      q = txColRef
+        .where('date', '>=', start)
+        .where('date', '<', end)
+        .orderBy('date', 'desc');
+    } else {
+      // 월 범위가 없을 때는 과다 조회 방지를 위해 안전한 기본 상한
+      const limitN = Math.max(1, Math.min(Number(req.query.limit) || 20, 200));
+      q = q.limit(limitN);
+    }
+
+    // 2) 쿼리 실행: ❗️여기서 읽힌 문서만이 read에 카운트됩니다
+    const snap = await q.get();
+
+    // 결과 골격
     const result = {
       summary: { income: 0, expense: 0, count: 0 },
       items: [],
     };
 
-    const txColRef = db.collection('users').doc(uid).collection('transactions');
-    const txSnap = await txColRef.get();
-    if (txSnap.empty) return res.json(result);
+    if (snap.empty) {
+      return res.json(result);
+    }
 
-    let expenseSum = 0;
+    // 3) 쿼리로 이미 'date' 범위가 잘려 있으므로 추가 필터 불필요
     let incomeSum = 0;
+    let expenseSum = 0;
     const items = [];
 
-    // createdAt이 월 범위에 들어오는지 체크
-    const isInRange = (createdAt) => {
-      try {
-        if (!start || !end) return true; // year/month 없으면 전체 허용
-        let d;
-        if (createdAt?.toDate) d = createdAt.toDate();
-        else if (createdAt?._seconds) d = new Date(createdAt._seconds * 1000);
-        else if (typeof createdAt === 'string' || typeof createdAt === 'number') d = new Date(createdAt);
-        else return false;
-        // getMonthRange가 admin.firestore.Timestamp를 반환하므로 toDate() 비교
-        return d >= start.toDate() && d < end.toDate();
-      } catch { return false; }
-    };
+    // 필요 시에만 상세를 읽도록 옵션 처리 (하위 컬렉션은 기본 미조회)
+    // ⚠️ 하위 컬렉션까지 매 항목마다 읽으면 read 폭증 → 정말 필요할 때만 on-demand 권장
+    for (const doc of snap.docs) {
+      const base = doc.data() || {};
+      const type = String(base.type || '').toLowerCase();
+      const amount = Number(base.amount ?? 0);
+      if (type === 'income') incomeSum += amount;
+      else if (type === 'expense') expenseSum += amount;
 
-    // 모든 transactions 문서를 순회하면서 월 범위 안의 거래(수입/지출)를 모음
-    await Promise.all(
-      txSnap.docs.map(async (txDoc) => {
-        // 1️⃣ transaction 문서 자체를 확인
-        const base = txDoc.data() || {};
-        if (isInRange(base.date)) {
-          const type = String(base.type || '').toLowerCase(); // 'income' | 'expense'
-          const amount = Number(base.amount ?? 0);
-          const category = base.category || (type === 'income' ? '수입' : '지출');
-          const memo = base.memo || '';
+      result.summary.count += 1;
 
-          if (type === 'expense') expenseSum += amount;
-          else if (type === 'income') incomeSum += amount;
-          result.summary.count += 1;
+      if (wantExpand) {
+        const d = base.date?.toDate ? base.date.toDate() : new Date(base.date);
+        items.push({
+          id: doc.id,
+          type,
+          amount,
+          category: base.category ?? (type === 'income' ? '수입' : '지출'),
+          memo: base.memo ?? '',
+          date: d,
+          day: d.getDate?.() ?? null,
+          createdAt: base.createdAt ?? null,
+          // ❗️하위 컬렉션은 여기서 즉시 읽지 않습니다 (read 비용 급증)
+          //   필요하면 /api/transactions/:id/details 같은 별도 엔드포인트로 분리 추천
+        });
+      }
+    }
 
-          if (String(expand).toLowerCase() === 'true') {
-            let d = base.date?.toDate ? base.date.toDate() : new Date(base.date);
-            items.push({
-              id: txDoc.id,
-              type,
-              amount,
-              category,
-              memo,
-              date: d,             // JS Date
-              day: d.getDate(),    // 1~31
-              createdAt: base.createdAt ?? null,
-            });
-          }
-        }
-      })
-    );
-
+    result.summary.income = incomeSum;
     result.summary.expense = expenseSum;
-    result.summary.income  = incomeSum;
     result.items = items;
 
     return res.json(result);
@@ -207,5 +207,6 @@ router.get('/', async (req, res) => {
     return res.status(500).json({ ok: false, error: e.message });
   }
 });
+
 
 module.exports = router;
