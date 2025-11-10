@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { appBus } from './app/eventBus';
+import { loadPendingByCreatedAt } from './hooks/loadPendingByCreatedAt';
 import Challenge from './components/Challenge';
 import ChallengeDetail from './components/ChallengeDetail';
 
@@ -41,13 +42,20 @@ const formatKRW = (amount) =>
   (typeof amount === 'number' ? amount : 0).toLocaleString('ko-KR') + '원';
 
 // 로컬 기준 YYYY-MM-DD로 포맷팅
- const toLocalDateString = (d) => {
-    const dt = d instanceof Date ? d : new Date(d);
-    const y = dt.getFullYear();
-    const m = String(dt.getMonth() + 1).padStart(2, '0');
-    const day = String(dt.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  };
+const toLocalDateString = (d) => {
+  const dt = d instanceof Date ? d : new Date(d);
+  const y = dt.getFullYear();
+  const m = String(dt.getMonth() + 1).padStart(2, '0');
+  const day = String(dt.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+// 만족도 평가 박스 UI 표시용: "M월 D일"
+const fmtMonthDayKR = (d) => {
+  const dt = new Date(d);
+  if (Number.isNaN(dt.getTime())) return d;
+  return `${dt.getMonth() + 1}월 ${dt.getDate()}일`;
+};
 
 const EntryFlow = ({
   step,               // 'amount' | 'income' | 'expense'
@@ -69,9 +77,9 @@ const EntryFlow = ({
       duration: 220, // 내부 전환만 살짝 애니메이션
       useNativeDriver: true,
     }).start();
-  }, [step]);  
+  }, [step]);
 
-    const translateX = progress.interpolate({
+  const translateX = progress.interpolate({
     inputRange: [0, 1, 2],
     outputRange: [0, -width, -2 * width],
   });
@@ -109,7 +117,12 @@ export default function SaveMateApp() {
   const [selectedDate, setSelectedDate] = useState(TODAY);
   const [showTransactionInput, setShowTransactionInput] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0); // 저장 후 목록 새로고침 트리거
-  
+
+  // 만족도 평가용 상태
+  const [pendingEvaluation, setPendingEvaluation] = useState(null); // 평가 화면에 넘길 거래
+  const [pendingList, setPendingList] = useState([]);  // 미평가 지출 큐
+  const [pendingIndex, setPendingIndex] = useState(0); // 현재 보여줄 큐 인덱스
+
   // API 헬스체크로 대체 (선택)
   const api = useApi();
   useEffect(() => {
@@ -121,16 +134,18 @@ export default function SaveMateApp() {
 
   const handleSatisfactionSubmit = async (payload) => {
     try {
-      const res = await fetch(`${api.baseURL}/api/satisfaction`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
+      const data = await api.post('/api/satisfaction', payload);
       if (data.ok) {
         Alert.alert('저장 완료', '만족도 기록이 저장되었습니다 ✅');
+        // 1) 로컬 큐에서 제거
+        setPendingList(list => list.filter(x => x.id !== payload.transactionId));
+        // 2) 평가 화면 닫고 홈으로
         setPendingEvaluation(null);
         setCurrentPage('home');
+        // 3) (선택) 서버 정합성 재로딩 트리거
+        setRefreshKey(k => k + 1);
+        // 큐가 비었을 때 인덱스 0으로
+        setPendingIndex(i => 0);
       } else {
         Alert.alert('저장 실패', data.error || '서버 오류');
       }
@@ -147,7 +162,7 @@ export default function SaveMateApp() {
     return off;
   }, []);
 
-    
+
   const [entryModal, setEntryModal] = useState({ visible: false, step: 'amount' });
   const [tempIncomeData, setTempIncomeData] = useState(null);
   const [tempExpenseData, setTempExpenseData] = useState(null);
@@ -160,8 +175,8 @@ export default function SaveMateApp() {
       raw instanceof Date
         ? raw
         : raw
-        ? new Date(raw)
-        : new Date();  
+          ? new Date(raw)
+          : new Date();
 
     if (type === 'income') {
       setTempIncomeData({ amount: isNaN(amt) ? 0 : amt, date: dateObj });
@@ -206,6 +221,29 @@ export default function SaveMateApp() {
       });
     const totalExpenseThisMonth = homeMonthlyTotals?.expense ?? 0;
 
+    // 만족도 평가 안한 지출내역들을 넣는 미평가 큐
+    useEffect(() => {
+      let mounted = true;
+      (async () => {
+        try {
+          // 새 함수 사용: createdAt 기준 최신순 + 미평가만 반환
+          const pending = await loadPendingByCreatedAt({ api, limit: 200, cap: 50 });
+
+          if (!mounted) return;
+          setPendingList(pending);
+          setPendingIndex(0);
+        } catch (e) {
+          // useApi가 HTTP 에러/JSON 파싱 에러를 일반 Error 객체로 변환해주므로,
+          // catch 블록이 예상치 못한 HTML 응답으로 인한 JSON.parse 오류를 받지 않습니다.
+          console.error('pending queue load failed', e);
+          if (!mounted) return;
+          setPendingList([]);
+          setPendingIndex(0);
+        }
+      })();
+      return () => { mounted = false; };
+    }, [refreshKey, api]);
+
     return (
       <SafeAreaView style={styles.screen}>
         <View style={styles.header}>
@@ -238,7 +276,7 @@ export default function SaveMateApp() {
           </TouchableOpacity>
 
           <View style={styles.card}>
-            <View className={styles.rowBetween}>
+            <View style={styles.rowBetween}>
               <Text style={styles.cardTitle}>{homeData.challengeProgress.title}</Text>
               <Text style={styles.progressText}>
                 {homeData.challengeProgress.progressRate}%
@@ -254,25 +292,49 @@ export default function SaveMateApp() {
             </View>
           </View>
 
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>만족도 기록</Text>
-            <Text style={[styles.cardText, { marginBottom: 12 }]}>
-              어제 구매한 `식사`에 대한 만족도를 기록해주세요.
-            </Text>
-            <View style={styles.rowCenter}>
-              <TouchableOpacity style={styles.btnGhost} onPress={() => setCurrentPage('home')}>
-                <Text style={styles.btnGhostText}>나중에</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.btnPrimary}
-                onPress={() => {
-                  setCurrentPage('satisfaction');
-                }}
-              >
-                <Text style={styles.btnPrimaryText}>기록하기</Text>
-              </TouchableOpacity>
+          {pendingList.length > 0 && (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>만족도 기록</Text>
+              {(() => {
+                const t = pendingList[pendingIndex % pendingList.length];
+                return (
+                  <Text style={[styles.cardText, { marginBottom: 12 }]}>
+                    {fmtMonthDayKR(t.date)}에 지출한 ‘{t.category || '지출'}’에 대한 만족도를 기록해주세요.
+                  </Text>
+                );
+              })()}
+              <View style={styles.rowCenter}>
+                {/* 나중에 → 큐에서 다음 항목 보여주기 */}
+                <TouchableOpacity
+                  style={styles.btnGhost}
+                  onPress={() => setPendingIndex(i => (i + 1) % pendingList.length)}
+                >
+                  <Text style={styles.btnGhostText}>나중에</Text>
+                </TouchableOpacity>
+
+                {/* 기록하기 → 평가 화면으로 이동 */}
+                <TouchableOpacity
+                  style={styles.btnPrimary}
+                  onPress={() => {
+                    const t = pendingList[pendingIndex % pendingList.length];
+                    setPendingEvaluation({
+                      transactionId: t.id,
+                      purchaseItem: t.memo || t.category || '지출',
+                      amount: t.amount,
+                      purchaseDate: t.date, // 원본 전달
+                      category: t.category || '지출',
+                    });
+                    setCurrentPage('satisfaction');
+                  }}
+                >
+                  <Text style={styles.btnPrimaryText}>기록하기</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
+          )}
+
+
+
         </ScrollView>
 
         <TouchableOpacity
@@ -385,9 +447,9 @@ export default function SaveMateApp() {
                   const prevExpense = prevTotals?.expense || 0;
                   const diff = (monthlyTotals?.expense || 0) - prevExpense;
                   const abs = Math.abs(diff);
-                  if (diff > 0) return `${selectedMonth===1?12:selectedMonth-1}월보다 ${formatKRW(abs)} 더 썼어요`;
-                  if (diff < 0) return `${selectedMonth===1?12:selectedMonth-1}월보다 ${formatKRW(abs)} 덜 썼어요`;
-                  return `${selectedMonth===1?12:selectedMonth-1}월과 동일하게 썼어요`;
+                  if (diff > 0) return `${selectedMonth === 1 ? 12 : selectedMonth - 1}월보다 ${formatKRW(abs)} 더 썼어요`;
+                  if (diff < 0) return `${selectedMonth === 1 ? 12 : selectedMonth - 1}월보다 ${formatKRW(abs)} 덜 썼어요`;
+                  return `${selectedMonth === 1 ? 12 : selectedMonth - 1}월과 동일하게 썼어요`;
                 })()}
               </Text>
             </View>
@@ -474,7 +536,7 @@ export default function SaveMateApp() {
                 {selectedDate}일{' '}
                 {
                   ['일', '월', '화', '수', '목', '금', '토'][
-                    new Date(CURRENT_YEAR, selectedMonth - 1, selectedDate).getDay()
+                  new Date(CURRENT_YEAR, selectedMonth - 1, selectedDate).getDay()
                   ]
                 }
                 요일
@@ -482,7 +544,7 @@ export default function SaveMateApp() {
 
               {selectedDayTransactions.map((transaction, index) => {
                 const isIncome = (transaction.type || '').toLowerCase() === 'income';
-                const displayAmount = Math.abs(Number(transaction.amount)||0);
+                const displayAmount = Math.abs(Number(transaction.amount) || 0);
 
                 return (
                   <View
@@ -517,7 +579,7 @@ export default function SaveMateApp() {
 
       </SafeAreaView>
     );
-  };  
+  };
 
   return (
     <>
@@ -534,12 +596,21 @@ export default function SaveMateApp() {
                 evaluationData={pendingEvaluation ?? undefined}
                 onBack={() => { setPendingEvaluation(null); setCurrentPage('home'); }}
                 onSubmit={(payloadFromUI) => {
+                  // payloadFromUI 구조분해를 통해 서버에 필요한 필드를 명확히 지정
+                  const {
+                    transactionId,
+                    emotion,
+                    rating, // emotion 대신 rating 키가 넘어올 경우 대비 (Safety)
+                    reason,
+                    memo
+                  } = payloadFromUI;
+
                   handleSatisfactionSubmit({
                     uid: homeData.userId,
-                    transactionId: payloadFromUI.transactionId,
-                    emotion: payloadFromUI.rating,
-                    reason: payloadFromUI.reason,
-                    memo: payloadFromUI.memo,
+                    transactionId: transactionId,
+                    emotion: emotion ?? rating, // emotion이 우선, 없으면 rating 사용
+                    reason: reason,             // reason 필드 명확히 전달
+                    memo: memo,
                   });
                 }}
               />

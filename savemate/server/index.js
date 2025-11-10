@@ -32,6 +32,7 @@ app.get('/api/health', (req, res) => {
 
 // 기존 라우트 마운트 (경로 정확히 /api/transactions)
 app.use('/api/transactions', transactionRoutes);
+app.use('/api/satisfaction', satisfactionRoutes);
 
 const port = Number(process.env.PORT || 8080);
 // 외부(폰) 접근 가능하도록 0.0.0.0 바인딩

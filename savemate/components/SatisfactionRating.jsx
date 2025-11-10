@@ -15,6 +15,12 @@ import {
 } from 'react-native';
 import { useApi } from '../hooks/useApi';
 
+const fmtMonthDayKR = (d) => {
+  const dt = new Date(d);
+  if (Number.isNaN(dt.getTime())) return d || '';
+  return `${dt.getMonth() + 1}월 ${dt.getDate()}일`;
+};
+
 const DEFAULT_REASON_OPTIONS = {
   dissatisfied: ['품질 불만', '가격 불만', '과소비 / 불필요', '경제적 / 사회적 압박', '감정 억제 (후회)', '기타'],
   neutral: ['평범함', '일상적 / 습관적', '대안 없음', '기타'],
@@ -52,13 +58,12 @@ export default function SatisfactionRating({
   reasonOptions: reasonOptionsProp,
   onBack,
   onSubmit,       // 선택값: 없으면 내부에서 onBack 호출로 대체
-  bottomNav,
 }) {
   const evaluationData = evaluationDataProp ?? DEFAULT_EVALUATION_DATA;
   const reasonOptions = reasonOptionsProp ?? DEFAULT_REASON_OPTIONS;
 
-  const api = useApi();
-  const UID = process.env.EXPO_PUBLIC_UID;
+  // const api = useApi();
+  // const UID = process.env.EXPO_PUBLIC_UID;
 
   const [rating, setRating] = useState(null);
   const [selectedReason, setSelectedReason] = useState(null);
@@ -93,179 +98,167 @@ export default function SatisfactionRating({
   };
 
   const submit = async () => {
-  if (!rating) {
-    Alert.alert('만족도 선택', '만족도(불만족/보통/만족) 중 하나를 선택해 주세요.');
-    return;
-  }
-  if (!selectedReason) {
-    Alert.alert('이유 선택 필요', '어떤 이유인지 선택해 주세요.');
-    return;
-  }
+    if (!rating) {
+      Alert.alert('만족도 선택', '만족도(불만족/보통/만족) 중 하나를 선택해 주세요.');
+      return;
+    }
+    if (!selectedReason) {
+      Alert.alert('이유 선택 필요', '어떤 이유인지 선택해 주세요.');
+      return;
+    }
 
-  Keyboard.dismiss();
+    Keyboard.dismiss();
 
-  const payload = {
-    uid: UID, // 실제 로그인 사용자 ID
-    transactionId: evaluationData.transactionId,
-    emotion: rating, // ‘dissatisfied’, ‘neutral’, ‘satisfied’
-    reason: selectedReason,
-    memo: localMemo,
+    const payload = {
+      // uid 는 여기서 넣지 않음! (부모가 넣어줌)
+      transactionId: evaluationData.transactionId,
+      emotion: rating,         // 'dissatisfied' | 'neutral' | 'satisfied'
+      reason: selectedReason,
+      memo: localMemo,
+    };
+
+    if (onSubmit) {
+      onSubmit(payload);       // 부모 SaveMateApp에서 저장 + 홈 복귀/큐 갱신 처리
+    } else {
+      // 폴백: onSubmit이 없으면 그냥 돌아가기
+      onBack?.();
+    }
   };
 
-  try {
-    const res = await fetch(`${api.baseURL}/api/satisfaction`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (data.ok) {
-      Alert.alert('저장 완료', '만족도 기록이 저장되었습니다 ✅');
-      onBack?.(); // 홈으로 복귀
-    } else {
-      Alert.alert('저장 실패', data.error || '서버 오류');
-    }
-  } catch (e) {
-    console.error(e);
-    Alert.alert('네트워크 오류', '서버에 연결할 수 없습니다.');
-  }
-};
 
+return (
+  <SafeAreaView style={styles.screen}>
+    {/* 헤더 */}
+    <View style={styles.detailHeader}>
+      <TouchableOpacity onPress={onBack} style={styles.backBtn}>
+        <Text style={styles.backChevron}>‹</Text>
+      </TouchableOpacity>
+      <Text style={styles.detailTitle}>만족도 평가</Text>
+      <View style={{ width: 24 }} />
+    </View>
 
-  return (
-    <SafeAreaView style={styles.screen}>
-      {/* 헤더 */}
-      <View style={styles.detailHeader}>
-        <TouchableOpacity onPress={onBack} style={styles.backBtn}>
-          <Text style={styles.backChevron}>‹</Text>
-        </TouchableOpacity>
-        <Text style={styles.detailTitle}>만족도 평가</Text>
-        <View style={{ width: 24 }} />
-      </View>
-
-      {/* 본문 */}
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}>
-        <ScrollView
-          ref={scrollViewRef}
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="always"
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
-        >
-          {/* 요약 카드 */}
-          <View style={styles.card}>
-            <Text style={styles.satisfactionQuestion}>
-              어제의 `{evaluationData.purchaseItem}` 지출은 어떠셨나요?
+    {/* 본문 */}
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}>
+      <ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="always"
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
+        {/* 요약 카드 */}
+        <View style={styles.card}>
+          <Text style={styles.satisfactionQuestion}>
+            {fmtMonthDayKR(evaluationData.purchaseDate)}의 ‘{evaluationData.purchaseItem}’ 지출은 어떠셨나요?
+          </Text>
+          <View style={styles.amountBox}>
+            <Text style={styles.satisfactionAmount}>
+              {typeof evaluationData.amount === 'number'
+                ? evaluationData.amount.toLocaleString('ko-KR') + '원'
+                : evaluationData.amount}
             </Text>
-            <View style={styles.amountBox}>
-              <Text style={styles.satisfactionAmount}>
-                {typeof evaluationData.amount === 'number'
-                  ? evaluationData.amount.toLocaleString('ko-KR') + '원'
-                  : evaluationData.amount}
-              </Text>
-              <Text style={styles.satisfactionDate}>
-                {evaluationData.purchaseDate} | {evaluationData.category}
-              </Text>
-            </View>
+            <Text style={styles.satisfactionDate}>
+              {fmtMonthDayKR(evaluationData.purchaseDate)} | {evaluationData.category}
+            </Text>
           </View>
+        </View>
 
-          {/* 이모지 선택 */}
-          <View style={styles.card}>
-            <View style={styles.emojiRow}>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                style={[styles.emojiButton, rating === 'dissatisfied' && styles.emojiButtonSelected, rating === 'dissatisfied' && styles.emojiButtonDissatisfied]}
-                onPress={() => handleRatingSelect('dissatisfied')}
-              >
-                <Text style={styles.emojiIcon}>😡</Text>
-                <Text style={styles.emojiLabel}>불만족</Text>
-              </TouchableOpacity>
 
-              <TouchableOpacity
-                activeOpacity={0.7}
-                style={[styles.emojiButton, rating === 'neutral' && styles.emojiButtonSelected, rating === 'neutral' && styles.emojiButtonNeutral]}
-                onPress={() => handleRatingSelect('neutral')}
-              >
-                <Text style={styles.emojiIcon}>😐</Text>
-                <Text style={styles.emojiLabel}>보통</Text>
-              </TouchableOpacity>
+        {/* 이모지 선택 */}
+        <View style={styles.card}>
+          <View style={styles.emojiRow}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={[styles.emojiButton, rating === 'dissatisfied' && styles.emojiButtonSelected, rating === 'dissatisfied' && styles.emojiButtonDissatisfied]}
+              onPress={() => handleRatingSelect('dissatisfied')}
+            >
+              <Text style={styles.emojiIcon}>😡</Text>
+              <Text style={styles.emojiLabel}>불만족</Text>
+            </TouchableOpacity>
 
-              <TouchableOpacity
-                activeOpacity={0.7}
-                style={[styles.emojiButton, rating === 'satisfied' && styles.emojiButtonSelected, rating === 'satisfied' && styles.emojiButtonSatisfied]}
-                onPress={() => handleRatingSelect('satisfied')}
-              >
-                <Text style={styles.emojiIcon}>😆</Text>
-                <Text style={styles.emojiLabel}>만족</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={[styles.emojiButton, rating === 'neutral' && styles.emojiButtonSelected, rating === 'neutral' && styles.emojiButtonNeutral]}
+              onPress={() => handleRatingSelect('neutral')}
+            >
+              <Text style={styles.emojiIcon}>😐</Text>
+              <Text style={styles.emojiLabel}>보통</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={[styles.emojiButton, rating === 'satisfied' && styles.emojiButtonSelected, rating === 'satisfied' && styles.emojiButtonSatisfied]}
+              onPress={() => handleRatingSelect('satisfied')}
+            >
+              <Text style={styles.emojiIcon}>😆</Text>
+              <Text style={styles.emojiLabel}>만족</Text>
+            </TouchableOpacity>
           </View>
+        </View>
 
-          {/* 이유/메모/버튼 */}
-          {!!rating && (
-            <>
-              <View style={styles.card}>
-                <Text style={styles.sectionTitle}>어떤 이유인가요?</Text>
-                <View style={[styles.reasonGrid, { justifyContent: 'space-between' }]}>
-                  {currentReasons.map((reason) => (
-                    <TouchableOpacity
-                      key={reason}
-                      activeOpacity={0.7}
+        {/* 이유/메모/버튼 */}
+        {!!rating && (
+          <>
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>어떤 이유인가요?</Text>
+              <View style={[styles.reasonGrid, { justifyContent: 'space-between' }]}>
+                {currentReasons.map((reason) => (
+                  <TouchableOpacity
+                    key={reason}
+                    activeOpacity={0.7}
+                    style={[
+                      styles.reasonChip,
+                      { width: '48%', alignItems: 'center', justifyContent: 'center' }, // ✅ 2개/줄 배치
+                      selectedReason === reason && styles.reasonChipSelected,
+                    ]}
+                    onPress={() => handleReasonSelect(reason)}
+                  >
+                    <Text
                       style={[
-                        styles.reasonChip,
-                        { width: '48%', alignItems: 'center', justifyContent: 'center' }, // ✅ 2개/줄 배치
-                        selectedReason === reason && styles.reasonChipSelected,
+                        styles.reasonChipText,
+                        { textAlign: 'center' },
+                        selectedReason === reason && styles.reasonChipTextSelected,
                       ]}
-                      onPress={() => handleReasonSelect(reason)}
                     >
-                      <Text
-                        style={[
-                          styles.reasonChipText,
-                          { textAlign: 'center' },
-                          selectedReason === reason && styles.reasonChipTextSelected,
-                        ]}
-                      >
-                        {reason}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+                      {reason}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
+            </View>
 
-              <View style={styles.card}>
-                <Text style={styles.sectionTitle}>메모</Text>
-                <TextInput
-                  style={styles.memoInput}
-                  placeholder="기록하고 싶은 내용을 입력해주세요."
-                  placeholderTextColor="#9CA3AF"
-                  multiline
-                  value={localMemo}
-                  onChangeText={setLocalMemo}
-                  textAlignVertical="top"
-                  autoCorrect={false}
-                  autoCapitalize="none"
-                  onFocus={() => {
-                    setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 300);
-                  }}
-                />
-              </View>
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>메모</Text>
+              <TextInput
+                style={styles.memoInput}
+                placeholder="기록하고 싶은 내용을 입력해주세요."
+                placeholderTextColor="#9CA3AF"
+                multiline
+                value={localMemo}
+                onChangeText={setLocalMemo}
+                textAlignVertical="top"
+                autoCorrect={false}
+                autoCapitalize="none"
+                onFocus={() => {
+                  setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 300);
+                }}
+              />
+            </View>
 
-              <View style={styles.buttonRow}>
-                <TouchableOpacity style={styles.btnSecondary} onPress={() => { Keyboard.dismiss(); onBack?.(); }}>
-                  <Text style={styles.btnSecondaryText}>다음에</Text>
-                </TouchableOpacity>
+            <View style={styles.buttonRow}>
+              <TouchableOpacity style={styles.btnSecondary} onPress={() => { Keyboard.dismiss(); onBack?.(); }}>
+                <Text style={styles.btnSecondaryText}>다음에</Text>
+              </TouchableOpacity>
 
-                <TouchableOpacity style={styles.btnPrimaryLarge} onPress={submit}>
-                  <Text style={styles.btnPrimaryLargeText}>기록하기</Text>
-                </TouchableOpacity>
-              </View>
-            </>
-          )}
-        </ScrollView>
-      </KeyboardAvoidingView>
+              <TouchableOpacity style={styles.btnPrimaryLarge} onPress={submit}>
+                <Text style={styles.btnPrimaryLargeText}>기록하기</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+      </ScrollView>
+    </KeyboardAvoidingView>
 
-      {/* 하단 네비 */}
-      {bottomNav}
-    </SafeAreaView>
-  );
-}
+  </SafeAreaView>
+);
+};
