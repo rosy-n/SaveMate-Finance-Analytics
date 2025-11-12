@@ -21,13 +21,67 @@ export default function ReportHome() {
   const api = useApi();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
+
   const [seriesLoading, setSeriesLoading] = useState(true);
   const [monthlySeries, setMonthlySeries] = useState({ labels: [], values: [] });
 
+  // 🔹 LLM 소비 리포트 상태
+  const [llmReport, setLlmReport] = useState(null);
+  const [llmLoading, setLlmLoading] = useState(true);
+  const [llmError, setLlmError] = useState(null);
+
+  // ✅ (1) 소비 요약 리포트 불러오기
+  useEffect(() => {
+    let mounted = true;
+    const run = async () => {
+      try {
+        setLlmLoading(true);
+        setLlmError(null);
+
+        if (!uid) {
+          throw new Error('EXPO_PUBLIC_UID가 비어 있습니다 (.env 확인).');
+        }
+
+        const path = `/api/reports/consumption?uid=${uid}&year=${year}&month=${month}`;
+        console.log('📡 GET', api.baseURL + path);
+
+        // (선택) 8초 타임아웃: 네트워크 지연 시 무한 대기 방지
+        const ac = new AbortController();
+        const t = setTimeout(() => ac.abort(), 8000);
+
+        const res = await api.get(path, { signal: ac.signal }); // useApi가 signal 전달 지원 안 하면 fetch로 대체
+        clearTimeout(t);
+
+        if (!mounted) return;
+
+        const rep = res?.report;
+        if (!rep || typeof rep.summary !== 'string') {
+          throw new Error('서버 응답에 report가 없거나 형식이 올바르지 않습니다.');
+        }
+        setLlmReport(rep);
+      } catch (e) {
+        if (mounted) {
+          console.error('❌ LLM report fetch error:', e);
+          setLlmReport(null);
+          setLlmError(e?.message || 'LLM 리포트를 불러오지 못했습니다.');
+        }
+      } finally {
+        if (mounted) setLlmLoading(false); // ✅ 반드시 false로 내리기
+      }
+    };
+    run();
+    return () => { mounted = false; };
+  }, [api, uid, year, month]);
+
+
+
   const [year, month] = useMemo(() => {
-    const now = new Date(); return [now.getFullYear(), now.getMonth() + 1];
+    const now = new Date(); 
+    return [now.getFullYear(), now.getMonth() + 1];
   }, []);
+
   const uid = process.env.EXPO_PUBLIC_UID;
+
  if (!uid) {
    // 개발 단계라면 Alert/console.warn 정도만; 배포에선 로그인 연동 권장
    console.warn('EXPO_PUBLIC_UID가 설정되지 않았습니다. .env를 확인하세요.');
@@ -194,16 +248,15 @@ const pieData = useMemo(() => {
               withInnerLines={true}
               withOuterLines={false}
 
-              // ✅ y축 라벨은 형식 지정자로 비워 없애기 (버전 상관없이 동작)
-              withVerticalLabels={true}      // <-- 켜두되
-              formatYLabel={() => ''}        // <-- 내용은 비워서 표시 안 함
+              // ✅ y축 라벨은 형식 지정자로 비워 없애기
+              withVerticalLabels={true}      
+              formatYLabel={() => ''}    
 
               // ✅ x축 라벨 기본 표시 (라이브러리에게 맡김)
               withHorizontalLabels={true}
               formatXLabel={(s) => (String(s).endsWith('월') ? s : `${s}월`)}
 
-              fromZero                         // 0부터 시작
-              // ❌ 곡선 금지: bezier 옵션 사용하지 않음
+              fromZero                         // 0부터 시작              
 
               chartConfig={{
                 backgroundGradientFrom: '#fff',
@@ -216,7 +269,7 @@ const pieData = useMemo(() => {
               }}
               style={{ marginTop: 12, borderRadius: 8 }}
 
-              // ✅ 점 위 금액 라벨만 간단히 표시
+              // 점 위 금액 라벨만 간단히 표시
               renderDotContent={({ x, y, indexData, index }) => {
                 const v = Number(indexData || 0);
                 const man = Math.round(v / 10000);
@@ -228,11 +281,64 @@ const pieData = useMemo(() => {
                 );
               }}
             />
-
-
-
           )}
-        </View>    
+        </View> 
+
+        {/* LLM 기반 소비 리포트 */}
+        <View style={reportStyles.card}>
+          <Text style={reportStyles.cardTitle}>AI 소비 리포트</Text>
+
+          {llmLoading ? (
+            <View style={reportStyles.center}>
+              <ActivityIndicator />
+              <Text style={[reportStyles.cardText, { marginTop: 6, color: '#888' }]}>
+                분석 데이터를 불러오는 중…
+              </Text>
+            </View>
+          ) : llmError ? (
+            <Text style={[reportStyles.cardText, { marginTop: 8, color: '#B43A22' }]}>
+              {llmError}
+            </Text>
+          ) : !llmReport ? (
+            <Text style={[reportStyles.cardText, { marginTop: 8 }]}>
+              리포트를 불러오지 못했습니다.
+            </Text>
+          ) : (
+            <>
+              <Text style={[reportStyles.cardText, { marginTop: 8, lineHeight: 20 }]}>
+                {llmReport.summary}
+              </Text>
+
+              {Array.isArray(llmReport.habits) && llmReport.habits.length > 0 && (
+                <View style={{ marginTop: 12 }}>
+                  <Text style={reportStyles.listTitle}>💡 소비 습관</Text>
+                  {llmReport.habits.map((h, i) => (
+                    <Text key={i} style={reportStyles.cardText}> {h}</Text>
+                  ))}
+                </View>
+              )}
+
+              {Array.isArray(llmReport.spending_risks) && llmReport.spending_risks.length > 0 && (
+                <View style={{ marginTop: 12 }}>
+                  <Text style={reportStyles.listTitle}>⚠️ 소비 리스크</Text>
+                  {llmReport.spending_risks.map((r, i) => (
+                    <Text key={i} style={reportStyles.cardText}> {r.why}</Text>
+                  ))}
+                </View>
+              )}
+
+              {llmReport.emotion_patterns && (
+                <View style={{ marginTop: 12 }}>
+                  <Text style={reportStyles.listTitle}>🙂 감정 패턴</Text>
+                  {(llmReport.emotion_patterns.neutral_insights ?? []).map((e, i) => (
+                    <Text key={i} style={reportStyles.cardText}> {e}</Text>
+                  ))}
+                </View>
+              )}
+            </>
+          )}
+        </View>
+
 
         <View style={{ height: 24 }} />
       </ScrollView>
