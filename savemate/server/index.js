@@ -39,3 +39,6 @@ app.listen(port, '0.0.0.0', () => {
   console.log(`API listening on http://0.0.0.0:${port}`);
   console.log(`Health check: http://0.0.0.0:${port}/api/health`);
 });
+
+const reportRoutes = require('./routes/reports');
+app.use('/api/reports', reportRoutes);
