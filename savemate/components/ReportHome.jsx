@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { PieChart } from 'react-native-chart-kit';
+import { LineChart, PieChart } from 'react-native-chart-kit';
+import { Text as SvgText } from 'react-native-svg';
 import { useApi } from '../hooks/useApi';
 import { SaveMateStyles as styles } from '../styles/SaveMateStyles';
 import { ReportStyles as reportStyles } from './styles/ReportStyles';
@@ -20,6 +21,9 @@ export default function ReportHome() {
   const api = useApi();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
+  const [seriesLoading, setSeriesLoading] = useState(true);
+  const [monthlySeries, setMonthlySeries] = useState({ labels: [], values: [] });
+
   const [year, month] = useMemo(() => {
     const now = new Date(); return [now.getFullYear(), now.getMonth() + 1];
   }, []);
@@ -41,6 +45,28 @@ export default function ReportHome() {
         mounted && setItems([]);
       } finally {
         mounted && setLoading(false);
+      }
+    })();
+    return () => (mounted = false);
+  }, [api, uid, year, month]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setSeriesLoading(true);
+        const path = `/api/transactions/monthly-sum?uid=${uid}&months=4&endYear=${year}&endMonth=${month}`;
+        const res = await api.get(path); // useApi() 사용
+        const arr = Array.isArray(res?.items) ? res.items : [];
+
+        // 라벨(가로축)과 값(세로데이터) 구성: 과거→현재 순
+        const labels = arr.map(x => `${x.month}월`);
+        const values = arr.map(x => Number(x.totalExpense || 0));
+        mounted && setMonthlySeries({ labels, values });
+      } catch {
+        mounted && setMonthlySeries({ labels: [], values: [] });
+      } finally {
+        mounted && setSeriesLoading(false);
       }
     })();
     return () => (mounted = false);
@@ -76,7 +102,7 @@ export default function ReportHome() {
     return { total: t, top3: entries.slice(0, 3), chartData: chart };
   }, [items]);
     
-  // (2) chartData 결과를 기반으로 pieData 생성
+  // chartData 결과를 기반으로 pieData 생성
 const pieData = useMemo(() => {
     const src = Array.isArray(chartData) ? chartData : [];
     return src
@@ -146,7 +172,67 @@ const pieData = useMemo(() => {
               </View>
             </>
           )}
-        </View>
+        </View>    
+
+        {/* ② 월별 지출 추이 (꺾은선) */}
+        <View style={reportStyles.card}>
+          <Text style={reportStyles.cardTitle}>월별 지출 추이</Text>
+
+          {seriesLoading ? (
+            <View style={reportStyles.center}><ActivityIndicator /></View>
+          ) : monthlySeries.values.length === 0 ? (
+            <Text style={[reportStyles.cardText,{marginTop:8}]}>지출 데이터가 충분하지 않습니다.</Text>
+          ) : (
+            <LineChart
+              data={{
+                labels: monthlySeries.labels,               // 예: ['7','8','9','10'] 또는 ['7월','8월','9월','10월']
+                datasets: [{ data: monthlySeries.values }], // 예: [0, 210000, 700000, 20000]
+              }}
+              width={screenWidth - 48}
+              height={220}
+              withShadow={false}
+              withInnerLines={true}
+              withOuterLines={false}
+
+              // ✅ y축 라벨은 형식 지정자로 비워 없애기 (버전 상관없이 동작)
+              withVerticalLabels={true}      // <-- 켜두되
+              formatYLabel={() => ''}        // <-- 내용은 비워서 표시 안 함
+
+              // ✅ x축 라벨 기본 표시 (라이브러리에게 맡김)
+              withHorizontalLabels={true}
+              formatXLabel={(s) => (String(s).endsWith('월') ? s : `${s}월`)}
+
+              fromZero                         // 0부터 시작
+              // ❌ 곡선 금지: bezier 옵션 사용하지 않음
+
+              chartConfig={{
+                backgroundGradientFrom: '#fff',
+                backgroundGradientTo: '#fff',
+                decimalPlaces: 0,
+                color: (o = 1) => `rgba(125, 75, 214, ${o})`,
+                labelColor: (o = 1) => `rgba(0,0,0,${o})`,
+                propsForDots: { r: '4', strokeWidth: '2', stroke: '#BFA6F2' },
+                propsForBackgroundLines: { stroke: '#E9E9EF', strokeDasharray: '4 6' },
+              }}
+              style={{ marginTop: 12, borderRadius: 8 }}
+
+              // ✅ 점 위 금액 라벨만 간단히 표시
+              renderDotContent={({ x, y, indexData, index }) => {
+                const v = Number(indexData || 0);
+                const man = Math.round(v / 10000);
+                const label = man > 0 ? `${man}만원` : `${v.toLocaleString('ko-KR')}원`;
+                return (
+                  <SvgText key={`val-${index}`} x={x} y={y - 8} fontSize="11" fill="#7D4BD6" textAnchor="middle">
+                    {label}
+                  </SvgText>
+                );
+              }}
+            />
+
+
+
+          )}
+        </View>    
 
         <View style={{ height: 24 }} />
       </ScrollView>

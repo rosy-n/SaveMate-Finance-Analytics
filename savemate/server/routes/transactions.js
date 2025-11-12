@@ -208,5 +208,56 @@ router.get('/', async (req, res) => {
   }
 });
 
+// ✅ GET /api/transactions/monthly-sum?uid=...&months=4&endYear=2025&endMonth=11
+// - Firestore를 한 번만 읽고, 최근 N개월(기본 4개월) 지출 합계를 월별로 반환
+router.get('/monthly-sum', async (req, res) => {
+  try {
+    const { uid, months = 4, endYear, endMonth } = req.query;
+    if (!uid) return res.status(400).json({ ok: false, error: 'uid is required' });
+
+    const now = new Date();
+    const endY = Number(endYear || now.getFullYear());
+    const endM = Number(endMonth || (now.getMonth() + 1)); // 1~12
+
+    // 최근 N개월 키 만들기 (과거→현재 순)
+    const keys = [];
+    for (let i = months - 1; i >= 0; i--) {
+      const d = new Date(endY, endM - 1, 1);
+      d.setMonth(d.getMonth() - i);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      keys.push(`${y}-${m}`);
+    }
+
+    const sums = Object.fromEntries(keys.map(k => [k, 0]));
+
+    const txSnap = await db.collection('users').doc(uid).collection('transactions').get();
+    if (!txSnap.empty) {
+      txSnap.forEach(doc => {
+        const base = doc.data() || {};
+        const type = String(base.type || '').toLowerCase();
+        if (type !== 'expense') return;
+
+        const dt = base.date?.toDate ? base.date.toDate() : new Date(base.date);
+        if (!dt || isNaN(dt)) return;
+
+        const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
+        if (key in sums) {
+          sums[key] += Number(base.amount || 0);
+        }
+      });
+    }
+
+    const result = keys.map(k => {
+      const [y, m] = k.split('-');
+      return { year: Number(y), month: Number(m), totalExpense: sums[k] || 0 };
+    });
+
+    res.json({ ok: true, items: result });
+  } catch (e) {
+    console.error('[GET /api/transactions/monthly-sum Error]', e);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
 
 module.exports = router;
