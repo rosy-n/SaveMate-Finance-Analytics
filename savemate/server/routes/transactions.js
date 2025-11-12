@@ -44,6 +44,8 @@ router.post('/', async (req, res) => {
     const {
       uid, type, amount, category, memo, date,
       incomeDetail, expenseDetail,
+      method,
+      background,
     } = req.body;
 
     // ---- 검증 ----
@@ -75,7 +77,19 @@ router.post('/', async (req, res) => {
       date: ts,                       // 정렬을 위한 Timestamp
       createdAt: nowServer,
       updatedAt: nowServer,
+      paymentMethod: null,
+      incomeSource: null,
+      spendingBackground: null,
     };
+
+    // ✅ 요청 본문 또는 *_detail에서 수단값을 끌어와 상위에 적재
+    if (type === 'expense') {
+      baseDoc.paymentMethod = (method ?? expenseDetail?.paymentMethod) ?? null;
+      baseDoc.spendingBackground = (background ?? expenseDetail?.spendingBackground) ?? null;
+    }
+    if (type === 'income') {
+      baseDoc.incomeSource = (incomeDetail?.incomeSource ?? category) ?? null;
+    }
 
     const txnRef = await db
       .collection('users')
