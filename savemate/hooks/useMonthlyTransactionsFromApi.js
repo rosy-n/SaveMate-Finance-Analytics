@@ -45,7 +45,8 @@ export default function useMonthlyTransactionsFromApi({ userId, year, month, ref
           // 최신성 엄격하지 않으면 즉시 캐시 사용 + 백그라운드 갱신(Optional)
           if (!alive) return;
           setItems(Array.isArray(cached.json?.items) ? cached.json.items : []);
-          // setLoading(false);  // 필요시 즉시 로딩 종료
+          setLoading(false);  // 필요시 즉시 로딩 종료
+          return;
           // 이후 백그라운드 갱신을 하고 싶다면 여기서 계속 진행
         }
 

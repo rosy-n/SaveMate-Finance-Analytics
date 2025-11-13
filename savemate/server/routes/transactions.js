@@ -12,10 +12,10 @@ const getMonthRange = (year, month) => {
   const y = Number(year);
   const m = Number(month); // 1~12
   const startDate = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0, 0));
-  const endDate   = new Date(Date.UTC(y, m,     1, 0, 0, 0, 0)); // 다음달 1일
+  const endDate = new Date(Date.UTC(y, m, 1, 0, 0, 0, 0)); // 다음달 1일
   return {
     start: admin.firestore.Timestamp.fromDate(startDate),
-    end:   admin.firestore.Timestamp.fromDate(endDate),
+    end: admin.firestore.Timestamp.fromDate(endDate),
   };
 };
 const iso10 = (d) => new Date(d).toISOString().slice(0, 10);
@@ -39,6 +39,8 @@ const iso10 = (d) => new Date(d).toISOString().slice(0, 10);
  *     ├─ incomeDetails/{detailId}   (type === 'income')
  *     └─ expenseDetails/{detailId}  (type === 'expense')
  * ────────────────────────────────────────────────────────────── */
+
+
 router.post('/', async (req, res) => {
   try {
     const {
@@ -75,6 +77,7 @@ router.post('/', async (req, res) => {
       date: ts,                       // 정렬을 위한 Timestamp
       createdAt: nowServer,
       updatedAt: nowServer,
+      isRated: false,
     };
 
     const txnRef = await db
@@ -128,30 +131,50 @@ router.post('/', async (req, res) => {
  * ────────────────────────────────────────────────────────────── */
 router.get('/', async (req, res) => {
   try {
-    const { uid, year, month, expand } = req.query;
+    // 1) 쿼리 파라미터에 isRated 추가
+    const { uid, year, month, expand, isRated, type } = req.query; // type 추가
+
     if (!uid) {
       return res.status(400).json({ ok: false, error: 'uid is required' });
     }
 
     const wantExpand = String(expand).toLowerCase() === 'true';
     const txColRef = db.collection('users').doc(uid).collection('transactions');
+    
+    // 2) 새로운 미평가 플래그 확인
+    const wantUnratedExpenses = 
+        String(isRated).toLowerCase() === 'false' && 
+        String(type).toLowerCase() === 'expense';
+        
+    let q;
 
-    // 1) 쿼리 구성: 월 범위가 있으면 범위쿼리, 없으면 최신순 + limit
-    let q = txColRef.orderBy('date', 'desc');
+    // 1) 쿼리 구성: 월 범위, 미평가, 또는 최신순
     if (year && month) {
-      const { start, end } = getMonthRange(year, month); // UTC Timestamp
-      // 범위 쿼리에서는 orderBy('date')가 이미 있으므로 그대로 사용
+      // 월별 조회: 기존 로직 유지 (날짜 범위)
+      const { start, end } = getMonthRange(year, month);
       q = txColRef
         .where('date', '>=', start)
         .where('date', '<', end)
         .orderBy('date', 'desc');
-    } else {
-      // 월 범위가 없을 때는 과다 조회 방지를 위해 안전한 기본 상한
-      const limitN = Math.max(1, Math.min(Number(req.query.limit) || 20, 200));
-      q = q.limit(limitN);
-    }
+    } else if (wantUnratedExpenses) {
+      // ⭐️⭐️⭐️ 2단계 해결: 모든 미평가 지출을 찾기 위한 최적화 쿼리 ⭐️⭐️⭐️
+      // orderBy에 필터링된 필드를 먼저 넣어야 함 (Firestore 규칙)
+      q = txColRef
+        .where('type', '==', 'expense') // 지출만
+        .where('isRated', '==', false) // 미평가만
+        .orderBy('date', 'desc'); // 최신순 정렬
 
-    // 2) 쿼리 실행: ❗️여기서 읽힌 문서만이 read에 카운트됩니다
+      // ⚠️ 안전 장치: 전체 거래를 스캔하지 않도록 서버에서 하드 리밋(예: 500)을 적용할 수 있으나,
+      // 여기서는 클라이언트가 50개만 보여주므로, 데이터베이스 로직이 이를 처리하도록 제한 없이 보냅니다.
+      // (단, 이 쿼리를 위해 새로운 복합 인덱스 {type, isRated, date}가 필요할 수 있습니다.)
+      
+    } else {
+      // 월 범위나 isRated 필터가 없을 때는 기존 최신순 + limit 로직 유지
+      const limitN = Math.max(1, Math.min(Number(req.query.limit) || 20, 200));
+      q = txColRef.orderBy('date', 'desc').limit(limitN);
+    }
+    
+    // 3) 쿼리 실행: ❗️여기서 읽힌 문서만이 read에 카운트됩니다
     const snap = await q.get();
 
     // 결과 골격
@@ -191,8 +214,9 @@ router.get('/', async (req, res) => {
           date: d,
           day: d.getDate?.() ?? null,
           createdAt: base.createdAt ?? null,
+          isRated: base.isRated === true, // ⭐️ 이 줄 추가
           // ❗️하위 컬렉션은 여기서 즉시 읽지 않습니다 (read 비용 급증)
-          //   필요하면 /api/transactions/:id/details 같은 별도 엔드포인트로 분리 추천
+          // ...
         });
       }
     }

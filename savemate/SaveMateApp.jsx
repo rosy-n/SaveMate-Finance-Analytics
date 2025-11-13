@@ -134,7 +134,14 @@ export default function SaveMateApp() {
 
   const handleSatisfactionSubmit = async (payload) => {
     try {
-      const data = await api.post('/api/satisfaction', payload);
+      const data = await api.post('/api/satisfaction', {
+        uid: payload.uid,
+        transactionId: payload.transactionId,
+        emotion: payload.emotion,
+        reasons: payload.reasons,   // ← 여기 중요!!!!
+        memo: payload.memo,
+      });
+
       if (data.ok) {
         Alert.alert('저장 완료', '만족도 기록이 저장되었습니다 ✅');
         // 1) 로컬 큐에서 제거
@@ -364,46 +371,46 @@ export default function SaveMateApp() {
         refresh: refreshKey,
       });
 
-    // 1-보강) 이 달의 모든 거래(수입/지출)를 직접 한 번 불러와서 day별로 그룹핑
-    const [monthItems, setMonthItems] = useState(null);
-    const [byDay, setByDay] = useState(null);
-    useEffect(() => {
-      (async () => {
-        try {
-          const url = `/api/transactions?uid=${homeData.userId}&year=${CURRENT_YEAR}&month=${selectedMonth}&expand=true`;
-          const res = await fetch(`${api.baseURL}${url}`);
-          const data = await res.json();
-          if (data?.items) {
-            setMonthItems(data.items);
-            // day: 1~31 기준으로 그룹핑
-            const map = {};
-            for (const it of data.items) {
-              const day = Number(it.day ?? (new Date(it.date)).getDate());
-              if (!map[day]) map[day] = [];
-              map[day].push({
-                id: it.id,
-                type: it.type,            // 'income' | 'expense'
-                amount: it.amount,
-                category: it.category,
-                memo: it.memo,
-                date: it.date,
-              });
-            }
-            setByDay(map);
-          } else {
-            setMonthItems([]);
-            setByDay(null);
-          }
-        } catch {
-          // API 실패 시 훅 결과만 사용
-          setMonthItems(null);
-          setByDay(null);
-        }
-      })();
-    }, [selectedMonth, refreshKey, api.baseURL]);
+    // // 1-보강) 이 달의 모든 거래(수입/지출)를 직접 한 번 불러와서 day별로 그룹핑
+    // const [monthItems, setMonthItems] = useState(null);
+    // const [byDay, setByDay] = useState(null);
+    // useEffect(() => {
+    //   (async () => {
+    //     try {
+    //       const url = `/api/transactions?uid=${homeData.userId}&year=${CURRENT_YEAR}&month=${selectedMonth}&expand=true`;
+    //       const res = await fetch(`${api.baseURL}${url}`);
+    //       const data = await res.json();
+    //       if (data?.items) {
+    //         setMonthItems(data.items);
+    //         // day: 1~31 기준으로 그룹핑
+    //         const map = {};
+    //         for (const it of data.items) {
+    //           const day = Number(it.day ?? (new Date(it.date)).getDate());
+    //           if (!map[day]) map[day] = [];
+    //           map[day].push({
+    //             id: it.id,
+    //             type: it.type,            // 'income' | 'expense'
+    //             amount: it.amount,
+    //             category: it.category,
+    //             memo: it.memo,
+    //             date: it.date,
+    //           });
+    //         }
+    //         setByDay(map);
+    //       } else {
+    //         setMonthItems([]);
+    //         setByDay(null);
+    //       }
+    //     } catch {
+    //       // API 실패 시 훅 결과만 사용
+    //       setMonthItems(null);
+    //       setByDay(null);
+    //     }
+    //   })();
+    // }, [selectedMonth, refreshKey, api.baseURL]);
 
-    // 훅이 주는 groupedByDay가 있으면 쓰고, 없으면(byDay 사용)
-    const effectiveGrouped = byDay || groupedByDay || {};
+    // 🐰 수정: 훅이 제공하는 groupedByDay만 사용합니다.
+    const effectiveGrouped = groupedByDay || {};
 
     // 2) 달력 계산(일수/시작요일)
     const daysInMonth = new Date(CURRENT_YEAR, selectedMonth, 0).getDate();
@@ -609,7 +616,7 @@ export default function SaveMateApp() {
                     uid: homeData.userId,
                     transactionId: transactionId,
                     emotion: emotion ?? rating, // emotion이 우선, 없으면 rating 사용
-                    reason: reason,             // reason 필드 명확히 전달
+                    reasons: reason,             // reason 필드 명확히 전달
                     memo: memo,
                   });
                 }}

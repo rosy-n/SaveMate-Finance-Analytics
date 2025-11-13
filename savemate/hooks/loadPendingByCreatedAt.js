@@ -1,4 +1,4 @@
-// hooks/loadPendingByCreatedAt.js
+// hooks/loadPendingByCreatedAt.js (전체 코드 수정)
 
 // .env의 EXPO_PUBLIC_UID (없으면 null)
 const ENV_UID =
@@ -7,66 +7,66 @@ const ENV_UID =
 // 안전한 Date 변환
 const asDate = (v) => (v?.toDate ? v.toDate() : new Date(v));
 
+// ──────────────────────────────────────────────────────────────
+// ✅ 재도입: 모듈 전역 캐시 + in-flight dedupe
+// ──────────────────────────────────────────────────────────────
+const _cache = new Map();    // key -> { ts, data }
+const _inflight = new Map(); // key -> Promise
+const TTL_MS = 5000; // 5초 TTL
+
 /**
- * createdAt 최신순 기준 '미평가 지출' 큐를 가져오는 순수 함수
- * - 절대 훅을 호출하지 않음
+ * 전체 미평가 지출 큐를 가져오는 순수 함수 (캐싱 적용됨)
  * @param {object} params
  * @param {object} params.api  - useApi() 결과(컴포넌트에서 주입)
  * @param {string} [params.uid] - 기본값: ENV_UID
- * @param {number} [params.limit=200]
- * @param {number} [params.cap=50]
+ * @param {number} [params.cap=50] - 화면에 올릴 최대 개수
  * @returns {Promise<Array>}
  */
 export async function loadPendingByCreatedAt({
   api,
   uid = ENV_UID,
-  limit = 200,
   cap = 50,
 } = {}) {
   if (!api) throw new Error('loadPendingByCreatedAt: api가 필요합니다');
   if (!uid) console.warn('⚠️ uid가 비어 있습니다(.env 확인)');
 
-  // 1) 이미 평가한 트랜잭션 id 집합
-  let ratedSet = new Set();
+  // ⭐️ 캐싱/디듀프 키 설정
+  const key = `${uid || 'nouid'}:${cap}`;
+  const now = Date.now();
+  const hit = _cache.get(key);
+  
+  if (hit && now - hit.ts < TTL_MS) return hit.data; // 캐시 히트
+  if (_inflight.has(key)) return await _inflight.get(key); // 중복 요청 방지
+
+  const p = (async () => {
+    // ⭐️ 단일 최적화 쿼리: isRated=false인 expense만 요청
+    const txURL = `/api/transactions?uid=${encodeURIComponent(uid)}&isRated=false&type=expense&expand=true&limit=${cap}`;
+
+    let items = [];
+    try {
+      const res = await api.get(txURL);
+      items = Array.isArray(res?.items) ? res.items : [];
+    } catch (e) {
+      console.warn('⚠️ transactions(fetch unrated) failed:', e);
+      return [];
+    }
+
+    // 큐에 넣을 최종 목록
+    const pending = [];
+    for (const t of items) {
+      pending.push({ ...t, date: asDate(t.date) });
+      if (pending.length >= cap) break; 
+    }
+    
+    return pending;
+  })(); // P Promise 끝
+
+  _inflight.set(key, p);
   try {
-    const sat = await api.get(`/api/satisfaction?uid=${uid}`);
-    (sat?.items || []).forEach((s) => {
-      const k = String(s.transactionId ?? s.tid ?? s.id ?? '');
-      if (k) ratedSet.add(k);
-    });
-  } catch (e) {
-    console.warn('⚠️ satisfaction fetch failed → assume none rated:', e);
+    const data = await p;
+    _cache.set(key, { ts: Date.now(), data }); // 캐시 저장
+    return data;
+  } finally {
+    _inflight.delete(key); // 인플라이트 제거
   }
-
-  // 2) createdAt 최신순 거래 조회 (서버가 정렬을 보장한다는 가정)
-  const url = `/api/transactions?uid=${uid}&limit=${limit}&expand=true`;
-  let items = [];
-  try {
-    const res = await api.get(url);
-    items = Array.isArray(res?.items) ? res.items : [];
-  } catch (e) {
-    console.warn('⚠️ transactions(fetch by createdAt) failed:', e);
-    return [];
-  }
-
-  // 2.5) 혹시 서버가 정렬을 안해주면 클라에서 보강
-  items.sort((a, b) => {
-    const da = a.createdAt ?? a.date;
-    const db = b.createdAt ?? b.date;
-    return new Date(db) - new Date(da);
-  });
-
-  // 3) 지출(expense) + 미평가만 cap개까지
-  const pending = [];
-  for (const t of items) {
-    const id = String(t.id ?? t.transactionId ?? '');
-    if (!id) continue;
-    if (String(t.type || '').toLowerCase() !== 'expense') continue;
-    if (ratedSet.has(id)) continue;
-
-    pending.push({ ...t, date: asDate(t.date) }); // UI: fmtMonthDayKR(t.date) 그대로
-    if (pending.length >= cap) break;
-  }
-
-  return pending;
 }
