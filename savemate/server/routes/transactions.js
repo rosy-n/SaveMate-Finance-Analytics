@@ -82,6 +82,7 @@ router.post('/', async (req, res) => {
       paymentMethod: null,
       incomeSource: null,
       spendingBackground: null,
+      isRated:false,
     };
 
     // ✅ 요청 본문 또는 *_detail에서 수단값을 끌어와 상위에 적재
