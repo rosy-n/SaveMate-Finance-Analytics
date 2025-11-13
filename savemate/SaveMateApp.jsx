@@ -199,8 +199,8 @@ export default function SaveMateApp() {
   const UID = process.env.EXPO_PUBLIC_UID; // 반드시 .env에서 주입
   const homeData = useMemo(
     () => ({
-      userName: '노지은', // 필요시 서버/프로필 API로 대체
-      userId: UID,
+      userName: '유은서',
+      userId: '2314513',
       motivationalQuote: {
         title: '오늘의 절약팁',
         content: '카페 대신 집에서 커피를 내려 마시면 한 달에 약 5만원을 절약할 수 있어요',
