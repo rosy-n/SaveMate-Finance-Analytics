@@ -5,7 +5,7 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 
-const healthRoutes = require('./routes/health');           // 이미 있다면 유지
+const healthRoutes = require('./routes/health');
 const transactionRoutes = require('./routes/transactions');
 const satisfactionRoutes = require('./routes/satisfaction');
 
@@ -25,7 +25,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// ✅ 헬스체크 라우트(인라인, 확실하게 잡아주자)
+// 헬스체크 라우트(인라인, 확실하게 잡아주자)
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', time: new Date().toISOString() });
 });

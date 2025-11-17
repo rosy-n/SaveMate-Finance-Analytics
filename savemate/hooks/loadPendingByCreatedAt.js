@@ -1,4 +1,4 @@
-// hooks/loadPendingByCreatedAt.js (전체 코드 수정)
+// hooks/loadPendingByCreatedAt.js
 
 // .env의 EXPO_PUBLIC_UID (없으면 null)
 const ENV_UID =
@@ -8,14 +8,14 @@ const ENV_UID =
 const asDate = (v) => (v?.toDate ? v.toDate() : new Date(v));
 
 // ──────────────────────────────────────────────────────────────
-// ✅ 재도입: 모듈 전역 캐시 + in-flight dedupe
+// 재도입: 모듈 전역 캐시 + in-flight dedupe
 // ──────────────────────────────────────────────────────────────
 const _cache = new Map();    // key -> { ts, data }
 const _inflight = new Map(); // key -> Promise
 const TTL_MS = 5000; // 5초 TTL
 
 /**
- * 전체 미평가 지출 큐를 가져오는 순수 함수 (캐싱 적용됨)
+ * 전체 미평가 지출 큐를 가져오는 순수 함수 (캐싱 적용)
  * @param {object} params
  * @param {object} params.api  - useApi() 결과(컴포넌트에서 주입)
  * @param {string} [params.uid] - 기본값: ENV_UID
@@ -30,7 +30,7 @@ export async function loadPendingByCreatedAt({
   if (!api) throw new Error('loadPendingByCreatedAt: api가 필요합니다');
   if (!uid) console.warn('⚠️ uid가 비어 있습니다(.env 확인)');
 
-  // ⭐️ 캐싱/디듀프 키 설정
+  // 캐싱/디듀프 키 설정
   const key = `${uid || 'nouid'}:${cap}`;
   const now = Date.now();
   const hit = _cache.get(key);
@@ -39,7 +39,7 @@ export async function loadPendingByCreatedAt({
   if (_inflight.has(key)) return await _inflight.get(key); // 중복 요청 방지
 
   const p = (async () => {
-    // ⭐️ 단일 최적화 쿼리: isRated=false인 expense만 요청
+    // 단일 최적화 쿼리: isRated=false인 expense만 요청
     const txURL = `/api/transactions?uid=${encodeURIComponent(uid)}&isRated=false&type=expense&expand=true&limit=${cap}`;
 
     let items = [];

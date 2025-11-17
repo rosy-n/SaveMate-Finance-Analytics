@@ -44,7 +44,7 @@ export default ({ config }) => ({
       reactCompiler: true,
     },
     extra: {
-      // 하드코딩 제거: .env 값 주입
+      // .env 값 주입
       API_BASE_URL: process.env.EXPO_PUBLIC_API_BASE_URL ?? "",
       UID: process.env.EXPO_PUBLIC_UID ?? "",
     },

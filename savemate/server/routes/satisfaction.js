@@ -32,19 +32,19 @@ router.post('/', async (req, res) => {
     const doc = {
       transactionId,
       emotion,
-      reasons,            // ⭐ 배열로 저장
+      reasons,            // 배열로 저장
       memo: memo ?? '',
       createdAt: now,
     };
 
-    // ⭐ 사용자 기반 경로에 저장
+    // 사용자 기반 경로에 저장
     const satRef = await db
       .collection('users')
       .doc(uid)
       .collection('satisfactionRatings')
       .add(doc);
 
-    // ⭐ 해당 거래의 isRated = true 업데이트
+    // 해당 거래의 isRated = true 업데이트
     await db
       .collection('users')
       .doc(uid)

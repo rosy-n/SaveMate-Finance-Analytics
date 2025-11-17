@@ -123,10 +123,10 @@ export default function SaveMateApp() {
   const [pendingList, setPendingList] = useState([]);  // 미평가 지출 큐
   const [pendingIndex, setPendingIndex] = useState(0); // 현재 보여줄 큐 인덱스
 
-  // API 헬스체크로 대체 (선택)
+  // API 헬스체크로 대체
   const api = useApi();
   useEffect(() => {
-    console.log('🔗 BASE_URL:', api.baseURL); // ✅ 추가
+    console.log('🔗 BASE_URL:', api.baseURL);
     api.get('/api/health')
       .then(() => console.log('✅ API 연결 OK'))
       .catch(e => console.error('❌ API 연결 실패:', e));
@@ -138,7 +138,7 @@ export default function SaveMateApp() {
         uid: payload.uid,
         transactionId: payload.transactionId,
         emotion: payload.emotion,
-        reasons: payload.reasons,   // ← 여기 중요!!!!
+        reasons: payload.reasons,
         memo: payload.memo,
       });
 
@@ -187,10 +187,10 @@ export default function SaveMateApp() {
 
     if (type === 'income') {
       setTempIncomeData({ amount: isNaN(amt) ? 0 : amt, date: dateObj });
-      setEntryModal(prev => ({ ...prev, visible: true, step: 'income' }));  // 모달 유지
+      setEntryModal(prev => ({ ...prev, visible: true, step: 'income' }));
     } else {
       setTempExpenseData({ amount: isNaN(amt) ? 0 : amt, date: dateObj });
-      setEntryModal(prev => ({ ...prev, visible: true, step: 'expense' })); // 모달 유지
+      setEntryModal(prev => ({ ...prev, visible: true, step: 'expense' }));
     }
   };
 
@@ -241,7 +241,7 @@ export default function SaveMateApp() {
           setPendingIndex(0);
         } catch (e) {
           // useApi가 HTTP 에러/JSON 파싱 에러를 일반 Error 객체로 변환해주므로,
-          // catch 블록이 예상치 못한 HTML 응답으로 인한 JSON.parse 오류를 받지 않습니다.
+          // catch 블록이 예상치 못한 HTML 응답으로 인한 JSON.parse 오류를 받지 않음.
           console.error('pending queue load failed', e);
           if (!mounted) return;
           setPendingList([]);
@@ -371,45 +371,7 @@ export default function SaveMateApp() {
         refresh: refreshKey,
       });
 
-    // // 1-보강) 이 달의 모든 거래(수입/지출)를 직접 한 번 불러와서 day별로 그룹핑
-    // const [monthItems, setMonthItems] = useState(null);
-    // const [byDay, setByDay] = useState(null);
-    // useEffect(() => {
-    //   (async () => {
-    //     try {
-    //       const url = `/api/transactions?uid=${homeData.userId}&year=${CURRENT_YEAR}&month=${selectedMonth}&expand=true`;
-    //       const res = await fetch(`${api.baseURL}${url}`);
-    //       const data = await res.json();
-    //       if (data?.items) {
-    //         setMonthItems(data.items);
-    //         // day: 1~31 기준으로 그룹핑
-    //         const map = {};
-    //         for (const it of data.items) {
-    //           const day = Number(it.day ?? (new Date(it.date)).getDate());
-    //           if (!map[day]) map[day] = [];
-    //           map[day].push({
-    //             id: it.id,
-    //             type: it.type,            // 'income' | 'expense'
-    //             amount: it.amount,
-    //             category: it.category,
-    //             memo: it.memo,
-    //             date: it.date,
-    //           });
-    //         }
-    //         setByDay(map);
-    //       } else {
-    //         setMonthItems([]);
-    //         setByDay(null);
-    //       }
-    //     } catch {
-    //       // API 실패 시 훅 결과만 사용
-    //       setMonthItems(null);
-    //       setByDay(null);
-    //     }
-    //   })();
-    // }, [selectedMonth, refreshKey, api.baseURL]);
-
-    // 🐰 수정: 훅이 제공하는 groupedByDay만 사용합니다.
+    // 훅이 제공하는 groupedByDay만 사용합니다.
     const effectiveGrouped = groupedByDay || {};
 
     // 2) 달력 계산(일수/시작요일)
@@ -698,7 +660,4 @@ export default function SaveMateApp() {
       </Modal>
     </>
   );
-
-
-
 };

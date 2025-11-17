@@ -49,7 +49,7 @@ router.post('/', async (req, res) => {
       category,
       memo,
       date,
-      occurredAt,           // 호환용
+      occurredAt,
       method,
       paymentMethod,
       background,
@@ -79,8 +79,8 @@ router.post('/', async (req, res) => {
       type,                                    // 'income' | 'expense'
       category: category ?? null,
       memo: memo ?? '',
-      date: dateTs,                            // 🔹 리포트/훅에서 사용하는 필드
-      occurredAt: dateTs,                      // 🔹 호환용 (원래 필드명)
+      date: dateTs,                            // 리포트/훅에서 사용하는 필드
+      occurredAt: dateTs,                      // 호환용 (원래 필드명)
       createdAt: now,
       updatedAt: now,
       isRated: false,
