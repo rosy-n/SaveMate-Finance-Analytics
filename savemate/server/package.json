@@ -1,6 +1,5 @@
 {
   "scripts": {
-    "postinstall": "node -r dotenv/config ../scripts/make-service-account.js dotenv_config_path=./.env",
     "prestart": "node -r dotenv/config ../scripts/make-service-account.js dotenv_config_path=./.env",
     "predev": "node -r dotenv/config ../scripts/make-service-account.js dotenv_config_path=./.env",
     "start": "node index.js",

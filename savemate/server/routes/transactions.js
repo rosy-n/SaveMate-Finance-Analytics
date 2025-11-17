@@ -105,6 +105,40 @@ router.post('/', async (req, res) => {
   }
 });
 
+// 만족도평가를 위해 미평가 지출을 불러오기
+router.get('/unrated', async (req, res) => {
+  // 만족도 박스 안 보이는 문제 해결하려고 넣은 콘솔 코드 -> 문제 해결하면 지울거임
+  console.log("🐰 [SERVER] unrated 호출됨:", req.query);
+  try {
+    const { uid, limit = 50 } = req.query;
+    if (!uid) return res.status(400).json({ ok: false, error: 'uid required' });
+
+    const snap = await db
+      .collection('users')
+      .doc(uid)
+      .collection('transactions')
+      .where('type', '==', 'expense')
+      .where('isRated', '==', false)
+      .orderBy('date', 'desc')
+      .limit(Number(limit))
+      .get();
+
+    const items = snap.docs.map(d => {
+      const data = d.data() || {};
+      return {
+        id: d.id,
+        ...data,
+        date: data.date?.toDate ? data.date.toDate().toISOString() : data.date
+      };
+    });
+
+    res.json({ ok: true, items });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 /**
  * GET /api/transactions
  * 쿼리스트링:
@@ -115,6 +149,8 @@ router.post('/', async (req, res) => {
  *
  * useMonthlyTransactionsFromApi, ReportHome 에서 사용
  */
+
+
 router.get('/', async (req, res) => {
   try {
     const { uid, year, month } = req.query;

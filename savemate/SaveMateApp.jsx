@@ -236,12 +236,16 @@ export default function SaveMateApp() {
 
     // 만족도 평가 안한 지출내역들을 넣는 미평가 큐
     useEffect(() => {
+      console.log("🎯 useEffect 실행됨. refreshKey=", refreshKey);
       let mounted = true;
       (async () => {
         try {
-          // 새 함수 사용: createdAt 기준 최신순 + 미평가만 반환
-          const pending = await loadPendingByCreatedAt({ api, limit: 200, cap: 50 });
+          console.log("🌐 loadPendingByCreatedAt 호출 직전");
 
+          // 새 함수 사용: createdAt 기준 최신순 + 미평가만 반환
+          const pending = await loadPendingByCreatedAt({ api, uid: homeData.userId, cap: 50 });
+          console.log("📥 loadPending 결과:", pending);
+          
           if (!mounted) return;
           setPendingList(pending);
           setPendingIndex(0);
