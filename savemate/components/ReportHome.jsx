@@ -330,11 +330,17 @@ const pieData = useMemo(() => {
               {llmReport.emotion_patterns && (
                 <View style={{ marginTop: 12 }}>
                   <Text style={reportStyles.listTitle}>🙂 감정 패턴</Text>
-                  {(llmReport.emotion_patterns.neutral_insights ?? []).map((e, i) => (
-                    <Text key={i} style={reportStyles.cardText}> {e}</Text>
-                  ))}
+
+                  {Array.isArray(llmReport.emotion_patterns.neutral_insights) ? (
+                    llmReport.emotion_patterns.neutral_insights.map((e, i) => (
+                      <Text key={i} style={reportStyles.cardText}> {e}</Text>
+                    ))
+                  ) : (
+                    <Text style={reportStyles.cardText}>감정 패턴 데이터가 없어요.</Text>
+                  )}
                 </View>
               )}
+
             </>
           )}
         </View>
