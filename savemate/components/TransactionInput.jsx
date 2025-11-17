@@ -278,7 +278,7 @@ const TransactionInput = ({ onClose, onSave }) => {
             styles.toggleBtn,
             transactionType === 'income' && styles.toggleBtnIncomeActive,
           ]}
-          onPress={() => setTransactionType('income')}
+          onPress={() => setTransactionType('expense')}
         >
           <Text
             style={[

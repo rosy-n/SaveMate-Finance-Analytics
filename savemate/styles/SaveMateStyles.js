@@ -57,7 +57,7 @@ export const SaveMateStyles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 16,
-    bottom: 96,
+    bottom: 32,
     width: 64,
     height: 64,
     borderRadius: 32,

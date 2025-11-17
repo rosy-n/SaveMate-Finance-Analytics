@@ -361,14 +361,14 @@ export default function SaveMateApp() {
         userId: homeData.userId,
         year: CURRENT_YEAR,
         month: selectedMonth,
-        refresh: refreshKey,
+        refresh: 0,
       });
     const { monthlyTotals: prevTotals } =
       useMonthlyTransactionsFromApi({
         userId: homeData.userId,
         year: selectedMonth === 1 ? CURRENT_YEAR - 1 : CURRENT_YEAR,
         month: selectedMonth === 1 ? 12 : selectedMonth - 1,
-        refresh: refreshKey,
+        refresh: 0,
       });
 
     // 훅이 제공하는 groupedByDay만 사용합니다.
