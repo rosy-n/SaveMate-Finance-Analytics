@@ -10,7 +10,7 @@ import {
 
 const TransactionInput = ({ onClose, onSave }) => {
   const [expression, setExpression] = useState('');
-  const [transactionType, setTransactionType] = useState('income');
+  const [transactionType, setTransactionType] = useState('expense');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
@@ -278,7 +278,7 @@ const TransactionInput = ({ onClose, onSave }) => {
             styles.toggleBtn,
             transactionType === 'income' && styles.toggleBtnIncomeActive,
           ]}
-          onPress={() => setTransactionType('expense')}
+          onPress={() => setTransactionType('income')}
         >
           <Text
             style={[
