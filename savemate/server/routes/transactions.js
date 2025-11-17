@@ -2,298 +2,273 @@
 const express = require('express');
 const router = express.Router();
 const { db, admin } = require('../firebaseAdmin');
-const { Timestamp } = require('firebase-admin/firestore');
-/** ──────────────────────────────────────────────────────────────
- * 유틸
- *  - 월 구간: [start, end)  (다음달 1일 00:00 미만까지)
- *  - iso10: Date/Timestamp → 'YYYY-MM-DD'
- * ────────────────────────────────────────────────────────────── */
-const getMonthRange = (year, month) => {
-  const y = Number(year);
-  const m = Number(month); // 1~12
-  const startDate = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0, 0));
-  const endDate = new Date(Date.UTC(y, m, 1, 0, 0, 0, 0)); // 다음달 1일
+
+const now = admin.firestore.FieldValue.serverTimestamp();
+
+// year, month에서 N개월 전/후 계산용
+function shiftYearMonth(year, month, delta) {
+  // month: 1~12, delta: +/- n개월
+  const base = (month - 1) + delta;
+  const y = year + Math.floor(base / 12);
+  const m = ((base % 12) + 12) % 12; // 0~11
+  return { year: y, month: m + 1 };
+}
+
+// 공통: 날짜 범위 계산 (UTC 기준)
+function getMonthRange(y, m) {
+  const start = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0, 0));
+  const end   = new Date(Date.UTC(y, m,     1, 0, 0, 0, 0));
   return {
-    start: admin.firestore.Timestamp.fromDate(startDate),
-    end: admin.firestore.Timestamp.fromDate(endDate),
+    start,
+    end,
+    startTs: admin.firestore.Timestamp.fromDate(start),
+    endTs:   admin.firestore.Timestamp.fromDate(end),
   };
-};
-const iso10 = (d) => new Date(d).toISOString().slice(0, 10);
+}
 
-/** ──────────────────────────────────────────────────────────────
+/**
  * POST /api/transactions
- * Body:
- * {
- *   uid: "2314513",
- *   type: "income" | "expense",
- *   amount: 30000,
- *   category?: "식비|용돈|...",
- *   memo?: "메모",
- *   date: "YYYY-MM-DD" | ISO string,
- *   incomeDetail?: { incomeSource?: "월급|용돈|기타", memo?: "..." },
- *   expenseDetail?: { paymentMethod?: "현금|신용카드|체크카드", spendingCategory?: "...", spendingItem?: "...", spendingBackground?: "..." }
- * }
- *
- * 저장 위치:
- *   users/{uid}/transactions/{tid}
- *     ├─ incomeDetails/{detailId}   (type === 'income')
- *     └─ expenseDetails/{detailId}  (type === 'expense')
- * ────────────────────────────────────────────────────────────── */
-
-
+ * Body (앱에서 보내는 값 기준):
+ *  - uid          (필수)
+ *  - type         'income' | 'expense' (필수)
+ *  - amount       숫자 (필수)
+ *  - category     (선택)
+ *  - memo         (선택)
+ *  - date         'YYYY-MM-DD' 또는 ISO 문자열 (선택, 없으면 서버 현재 시간)
+ *  - method       (지출 수단: 현금/신용카드/체크카드) or paymentMethod
+ *  - background   (소비 배경) or spendingBackground
+ *  - incomeDetail: { incomeSource, memo } (선택)
+ *  - incomeSource (선택, 상위 필드로 직접 보낼 수도 있음)
+ */
 router.post('/', async (req, res) => {
   try {
     const {
-      uid, type, amount, category, memo, date,
-      incomeDetail, expenseDetail,
+      uid,
+      amount,
+      type,
+      category,
+      memo,
+      date,
+      occurredAt,           // 호환용
       method,
+      paymentMethod,
       background,
+      spendingBackground,
+      incomeDetail,
+      incomeSource,
     } = req.body;
 
-    // ---- 검증 ----
-    if (!uid || amount == null || !type || !date) {
-      return res.status(400).json({ ok: false, error: 'missing fields (uid, amount, type, date)' });
-    }
-    if (!['income', 'expense'].includes(String(type))) {
-      return res.status(400).json({ ok: false, error: 'type must be income|expense' });
-    }
-    const _amount = Number(amount);
-    if (!Number.isFinite(_amount)) {
-      return res.status(400).json({ ok: false, error: 'amount must be a number' });
+    if (!uid || !amount || !type) {
+      return res.status(400).json({ ok: false, error: 'missing fields (uid, amount, type)' });
     }
 
-    // ---- 날짜 ----
-    const parsed = new Date(date);
-    if (isNaN(parsed.getTime())) {
-      return res.status(400).json({ ok: false, error: 'invalid date format' });
-    }
-    const ts = admin.firestore.Timestamp.fromDate(parsed);
-    const nowServer = admin.firestore.FieldValue.serverTimestamp();
+    // 날짜 파싱: occurredAt > date > now 순으로 사용
+    let baseDate =
+      occurredAt ? new Date(occurredAt)
+      : date      ? new Date(date)
+                  : new Date();
 
-    // ---- 1) 기본 거래 저장 ----
-    const baseDoc = {
-      amount: _amount,
-      type,                           // 'income' | 'expense'
+    if (!baseDate || !Number.isFinite(baseDate.getTime())) {
+      return res.status(400).json({ ok: false, error: 'invalid date/occurredAt' });
+    }
+
+    const dateTs = admin.firestore.Timestamp.fromDate(baseDate);
+
+    const doc = {
+      amount: Number(amount),
+      type,                                    // 'income' | 'expense'
       category: category ?? null,
-      memo: memo ?? null,
-      date: ts,                       // 정렬을 위한 Timestamp
-      createdAt: nowServer,
-      updatedAt: nowServer,
-      paymentMethod: null,
-      incomeSource: null,
-      spendingBackground: null,
-      isRated:false,
+      memo: memo ?? '',
+      date: dateTs,                            // 🔹 리포트/훅에서 사용하는 필드
+      occurredAt: dateTs,                      // 🔹 호환용 (원래 필드명)
+      createdAt: now,
+      updatedAt: now,
+      isRated: false,
+
+      // 수입/지출 상세 정보 매핑
+      incomeSource: incomeSource ?? incomeDetail?.incomeSource ?? null,
+      paymentMethod: paymentMethod ?? method ?? null,
+      spendingBackground: spendingBackground ?? background ?? null,
     };
 
-    // ✅ 요청 본문 또는 *_detail에서 수단값을 끌어와 상위에 적재
-    if (type === 'expense') {
-      baseDoc.paymentMethod = (method ?? expenseDetail?.paymentMethod) ?? null;
-      baseDoc.spendingBackground = (background ?? expenseDetail?.spendingBackground) ?? null;
-    }
-    if (type === 'income') {
-      baseDoc.incomeSource = (incomeDetail?.incomeSource ?? category) ?? null;
-    }
-
-    const txnRef = await db
+    // 최종 경로: users/{uid}/transactions/{tid}
+    const trxRef = await db
       .collection('users')
       .doc(uid)
       .collection('transactions')
-      .add(baseDoc);
+      .add(doc);
 
-    // ---- 2) 상세 하위 컬렉션 ----
-    if (type === 'income' && incomeDetail) {
-      const { incomeSource, memo: incomeMemo } = incomeDetail;
-      await txnRef.collection('incomeDetails').add({
-        incomeSource: incomeSource ?? category ?? '기타',
-        memo: incomeMemo ?? null,
-        createdAt: nowServer,
-      });
-    }
-
-    if (type === 'expense' && expenseDetail) {
-      const {
-        paymentMethod, spendingCategory, spendingItem, spendingBackground,
-      } = expenseDetail;
-      await txnRef.collection('expenseDetails').add({
-        paymentMethod: paymentMethod ?? null,                 // 현금/신용/체크
-        spendingCategory: spendingCategory ?? category ?? null,
-        spendingItem: spendingItem ?? memo ?? null,
-        spendingBackground: spendingBackground ?? null,
-        createdAt: nowServer,
-      });
-    }
-
-    return res.status(201).json({ ok: true, id: txnRef.id });
+    res.status(201).json({ ok: true, id: trxRef.id });
   } catch (e) {
-    console.error('[Firestore POST Error]', e);
-    return res.status(500).json({ ok: false, error: e.message });
+    console.error('[POST /api/transactions Error]', e);
+    res.status(500).json({ ok: false, error: e.message });
   }
 });
 
-/** ──────────────────────────────────────────────────────────────
+/**
  * GET /api/transactions
- * 쿼리:
- *   uid=필수
- *   year=선택(월 조회 시 필수)
- *   month=선택(1~12, 월 조회 시 필수)
- *   limit=선택(기본 20) — year/month 없을 때만 사용
- *   expand=true|false (기본 false) — 각 거래의 상세 1건 포함
+ * 쿼리스트링:
+ *  - uid   (필수)
+ *  - year  (필수, 숫자)
+ *  - month (필수, 1~12)
+ *  - expand (선택, 현재는 의미 없이 무시)
  *
- * 예:
- *   /api/transactions?uid=2314513&year=2025&month=11&expand=true
- *   /api/transactions?uid=2314513&limit=50
- * ────────────────────────────────────────────────────────────── */
+ * useMonthlyTransactionsFromApi, ReportHome 에서 사용
+ */
 router.get('/', async (req, res) => {
   try {
-    // 1) 쿼리 파라미터에 isRated 추가
-    const { uid, year, month, expand, isRated, type } = req.query; // type 추가
+    const { uid, year, month } = req.query;
+    const y = Number(year);
+    const m = Number(month);
 
-    if (!uid) {
-      return res.status(400).json({ ok: false, error: 'uid is required' });
+    if (!uid || !y || !m) {
+      return res.status(400).json({ ok: false, error: 'uid, year, month are required' });
     }
 
-    const wantExpand = String(expand).toLowerCase() === 'true';
-    const txColRef = db.collection('users').doc(uid).collection('transactions');
-    
-    // 2) 새로운 미평가 플래그 확인
-    const wantUnratedExpenses = 
-        String(isRated).toLowerCase() === 'false' && 
-        String(type).toLowerCase() === 'expense';
-        
-    let q;
+    const { startTs, endTs } = getMonthRange(y, m);
 
-    // 1) 쿼리 구성: 월 범위, 미평가, 또는 최신순
-    if (year && month) {
-      // 월별 조회: 기존 로직 유지 (날짜 범위)
-      const { start, end } = getMonthRange(year, month);
-      q = txColRef
-        .where('date', '>=', start)
-        .where('date', '<', end)
-        .orderBy('date', 'desc');
-    } else if (wantUnratedExpenses) {
-      // ⭐️⭐️⭐️ 2단계 해결: 모든 미평가 지출을 찾기 위한 최적화 쿼리 ⭐️⭐️⭐️
-      // orderBy에 필터링된 필드를 먼저 넣어야 함 (Firestore 규칙)
-      q = txColRef
-        .where('type', '==', 'expense') // 지출만
-        .where('isRated', '==', false) // 미평가만
-        .orderBy('date', 'desc'); // 최신순 정렬
+    const snap = await db
+      .collection('users')
+      .doc(uid)
+      .collection('transactions')
+      .where('date', '>=', startTs)
+      .where('date', '<', endTs)
+      .orderBy('date', 'desc')
+      .get();
 
-      // ⚠️ 안전 장치: 전체 거래를 스캔하지 않도록 서버에서 하드 리밋(예: 500)을 적용할 수 있으나,
-      // 여기서는 클라이언트가 50개만 보여주므로, 데이터베이스 로직이 이를 처리하도록 제한 없이 보냅니다.
-      // (단, 이 쿼리를 위해 새로운 복합 인덱스 {type, isRated, date}가 필요할 수 있습니다.)
-      
-    } else {
-      // 월 범위나 isRated 필터가 없을 때는 기존 최신순 + limit 로직 유지
-      const limitN = Math.max(1, Math.min(Number(req.query.limit) || 20, 200));
-      q = txColRef.orderBy('date', 'desc').limit(limitN);
-    }
-    
-    // 3) 쿼리 실행: ❗️여기서 읽힌 문서만이 read에 카운트됩니다
-    const snap = await q.get();
+    const items = snap.docs.map((d) => {
+      const data = d.data() || {};
+      let dateVal = null;
 
-    // 결과 골격
-    const result = {
-      summary: { income: 0, expense: 0, count: 0 },
-      items: [],
-    };
-
-    if (snap.empty) {
-      return res.json(result);
-    }
-
-    // 3) 쿼리로 이미 'date' 범위가 잘려 있으므로 추가 필터 불필요
-    let incomeSum = 0;
-    let expenseSum = 0;
-    const items = [];
-
-    // 필요 시에만 상세를 읽도록 옵션 처리 (하위 컬렉션은 기본 미조회)
-    // ⚠️ 하위 컬렉션까지 매 항목마다 읽으면 read 폭증 → 정말 필요할 때만 on-demand 권장
-    for (const doc of snap.docs) {
-      const base = doc.data() || {};
-      const type = String(base.type || '').toLowerCase();
-      const amount = Number(base.amount ?? 0);
-      if (type === 'income') incomeSum += amount;
-      else if (type === 'expense') expenseSum += amount;
-
-      result.summary.count += 1;
-
-      if (wantExpand) {
-        const d = base.date?.toDate ? base.date.toDate() : new Date(base.date);
-        items.push({
-          id: doc.id,
-          type,
-          amount,
-          category: base.category ?? (type === 'income' ? '수입' : '지출'),
-          memo: base.memo ?? '',
-          date: d,
-          day: d.getDate?.() ?? null,
-          createdAt: base.createdAt ?? null,
-          isRated: base.isRated === true, // ⭐️ 이 줄 추가
-          // ❗️하위 컬렉션은 여기서 즉시 읽지 않습니다 (read 비용 급증)
-          // ...
-        });
+      if (data.date?.toDate) {
+        dateVal = data.date.toDate().toISOString(); // 훅에서 Date로 다시 파싱 가능
+      } else if (data.occurredAt?.toDate) {
+        dateVal = data.occurredAt.toDate().toISOString();
+      } else if (data.date) {
+        dateVal = data.date;
       }
-    }
 
-    result.summary.income = incomeSum;
-    result.summary.expense = expenseSum;
-    result.items = items;
+      return {
+        id: d.id,
+        ...data,
+        date: dateVal,
+      };
+    });
 
-    return res.json(result);
+    res.json({ ok: true, items });
   } catch (e) {
-    console.error('[Firestore GET Error]', e);
-    return res.status(500).json({ ok: false, error: e.message });
+    console.error('[GET /api/transactions Error]', e);
+    res.status(500).json({ ok: false, error: e.message });
   }
 });
 
-// ✅ GET /api/transactions/monthly-sum?uid=...&months=4&endYear=2025&endMonth=11
-// - Firestore를 한 번만 읽고, 최근 N개월(기본 4개월) 지출 합계를 월별로 반환
+/**
+ * GET /api/transactions/monthly-sum
+ * 쿼리스트링:
+ *  - uid      (필수)
+ *  - months   (선택, 기본 4) : 최근 N개월
+ *  - endYear  (필수)
+ *  - endMonth (필수)
+ *
+ * ReportHome 의 "월별 지출 추이" 꺾은선 그래프에서 사용
+ */
 router.get('/monthly-sum', async (req, res) => {
   try {
-    const { uid, months = 4, endYear, endMonth } = req.query;
-    if (!uid) return res.status(400).json({ ok: false, error: 'uid is required' });
+    const { uid, months = '4', endYear, endMonth } = req.query;
+    const mCount = Number(months) || 4;
+    const y0 = Number(endYear);
+    const m0 = Number(endMonth);
 
-    const now = new Date();
-    const endY = Number(endYear || now.getFullYear());
-    const endM = Number(endMonth || (now.getMonth() + 1)); // 1~12
-
-    // 최근 N개월 키 만들기 (과거→현재 순)
-    const keys = [];
-    for (let i = months - 1; i >= 0; i--) {
-      const d = new Date(endY, endM - 1, 1);
-      d.setMonth(d.getMonth() - i);
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      keys.push(`${y}-${m}`);
+    if (!uid || !y0 || !m0) {
+      return res.status(400).json({ ok: false, error: 'uid, endYear, endMonth are required' });
     }
 
-    const sums = Object.fromEntries(keys.map(k => [k, 0]));
+    const tasks = [];
+    for (let i = mCount - 1; i >= 0; i--) {
+      const { year, month } = shiftYearMonth(y0, m0, -i);
+      const { startTs, endTs } = getMonthRange(year, month);
 
-    const txSnap = await db.collection('users').doc(uid).collection('transactions').get();
-    if (!txSnap.empty) {
-      txSnap.forEach(doc => {
-        const base = doc.data() || {};
-        const type = String(base.type || '').toLowerCase();
-        if (type !== 'expense') return;
+      tasks.push(
+        (async () => {
+          const snap = await db
+            .collection('users')
+            .doc(uid)
+            .collection('transactions')
+            .where('date', '>=', startTs)
+            .where('date', '<', endTs)
+            .get();
 
-        const dt = base.date?.toDate ? base.date.toDate() : new Date(base.date);
-        if (!dt || isNaN(dt)) return;
+          let totalExpense = 0;
+          snap.forEach((d) => {
+            const data = d.data() || {};
+            if (String(data.type || '').toLowerCase() === 'expense') {
+              totalExpense += Number(data.amount || 0);
+            }
+          });
 
-        const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
-        if (key in sums) {
-          sums[key] += Number(base.amount || 0);
-        }
-      });
+          return { year, month, totalExpense };
+        })()
+      );
     }
 
-    const result = keys.map(k => {
-      const [y, m] = k.split('-');
-      return { year: Number(y), month: Number(m), totalExpense: sums[k] || 0 };
-    });
-
-    res.json({ ok: true, items: result });
+    const results = await Promise.all(tasks);
+    res.json({ ok: true, items: results });
   } catch (e) {
     console.error('[GET /api/transactions/monthly-sum Error]', e);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+/**
+ * (기존) 특정 사용자 거래 전체 조회
+ * GET /api/transactions/:uid
+ */
+router.get('/:uid', async (req, res) => {
+  try {
+    const { uid } = req.params;
+
+    const snapshot = await db
+      .collection('users')
+      .doc(uid)
+      .collection('transactions')
+      .orderBy('date', 'desc')
+      .get();
+
+    const items = snapshot.docs.map((doc) => {
+      const data = doc.data() || {};
+      let dateVal = null;
+      if (data.date?.toDate) dateVal = data.date.toDate().toISOString();
+      else if (data.occurredAt?.toDate) dateVal = data.occurredAt.toDate().toISOString();
+      else if (data.date) dateVal = data.date;
+
+      return { id: doc.id, ...data, date: dateVal };
+    });
+
+    res.json({ ok: true, items });
+  } catch (e) {
+    console.error('[GET /api/transactions/:uid Error]', e);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+/**
+ * (기존) 단일 삭제
+ * DELETE /api/transactions/:uid/:tid
+ */
+router.delete('/:uid/:tid', async (req, res) => {
+  try {
+    const { uid, tid } = req.params;
+
+    await db
+      .collection('users')
+      .doc(uid)
+      .collection('transactions')
+      .doc(tid)
+      .delete();
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[DELETE /api/transactions Error]', e);
     res.status(500).json({ ok: false, error: e.message });
   }
 });

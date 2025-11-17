@@ -10,13 +10,13 @@ const inflight = new Map();
 const DEDUPE_MS = 3000; // 3초 내 동일 키 재요청은 캐시 재사용
 
 export default function useMonthlyTransactionsFromApi({ userId, year, month, refresh = 0 }) {
-  const { get, baseURL } = useApi();       // ✅ 함수만 구조분해 (의존성 안정화)
-  const getRef = useRef(get);              // ✅ get 참조 고정
+  const { get, baseURL } = useApi();       // 함수만 구조분해 (의존성 안정화)
+  const getRef = useRef(get);              // get 참조 고정
   const baseURLRef = useRef(baseURL);
   useEffect(() => { getRef.current = get; }, [get]);
   useEffect(() => { baseURLRef.current = baseURL; }, [baseURL]);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError]     = useState(null);
   const [items, setItems]     = useState([]);
 
@@ -95,9 +95,9 @@ export default function useMonthlyTransactionsFromApi({ userId, year, month, ref
 
     run();
     return () => { alive = false; };
-  }, [userId, year, month, refresh]); // ✅ api 제거(안정화)
+  }, [userId, year, month, refresh]); // api 제거(안정화)
 
-  // ✅ 안전한 날짜 파싱
+  // 안전한 날짜 파싱
   const getDay = (d) => {
     const dt = d instanceof Date ? d : new Date(d);
     const day = Number.isFinite(dt.getTime()) ? dt.getDate() : NaN;
