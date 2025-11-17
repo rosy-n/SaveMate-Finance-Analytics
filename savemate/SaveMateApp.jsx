@@ -128,7 +128,7 @@ export default function SaveMateApp() {
     const off = appBus.on('homeTabPressed', handler); // on() 이 off 함수를 리턴하는 구현인 경우
     return () => off && off(); // 구현이 off()를 리턴하지 않으면 appBus.off('homeTabPressed', handler) 사용
   }, []);
-  
+
   // API 헬스체크로 대체
   const api = useApi();
   useEffect(() => {
@@ -626,13 +626,14 @@ export default function SaveMateApp() {
               setSelectedMonth((tempIncomeData?.date?.getMonth?.() ?? new Date().getMonth()) + 1);
               setSelectedDate(tempIncomeData?.date?.getDate?.() ?? new Date().getDate());
               setRefreshKey(k => k + 1);
-              setCurrentPage('detail');
+              setCurrentPage('home');
               Alert.alert('저장 완료', '수입이 기록되었어요 ✅');
             } catch (e) {
               console.error(e);
               Alert.alert('저장 실패', '서버 통신 오류가 발생했습니다.');
             }
           }}
+
           onExpenseSubmit={async ({ memo, method, category, background }) => {
             try {
               const amount = Number(tempExpenseData?.amount || 0);
@@ -652,13 +653,14 @@ export default function SaveMateApp() {
               setSelectedMonth((tempExpenseData?.date?.getMonth?.() ?? new Date().getMonth()) + 1);
               setSelectedDate(tempExpenseData?.date?.getDate?.() ?? new Date().getDate());
               setRefreshKey(k => k + 1);
-              setCurrentPage('detail');
+              setCurrentPage('home');
               Alert.alert('저장 완료', '지출이 기록되었어요 ✅');
             } catch (e) {
               console.error(e);
               Alert.alert('저장 실패', e.message || '서버 오류');
             }
           }}
+
 
           tempIncomeData={tempIncomeData}
           tempExpenseData={tempExpenseData}
