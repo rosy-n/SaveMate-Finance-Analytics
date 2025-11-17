@@ -5,11 +5,11 @@ import React from 'react';
 import { Platform } from 'react-native';
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { appBus } from '../eventBus';
-// import { SaveMateStyles as styles } from '@/styles/SaveMateStyles'; // 필요 시
+import { appBus } from '@/app/eventBus';
+// import { SaveMateStyles as styles } from '@/styles/SaveMateStyles';
 
 const BRAND = {
-  // Figma의 활성 색상을 반영하여 마이페이지처럼 보라색 계열로 설정합니다.
+  // Figma의 활성 색상을 반영하여 마이페이지처럼 보라색 계열로 설정
   tint: '#7C3AED',        // 활성 탭 색 (라벤더/보라)
   inactive: '#9CA3AF',    // 비활성 라벨/아이콘 (회색)
   bg: '#FFFFFF',          // 탭바 배경
@@ -51,7 +51,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="home" 
         options={{
-          title: '홈', // Figma 텍스트 반영
+          title: '홈', 
           tabBarIcon: ({ color }) => (
             // 집 모양 아이콘 (Figma와 유사)
             <IconSymbol size={24} name="house" color={color} />
@@ -59,7 +59,7 @@ export default function TabLayout() {
         }}
         listeners={{
           tabPress: () => {
-            // ✅ 홈 탭을 누를 때 SaveMateApp에 알림
+            // 홈 탭을 누를 때 SaveMateApp에 알림
             appBus.emit('homeTabPressed');
           },
         }}
@@ -79,7 +79,7 @@ export default function TabLayout() {
       
       {/* 3. 챌린지 탭 */}
       <Tabs.Screen
-        name="challenge" // challenge 폴더를 가리킵니다.
+        name="challenge" // challenge 폴더
         options={{
           title: '챌린지', // Figma 텍스트 반영
           tabBarIcon: ({ color }) => (
@@ -91,7 +91,7 @@ export default function TabLayout() {
       
       {/* 4. 마이페이지 탭 */}
       <Tabs.Screen
-        name="mypage" // mypage 폴더 또는 mypage.tsx 파일을 가리킵니다.
+        name="mypage" // mypage 폴더 또는 mypage.tsx 파일
         options={{
           title: '마이페이지', // Figma 텍스트 반영
           tabBarIcon: ({ color }) => (
@@ -101,7 +101,7 @@ export default function TabLayout() {
         }}
       />
 
-      {/* explore 탭은 Figma에 없으므로 제거됩니다. */}
+      {/* explore 탭은 Figma에 없으므로 제거 */}
     </Tabs>
   );
 }

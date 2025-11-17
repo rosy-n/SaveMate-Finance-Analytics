@@ -123,6 +123,12 @@ export default function SaveMateApp() {
   const [pendingList, setPendingList] = useState([]);  // 미평가 지출 큐
   const [pendingIndex, setPendingIndex] = useState(0); // 현재 보여줄 큐 인덱스
 
+  useEffect(() => {
+    const handler = () => setCurrentPage('home');  // ✅ 함수
+    const off = appBus.on('homeTabPressed', handler); // on() 이 off 함수를 리턴하는 구현인 경우
+    return () => off && off(); // 구현이 off()를 리턴하지 않으면 appBus.off('homeTabPressed', handler) 사용
+  }, []);
+  
   // API 헬스체크로 대체
   const api = useApi();
   useEffect(() => {
