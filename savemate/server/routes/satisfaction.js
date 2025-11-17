@@ -5,31 +5,46 @@ const { db, admin } = require('../firebaseAdmin');
 
 const now = admin.firestore.FieldValue.serverTimestamp();
 
-// 🔹 만족도 평가 생성
+/**
+ * POST /api/satisfaction
+ * Body:
+ * {
+ *   uid: string,
+ *   transactionId: string,
+ *   emotion: 'dissatisfied' | 'neutral' | 'satisfied',
+ *   reasons: string[],   <-- 배열
+ *   memo?: string
+ * }
+ */
 router.post('/', async (req, res) => {
   try {
-    const { uid, transactionId, emotion, reason, memo } = req.body;
+    const { uid, transactionId, emotion, reasons, memo } = req.body;
 
-    if (!uid || !transactionId || !emotion || !reason) {
-      return res.status(400).json({ ok: false, error: 'missing fields' });
+    // 필수값 체크
+    if (!uid || !transactionId || !emotion || !Array.isArray(reasons)) {
+      return res.status(400).json({
+        ok: false,
+        error: 'missing fields or reasons must be an array',
+      });
     }
 
+    // 저장할 문서
     const doc = {
       transactionId,
-      emotion,           // 'dissatisfied' | 'neutral' | 'satisfied'
-      reason,
+      emotion,
+      reasons,            // ⭐ 배열로 저장
       memo: memo ?? '',
       createdAt: now,
     };
 
-    // ⭐ user 기반 경로로 저장
-    const ref = await db
+    // ⭐ 사용자 기반 경로에 저장
+    const satRef = await db
       .collection('users')
       .doc(uid)
       .collection('satisfactionRatings')
       .add(doc);
 
-    // 🔹 해당 트랜잭션의 isRated = true 업데이트
+    // ⭐ 해당 거래의 isRated = true 업데이트
     await db
       .collection('users')
       .doc(uid)
@@ -37,31 +52,40 @@ router.post('/', async (req, res) => {
       .doc(transactionId)
       .update({ isRated: true, updatedAt: now });
 
-    res.status(201).json({ ok: true, id: ref.id });
+    return res.status(201).json({ ok: true, id: satRef.id });
+
   } catch (e) {
     console.error('[POST /api/satisfaction Error]', e);
-    res.status(500).json({ ok: false, error: e.message });
+    return res.status(500).json({ ok: false, error: e.message });
   }
 });
 
-// 🔹 특정 사용자의 만족도 평가 조회
+
+/**
+ * GET /api/satisfaction/:uid
+ * 해당 사용자의 모든 만족도 평가 조회
+ */
 router.get('/:uid', async (req, res) => {
   try {
     const { uid } = req.params;
 
-    const snapshot = await db
+    const snap = await db
       .collection('users')
       .doc(uid)
       .collection('satisfactionRatings')
       .orderBy('createdAt', 'desc')
       .get();
 
-    const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    const items = snap.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
 
-    res.json({ ok: true, items });
+    return res.json({ ok: true, items });
+
   } catch (e) {
     console.error('[GET /api/satisfaction/:uid Error]', e);
-    res.status(500).json({ ok: false, error: e.message });
+    return res.status(500).json({ ok: false, error: e.message });
   }
 });
 

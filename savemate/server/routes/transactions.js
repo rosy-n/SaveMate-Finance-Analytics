@@ -118,11 +118,15 @@ router.post('/', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const { uid, year, month } = req.query;
+
     const y = Number(year);
     const m = Number(month);
 
     if (!uid || !y || !m) {
-      return res.status(400).json({ ok: false, error: 'uid, year, month are required' });
+      return res.status(400).json({
+        ok: false,
+        error: 'uid, year, month are required',
+      });
     }
 
     const { startTs, endTs } = getMonthRange(y, m);
@@ -136,12 +140,12 @@ router.get('/', async (req, res) => {
       .orderBy('date', 'desc')
       .get();
 
-    const items = snap.docs.map((d) => {
-      const data = d.data() || {};
-      let dateVal = null;
+    const items = snap.docs.map((doc) => {
+      const data = doc.data() || {};
 
+      let dateVal = null;
       if (data.date?.toDate) {
-        dateVal = data.date.toDate().toISOString(); // 훅에서 Date로 다시 파싱 가능
+        dateVal = data.date.toDate().toISOString();
       } else if (data.occurredAt?.toDate) {
         dateVal = data.occurredAt.toDate().toISOString();
       } else if (data.date) {
@@ -149,7 +153,7 @@ router.get('/', async (req, res) => {
       }
 
       return {
-        id: d.id,
+        id: doc.id,
         ...data,
         date: dateVal,
       };
