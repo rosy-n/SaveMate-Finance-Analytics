@@ -88,7 +88,10 @@ router.get('/consumption', async (req, res) => {
     const cntBy = (arr, key) => arr.reduce((m,t)=>{ const k = typeof key==='function'? key(t) : (t[key]||'기타'); m[k]=(m[k]||0)+1; return m; },{});
 
     const byCategory = sumBy(expense, 'category');
-    const byPayment  = cntBy(expense, t => t.expenseDetail?.paymentMethod || '기타');
+    const byPayment  = cntBy(
+      expense,
+      t => t.paymentMethod || t.expenseDetail?.paymentMethod || '기타'
+    );
     const emotions   = cntBy(sats, 'emotion');
     const reasons    = cntBy(sats, 'reason');
 
@@ -96,7 +99,7 @@ router.get('/consumption', async (req, res) => {
       const t = monthTx.find(x=>x.id===s.transactionId) || {};
       return {
         amount: t.amount, category: t.category || '기타', memo: redact(t.memo || ''),
-        background: t.expenseDetail?.spendingBackground || null,
+        background: t.spendingBackground || t.expenseDetail?.spendingBackground || null,
         date: t.date ? t.date.toISOString() : null, reason: s.reason || null
       };
     });

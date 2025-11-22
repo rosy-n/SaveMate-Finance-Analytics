@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,6 +7,8 @@ import { Text as SvgText } from 'react-native-svg';
 import { useApi } from '../hooks/useApi';
 import { SaveMateStyles as styles } from '../styles/SaveMateStyles';
 import { ReportStyles as reportStyles } from './styles/ReportStyles';
+import { useFocusEffect } from '@react-navigation/native';
+import { appBus } from '../app/eventBus';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -19,6 +21,30 @@ const pct = (part, total) => (total ? Math.round((part / total) * 100) : 0);
 
 export default function ReportHome() {
   const api = useApi();
+
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // ✅ 리포트탭 들어올 때마다 refreshKey 증가
+  useFocusEffect(
+    useCallback(() => {
+      setRefreshKey(k => k + 1);
+    }, [])
+  );
+
+  // ✅ 거래 저장/삭제 시 앱 전역 이벤트로도 refresh
+  useEffect(() => {
+    const off = appBus.on('transactionsChanged', () => {
+      setRefreshKey(k => k + 1);
+    });
+    return () => off && off();
+  }, []);
+
+  // ✅ refreshKey마다 "현재 월" 재계산 (앱 켜둔 채로 월 넘어가도 안전)
+  const [year, month] = useMemo(() => {
+    const now = new Date();
+    return [now.getFullYear(), now.getMonth() + 1];
+  }, [refreshKey]);
+
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
 
@@ -66,24 +92,17 @@ export default function ReportHome() {
           setLlmError(e?.message || 'LLM 리포트를 불러오지 못했습니다.');
         }
       } finally {
-        if (mounted) setLlmLoading(false); // ✅ 반드시 false로 내리기
+        if (mounted) setLlmLoading(false);
       }
     };
     run();
     return () => { mounted = false; };
-  }, [api, uid, year, month]);
-
-
-
-  const [year, month] = useMemo(() => {
-    const now = new Date(); 
-    return [now.getFullYear(), now.getMonth() + 1];
-  }, []);
+  }, [api, uid, year, month, refreshKey]);
 
   const uid = process.env.EXPO_PUBLIC_UID;
 
  if (!uid) {
-   // 개발 단계라면 Alert/console.warn 정도만; 배포에선 로그인 연동 권장
+   // 개발 단계라면 Alert/console.warn 정도만, 배포에선 로그인 연동 권장
    console.warn('EXPO_PUBLIC_UID가 설정되지 않았습니다. .env를 확인하세요.');
  }
 
@@ -102,7 +121,7 @@ export default function ReportHome() {
       }
     })();
     return () => (mounted = false);
-  }, [api, uid, year, month]);
+  }, [api, uid, year, month, refreshKey]);
 
   useEffect(() => {
     let mounted = true;
@@ -124,7 +143,7 @@ export default function ReportHome() {
       }
     })();
     return () => (mounted = false);
-  }, [api, uid, year, month]);
+  }, [api, uid, year, month, refreshKey]);
 
   // 카테고리 집계 (지출만, spendingCategory → category 폴백)
   const { total, top3, chartData } = useMemo(() => {

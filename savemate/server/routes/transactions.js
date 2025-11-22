@@ -14,6 +14,39 @@ function shiftYearMonth(year, month, delta) {
   return { year: y, month: m + 1 };
 }
 
+// YYYY-MM 포맷
+function monthKey(y, m) {
+  return `${y}-${String(m).padStart(2, '0')}`;
+}
+
+/**
+ * 🔁 월별 LLM 소비 리포트 캐시 무효화
+ *
+ * 현재 reports.js는 다음 경로에 캐시를 저장하고 있습니다.
+ *   users/{uid}/cachedReports/{YYYY-MM}
+ */
+async function invalidateConsumptionReportCache(uid, baseDate) {
+  try {
+    if (!uid || !baseDate) return;
+
+    const y = baseDate.getFullYear();
+    const m = baseDate.getMonth() + 1;
+    const ym = monthKey(y, m);
+
+    await db
+      .collection('users')
+      .doc(uid)
+      .collection('cachedReports')
+      .doc(ym)
+      .delete();
+
+    console.log(`[REPORT CACHE] invalidated users/${uid}/cachedReports/${ym}`);
+  } catch (e) {
+    // 캐시 삭제 실패 때문에 저장/삭제 자체가 실패하면 안 되므로 경고만
+    console.warn('[REPORT CACHE] invalidate failed:', e.message || e);
+  }
+}
+
 // 공통: 날짜 범위 계산 (UTC 기준)
 function getMonthRange(y, m) {
   const start = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0, 0));
@@ -97,6 +130,9 @@ router.post('/', async (req, res) => {
       .doc(uid)
       .collection('transactions')
       .add(doc);
+
+    // 🔁 이 거래가 속한 월의 LLM 소비 리포트 캐시 무효화
+    invalidateConsumptionReportCache(uid, baseDate).catch(() => {});
 
     res.status(201).json({ ok: true, id: trxRef.id });
   } catch (e) {
@@ -292,19 +328,41 @@ router.get('/:uid', async (req, res) => {
 });
 
 /**
- * (기존) 단일 삭제
  * DELETE /api/transactions/:uid/:tid
+ * 단일 거래 삭제 + 해당 월 LLM 리포트 캐시 무효화
  */
 router.delete('/:uid/:tid', async (req, res) => {
   try {
     const { uid, tid } = req.params;
 
-    await db
+    const trxRef = db
       .collection('users')
       .doc(uid)
       .collection('transactions')
-      .doc(tid)
-      .delete();
+      .doc(tid);
+
+    // 삭제 전 거래 날짜 읽기 → 어느 달인지 계산
+    const snap = await trxRef.get();
+
+    let baseDate = null;
+    if (snap.exists) {
+      const data = snap.data() || {};
+      if (data.date?.toDate) {
+        baseDate = data.date.toDate();
+      } else if (data.occurredAt?.toDate) {
+        baseDate = data.occurredAt.toDate();
+      } else if (data.date) {
+        const tmp = new Date(data.date);
+        if (Number.isFinite(tmp.getTime())) baseDate = tmp;
+      }
+    }
+
+    await trxRef.delete();
+
+    // 🔁 해당 달 리포트 캐시 삭제
+    if (baseDate) {
+      invalidateConsumptionReportCache(uid, baseDate).catch(() => {});
+    }
 
     res.json({ ok: true });
   } catch (e) {

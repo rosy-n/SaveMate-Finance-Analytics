@@ -240,11 +240,11 @@ export default function SaveMateApp() {
       let mounted = true;
       (async () => {
         try {
-          console.log("🌐 loadPendingByCreatedAt 호출 직전");
+          //console.log("🌐 loadPendingByCreatedAt 호출 직전");
 
           // 새 함수 사용: createdAt 기준 최신순 + 미평가만 반환
           const pending = await loadPendingByCreatedAt({ api, uid: homeData.userId, cap: 50 });
-          console.log("📥 loadPending 결과:", pending);
+          //console.log("📥 loadPending 결과:", pending);
           
           if (!mounted) return;
           setPendingList(pending);
