@@ -28,7 +28,7 @@ export async function loadPendingByCreatedAt({
   cap = 50,
 } = {}) {
   // loadPendingByCreatedAt 함수가 실제로 호출되는지 확인용 코드임. 잘 확인되는 지울거임
-  console.log("🐰 loadPendingByCreatedAt 호출됨! uid=", uid);
+  // console.log("🐰 loadPendingByCreatedAt 호출됨! uid=", uid);
   if (!api) throw new Error('loadPendingByCreatedAt: api가 필요합니다');
   if (!uid) console.warn('⚠️ uid가 비어 있습니다(.env 확인)');
 
