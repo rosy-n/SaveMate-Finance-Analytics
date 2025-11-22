@@ -176,7 +176,7 @@ export default function ReportHome() {
   }, [items]);
     
   // chartData 결과를 기반으로 pieData 생성
-const pieData = useMemo(() => {
+  const pieData = useMemo(() => {
     const src = Array.isArray(chartData) ? chartData : [];
     return src
         .filter(Boolean)
@@ -189,6 +189,48 @@ const pieData = useMemo(() => {
         legendFontSize: d.legendFontSize ?? 12,
         }));
     }, [chartData]);
+
+    // ✅ LLM 항목이 문자열/객체 둘 다 올 수 있어서 안전 렌더링
+    const renderLlmItem = (item) => {
+      if (item == null) return null;
+
+      if (typeof item === 'string' || typeof item === 'number') {
+        return String(item);
+      }
+
+      if (typeof item === 'object') {
+        const reason = item.reason ?? item.trigger ?? item.title ?? null;
+        const count = item.count ?? null;
+        const examples = Array.isArray(item.examples) ? item.examples : null;
+
+        if (reason) {
+          let s = reason;
+          if (count != null) s += ` (${count}회)`;
+          if (examples?.length) s += `\n예: ${examples.join(', ')}`;
+          return s;
+        }
+
+        try { return JSON.stringify(item); }
+        catch { return String(item); }
+      }
+
+      return String(item);
+    };
+
+    const LoadingBlock = () => (
+      <View style={reportStyles.center}>
+        <ActivityIndicator />
+        <Text style={[reportStyles.cardText, { marginTop: 6, color: '#888' }]}>
+          분석 데이터를 불러오는 중…
+        </Text>
+      </View>
+    );
+
+    const ErrorBlock = ({ message }) => (
+      <Text style={[reportStyles.cardText, { marginTop: 8, color: '#B43A22' }]}>
+        {message}
+      </Text>
+    );
 
 
   return (
@@ -303,67 +345,108 @@ const pieData = useMemo(() => {
           )}
         </View> 
 
-        {/* LLM 기반 소비 리포트 */}
-        <View style={reportStyles.card}>
-          <Text style={reportStyles.cardTitle}>AI 소비 리포트</Text>
+        {/* --- AI 소비 리포트 (카드 분리) --- */}
+        <View>
 
+        {/* 1) 요약 */}
+        <View style={reportStyles.card}>
+          <Text style={reportStyles.cardTitle}>AI 소비 요약</Text>
           {llmLoading ? (
-            <View style={reportStyles.center}>
-              <ActivityIndicator />
-              <Text style={[reportStyles.cardText, { marginTop: 6, color: '#888' }]}>
-                분석 데이터를 불러오는 중…
-              </Text>
-            </View>
+            <LoadingBlock />
           ) : llmError ? (
-            <Text style={[reportStyles.cardText, { marginTop: 8, color: '#B43A22' }]}>
-              {llmError}
-            </Text>
+            <ErrorBlock message={llmError} />
           ) : !llmReport ? (
             <Text style={[reportStyles.cardText, { marginTop: 8 }]}>
               리포트를 불러오지 못했습니다.
             </Text>
           ) : (
-            <>
-              <Text style={[reportStyles.cardText, { marginTop: 8, lineHeight: 20 }]}>
-                {llmReport.summary}
-              </Text>
-
-              {Array.isArray(llmReport.habits) && llmReport.habits.length > 0 && (
-                <View style={{ marginTop: 12 }}>
-                  <Text style={reportStyles.listTitle}>💡 소비 습관</Text>
-                  {llmReport.habits.map((h, i) => (
-                    <Text key={i} style={reportStyles.cardText}> {h}</Text>
-                  ))}
-                </View>
-              )}
-
-              {Array.isArray(llmReport.spending_risks) && llmReport.spending_risks.length > 0 && (
-                <View style={{ marginTop: 12 }}>
-                  <Text style={reportStyles.listTitle}>⚠️ 소비 리스크</Text>
-                  {llmReport.spending_risks.map((r, i) => (
-                    <Text key={i} style={reportStyles.cardText}> {r.why}</Text>
-                  ))}
-                </View>
-              )}
-
-              {llmReport.emotion_patterns && (
-                <View style={{ marginTop: 12 }}>
-                  <Text style={reportStyles.listTitle}>🙂 감정 패턴</Text>
-
-                  {Array.isArray(llmReport.emotion_patterns.neutral_insights) ? (
-                    llmReport.emotion_patterns.neutral_insights.map((e, i) => (
-                      <Text key={i} style={reportStyles.cardText}> {e}</Text>
-                    ))
-                  ) : (
-                    <Text style={reportStyles.cardText}>감정 패턴 데이터가 없어요.</Text>
-                  )}
-                </View>
-              )}
-
-            </>
+            <Text style={[reportStyles.cardText, { marginTop: 8, lineHeight: 20 }]}>
+              {llmReport.summary}
+            </Text>
           )}
         </View>
 
+        {/* 소비 습관 + 소비 리스크 (통합 카드) */}
+        {(Array.isArray(llmReport?.habits) && llmReport.habits.length > 0) ||
+        (Array.isArray(llmReport?.spending_risks) && llmReport.spending_risks.length > 0) ? (
+          <View style={[reportStyles.card, { marginTop: 12 }]}>
+            
+            {/* 제목 */}
+            <Text style={reportStyles.cardTitle}>💡 소비 습관 & ⚠️ 소비 리스크</Text>
+
+            {/* 소비 습관 */}
+            {Array.isArray(llmReport?.habits) && llmReport.habits.length > 0 && (
+              <>
+                <Text style={[reportStyles.listTitle, { marginTop: 8 }]}>소비 습관</Text>
+                {llmReport.habits.map((h, i) => (
+                  <Text key={i} style={reportStyles.cardText}>
+                    • {renderLlmItem(h)}
+                  </Text>
+                ))}
+              </>
+            )}
+
+            {/* 소비 리스크 */}
+            {Array.isArray(llmReport?.spending_risks) && llmReport.spending_risks.length > 0 && (
+              <>
+                <Text style={[reportStyles.listTitle, { marginTop: 12 }]}>소비 리스크</Text>
+                {llmReport.spending_risks.map((r, i) => (
+                  <Text key={i} style={reportStyles.cardText}>
+                    • {renderLlmItem(r)}
+                  </Text>
+                ))}
+              </>
+            )}
+
+          </View>
+        ) : null}
+
+
+        {/* 4) 감정 패턴 */}
+        {llmReport?.emotion_patterns && (
+          <View style={[reportStyles.card, { marginTop: 12 }]}>
+            <Text style={reportStyles.cardTitle}>🙂 감정 패턴</Text>
+
+            {Array.isArray(llmReport.emotion_patterns.neutral_insights) &&
+              llmReport.emotion_patterns.neutral_insights.length > 0 && (
+              <>
+                <Text style={reportStyles.listTitle}>중립 소비</Text>
+                {llmReport.emotion_patterns.neutral_insights.map((e, i) => (
+                  <Text key={i} style={reportStyles.cardText}>
+                    • {renderLlmItem(e)}
+                  </Text>
+                ))}
+              </>
+            )}
+
+            {Array.isArray(llmReport.emotion_patterns.satisfied_top_reasons) &&
+              llmReport.emotion_patterns.satisfied_top_reasons.length > 0 && (
+              <>
+                <Text style={[reportStyles.listTitle, { marginTop: 10 }]}>만족 소비</Text>
+                {llmReport.emotion_patterns.satisfied_top_reasons.map((e, i) => (
+                  <Text key={i} style={reportStyles.cardText}>
+                    • {renderLlmItem(e)}
+                  </Text>
+                ))}
+              </>
+            )}
+
+            {Array.isArray(llmReport.emotion_patterns.dissatisfied_top_reasons) &&
+              llmReport.emotion_patterns.dissatisfied_top_reasons.length > 0 && (
+              <>
+                <Text style={[reportStyles.listTitle, { marginTop: 10 }]}>불만족 소비</Text>
+                {llmReport.emotion_patterns.dissatisfied_top_reasons.map((e, i) => (
+                  <Text key={i} style={reportStyles.cardText}>
+                    • {renderLlmItem(e)}
+                  </Text>
+                ))}
+              </>
+            )}
+          </View>
+        )}
+
+
+      </View>
 
         <View style={{ height: 24 }} />
       </ScrollView>

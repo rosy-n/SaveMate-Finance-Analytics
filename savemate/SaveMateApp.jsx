@@ -236,7 +236,7 @@ export default function SaveMateApp() {
 
     // 만족도 평가 안한 지출내역들을 넣는 미평가 큐
     useEffect(() => {
-      console.log("🎯 useEffect 실행됨. refreshKey=", refreshKey);
+      //console.log("🎯 useEffect 실행됨. refreshKey=", refreshKey);
       let mounted = true;
       (async () => {
         try {
