@@ -295,6 +295,37 @@ router.get('/monthly-sum', async (req, res) => {
   }
 });
 
+// transactions bulk 조회 (지출배경 분석에서 사용)
+router.post('/bulk', async (req, res) => {
+  try {
+    const { ids, uid } = req.body;
+
+    if (!uid) {
+      return res.status(400).json({ ok: false, error: 'uid required' });
+    }
+
+    if (!Array.isArray(ids)) {
+      return res.status(400).json({ ok: false, error: 'ids must be an array' });
+    }
+
+    const col = db.collection('users').doc(uid).collection('transactions');
+    const items = [];
+
+    for (const id of ids) {
+      const snap = await col.doc(id).get();
+      if (snap.exists) {
+        items.push({ id, ...snap.data() });
+      }
+    }
+
+    return res.json({ ok: true, items });
+  } catch (e) {
+    console.error('[POST /api/transactions/bulk Error]', e);
+    return res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+
 /**
  * (기존) 특정 사용자 거래 전체 조회
  * GET /api/transactions/:uid

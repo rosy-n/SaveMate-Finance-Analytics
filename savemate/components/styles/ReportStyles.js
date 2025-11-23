@@ -45,4 +45,56 @@ export const ReportStyles = StyleSheet.create({
   dot: { width: 20, height: 20, borderRadius: 10 },
 
   itemRow: { paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#EFEFF2' },
+
+
+// 지출배경별 만족도 막대 그래프 스타일
+    bgBlock: {
+      marginBottom: 22,
+    },
+    bgLabel: {
+      fontSize: 14,
+      color: '#444',
+      marginBottom: 4,
+    },
+    bgBarWrap: {
+      height: 28,
+      borderRadius: 14,
+      overflow: 'hidden',
+      flexDirection: 'row',
+      backgroundColor: '#eee',
+    },
+    bgBarDissatisfied: {
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: '#F4A7A7',
+    },
+    bgBarNeutral: {
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: '#F7D8A4',
+    },
+    bgBarSatisfied: {
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: '#BFF8AA',
+    },
+    bgBarText: {
+      fontSize: 12,
+      color: 'gray-600',
+      fontWeight: '600',
+    },
+  
+    bgLegendRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      marginTop: 6,
+    },
+    bgLegendItem: {
+      fontSize: 12,
+      marginRight: 10,
+    },
+    bgLegendD: { color: '#F4A7A7' },
+    bgLegendN: { color: '#F7D8A4' },
+    bgLegendS: { color: '#BFF8AA' },
+  
 });
