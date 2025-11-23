@@ -79,12 +79,16 @@ const Challenge = () => {
   return (
     <View style={styles.screen}>
       {/* 헤더 */}
-      <View style={styles.challengeHeader}>
+      <View style={styles.challengeHeaderFix}>
+        <View style={{ width: 40, height: 40 }} />
+
         <Text style={styles.challengeTitle}>챌린지</Text>
+
         <TouchableOpacity style={styles.addChallengeButton} onPress={goToNewChallenge}>
           <Text style={styles.addChallengeButtonText}>+</Text>
         </TouchableOpacity>
       </View>
+
 
       {/* 서브 헤더 */}
       <View style={styles.challengeSubheader}>

@@ -237,6 +237,16 @@ export const SaveMateStyles = StyleSheet.create({
   btnPrimaryLargeText: { fontSize: 15, color: '#7C3AED', fontWeight: '600' },
 
   // ===== 챌린지 탭 =====
+  challengeHeaderFix: {
+    height: 56,           
+    paddingTop: 8,  
+    paddingHorizontal: 20,       
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+
   challengeHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -253,11 +263,20 @@ export const SaveMateStyles = StyleSheet.create({
     flex: 1,
   },
   addChallengeButton: {
-    width: 24,
-    height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "transparent", // 필요하면 배경색 추가 가능
   },
+  addChallengeButtonText: {
+    fontSize: 32,
+    color: "#7C3AED",
+    fontWeight: "700",
+    lineHeight: 34, // iOS에서 중앙 맞춤
+  },
+
   challengeSubheader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -341,6 +360,71 @@ export const SaveMateStyles = StyleSheet.create({
     marginBottom: 10,
   },
 
+    // ===== 챌린지 탭 (시안 카드용 추가 스타일) =====
+    challengeCard: {
+      backgroundColor: "#FFFFFF",
+      borderRadius: 14,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: "rgba(0,0,0,0.06)",
+      marginBottom: 12,
+    },
+    challengeCardRow: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    challengeCardTitle: {
+      fontSize: 14,
+      fontWeight: "700",
+      color: "#111827",
+    },
+    challengeCardAmount: {
+      fontSize: 12,
+      color: "#6B7280",
+      marginTop: 4,
+    },
+
+    challengeProgressTrack: {
+      marginTop: 8,
+      height: 10,
+      borderRadius: 999,
+      backgroundColor: "#E5E7EB",
+      overflow: "hidden",
+    },
+    challengeProgressFill: {
+      height: "100%",
+      backgroundColor: "#8B5CF6",
+    },
+    challengeProgressFillFail: {
+      backgroundColor: "#AEAEB2",
+    },
+
+    challengeCardRight: {
+      alignItems: "flex-end",
+      justifyContent: "center",
+      marginLeft: 12,
+      minWidth: 48,
+    },
+    challengeCardPct: {
+      fontSize: 14,
+      fontWeight: "800",
+      color: "#8B5CF6",
+    },
+    challengeCardPctFail: {
+      color: "#AEAEB2",
+    },
+
+    challengeMoreBtn: {
+      paddingVertical: 4,
+      paddingHorizontal: 6,
+      marginTop: 4,
+    },
+    challengeMoreBtnText: {
+      fontSize: 16,
+      color: "#9CA3AF",
+      fontWeight: "700",
+      lineHeight: 16,
+    },
 
   // 새 챌린지 추가 화면
   challengeTitleInput: {
