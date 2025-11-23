@@ -20,6 +20,9 @@ const formatKRW = (n) => `${Number(n || 0).toLocaleString('ko-KR')}원`;
 const pct = (part, total) => (total ? Math.round((part / total) * 100) : 0);
 
 export default function ReportHome() {
+  const uid = process.env.EXPO_PUBLIC_UID;
+
+  const [worst3, setWorst3] = useState([]);
   const api = useApi();
 
   const [refreshKey, setRefreshKey] = useState(0);
@@ -172,8 +175,6 @@ export default function ReportHome() {
   }, [api, uid, refreshKey]);
 
 
-  const uid = process.env.EXPO_PUBLIC_UID;
-
   if (!uid) {
     // 개발 단계라면 Alert/console.warn 정도만, 배포에선 로그인 연동 권장
     console.warn('EXPO_PUBLIC_UID가 설정되지 않았습니다. .env를 확인하세요.');
@@ -195,6 +196,94 @@ export default function ReportHome() {
     })();
     return () => (mounted = false);
   }, [api, uid, year, month, refreshKey]);
+
+
+  // 이번달 Worst 3 계산 useEffect
+  useEffect(() => {
+    console.log("🔍 Worst3 시작");
+
+    let mounted = true;
+
+    (async () => {
+      try {
+        // 1) 전체 만족도 가져오기
+        const satRes = await api.get(`/api/satisfaction/${uid}`);
+        const satItems = Array.isArray(satRes?.items) ? satRes.items : [];
+
+        // 2) 불만족만 추출
+        const disliked = satItems.filter(r => r.emotion === 'dissatisfied');
+
+        if (disliked.length === 0) {
+          mounted && setWorst3([]);
+          return;
+        }
+
+        // 3) 불만족 트랜잭션ID 모으기
+        const ids = disliked.map(r => r.transactionId);
+
+        // 4) bulk로 모든 트랜잭션 로드
+        const bulk = await api.post(`/api/transactions/bulk`, { ids, uid });
+        const txList = Array.isArray(bulk?.items) ? bulk.items : [];
+
+        // 5) 지출(expense)만 남기기
+        const expenses = txList.filter(tx =>
+          String(tx.type || '').toLowerCase().includes('exp')
+        );
+
+        // 6) 이번 달 date 기준 필터
+        const monthFiltered = expenses.filter(tx => {
+          const d = tx.date?.toDate ? tx.date.toDate() : new Date(tx.date);
+          return (
+            d.getFullYear() === year &&
+            d.getMonth() + 1 === month
+          );
+        });
+
+
+        if (monthFiltered.length === 0) {
+          mounted && setWorst3([]);
+          return;
+        }
+
+        // 7) amount 기준 내림차순 정렬
+        monthFiltered.sort((a, b) => Number(b.amount) - Number(a.amount));
+
+        // 8) Top 3 추출
+        mounted && setWorst3(monthFiltered.slice(0, 3));
+        console.log("🧪 disliked:", disliked.length);
+        console.log("🧪 bulk tx:", txList.length);
+        console.log("🧪 expenses:", expenses.length);
+        console.log("🧪 monthFiltered:", monthFiltered.length);
+
+        // 9) satisfaction 정보 합치기
+        const reasonsMap = {};
+        satItems.forEach(s => {
+          if (!reasonsMap[s.transactionId])
+            reasonsMap[s.transactionId] = [];
+          if (Array.isArray(s.reasons)) {
+            reasonsMap[s.transactionId].push(...s.reasons);
+          }
+        });
+
+        // 10) worst3에 reasons 병합
+        const merged = monthFiltered.slice(0, 3).map(tx => ({
+          ...tx,
+          satisfaction: {
+            reasons: reasonsMap[tx.id] || [],
+          },
+        }));
+
+        mounted && setWorst3(merged);
+
+      } catch (e) {
+        console.error('🔥 Worst3 새 알고리즘 오류:', e);
+        mounted && setWorst3([]);
+      }
+    })();
+
+    return () => (mounted = false);
+  }, [api, uid, year, month, refreshKey]);
+
 
   useEffect(() => {
     let mounted = true;
@@ -596,6 +685,60 @@ export default function ReportHome() {
               </View>
             )}
           </View>
+
+          {/* 이번달 지출 Worst 3 */}
+          {worst3.length > 0 && (
+            <View style={[reportStyles.card, { paddingBottom: 18 }]}>
+              <Text style={[reportStyles.cardTitle, { fontSize: 18, marginBottom: 6 }]}>
+                이번달 지출 Worst 3
+              </Text>
+
+              {worst3.map((item, index) => {
+                const rank = index + 1;
+                const dt = item.date?.toDate
+                  ? item.date.toDate()
+                  : new Date(item.date);
+
+                const dateKR = `${dt.getMonth() + 1}월 ${dt.getDate()}일 ${['일', '월', '화', '수', '목', '금', '토'][dt.getDay()]
+                  }요일`;
+
+                return (
+                  <View key={item.id} style={reportStyles.worstContainer}>
+                    <View style={reportStyles.worstRow}>
+
+                      <Text style={reportStyles.worstRank}>{rank}</Text>
+
+                      <View style={reportStyles.worstLeft}>
+                        <Text style={reportStyles.worstDate}>{dateKR}</Text>
+                        <Text style={reportStyles.worstAmount}>
+                          {Number(item.amount).toLocaleString('ko-KR')}원
+                        </Text>
+                      </View>
+
+                      <View style={reportStyles.worstRight}>
+                        <Text style={reportStyles.worstTitle}>
+                          {item.memo || item.category || '지출'}
+                        </Text>
+
+                        <Text style={reportStyles.worstSub}>
+                          구매배경 : {item.spendingBackground ?? '정보 없음'}
+                        </Text>
+
+                        {item.satisfaction?.reasons?.length > 0 && (
+                          <Text style={reportStyles.worstSub}>
+                            불만족이유 : {item.satisfaction.reasons.join(', ')}
+                          </Text>
+                        )}
+                      </View>
+
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+
+
 
 
 

@@ -311,11 +311,37 @@ router.post('/bulk', async (req, res) => {
     const col = db.collection('users').doc(uid).collection('transactions');
     const items = [];
 
+    // for (const id of ids) {
+    //   const snap = await col.doc(id).get();
+    //   if (snap.exists) {
+    //     items.push({ id, ...snap.data() });
+    //   }
+    // }
+
     for (const id of ids) {
       const snap = await col.doc(id).get();
-      if (snap.exists) {
-        items.push({ id, ...snap.data() });
+      if (!snap.exists) continue;
+
+      const data = snap.data() || {};
+
+      // 🔥 date 필드를 확실한 문자열로 변환
+      let dateVal = null;
+      if (data.date?.toDate) {
+        dateVal = data.date.toDate().toISOString();
+      } else if (data.date) {
+        // Timestamp가 JSON 변환되면서 toDate()가 사라진 경우
+        try {
+          dateVal = new Date(data.date._seconds * 1000).toISOString();
+        } catch {
+          dateVal = data.date;
+        }
       }
+
+      items.push({
+        id,
+        ...data,
+        date: dateVal,
+      });
     }
 
     return res.json({ ok: true, items });
