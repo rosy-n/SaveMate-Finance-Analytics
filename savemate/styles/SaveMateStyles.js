@@ -155,6 +155,11 @@ export const SaveMateStyles = StyleSheet.create({
   txnMeta: { fontSize: 13, color: '#4B5563', marginTop: 2 },
   emptyText: { fontSize: 13, color: '#9CA3AF' },
 
+  tipCard: {
+  height: 110,   // ← 3줄 기준 추천값
+  // height: 120      // 완전 고정하려면 이것도 가능
+  },
+
   // ===== 만족도 평가 스타일 =====
   satisfactionQuestion: { fontSize: 15, color: '#1F2937', marginBottom: 16, textAlign: 'center' },
   amountBox: {

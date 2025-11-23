@@ -234,6 +234,56 @@ export default function SaveMateApp() {
       });
     const totalExpenseThisMonth = homeMonthlyTotals?.expense ?? 0;
 
+    // 🔥 오늘의 절약팁 (여러 개)
+    const [todayTips, setTodayTips] = useState([]);
+    const [tipIndex, setTipIndex] = useState(0);
+    const [tipLoading, setTipLoading] = useState(true);
+    const [tipError, setTipError] = useState(null);
+
+    // 🔥 오늘의 절약팁 로드 (refreshKey에 묶어야 거래 입력 후 자동 갱신)
+    useEffect(() => {
+      let mounted = true;
+
+      (async () => {
+        try {
+          setTipLoading(true);
+          setTipError(null);
+
+          const res = await api.get(`/api/tips/today?uid=${homeData.userId}`);
+          const tips = res?.tip?.tips ?? [];
+
+          if (!mounted) return;
+          setTodayTips(tips);
+
+          // 홈 입장마다 랜덤한 팁부터 시작 (첫 팁 고정 방지)
+          if (tips.length > 0) {
+            setTipIndex(Math.floor(Math.random() * tips.length));
+          }
+        } catch (e) {
+          if (!mounted) return;
+          setTipError("절약팁 불러오지 못했어요.");
+          setTodayTips([]);
+        } finally {
+          mounted && setTipLoading(false);
+        }
+      })();
+
+      return () => { mounted = false; };
+    }, [api, homeData.userId, refreshKey]);
+
+    // 🔥 3초마다 자동으로 다음 팁으로 순환
+    useEffect(() => {
+      if (!todayTips || todayTips.length <= 1) return;
+
+      const timer = setInterval(() => {
+        setTipIndex(i => (i + 1) % todayTips.length);
+      }, 5000);
+
+      return () => clearInterval(timer);
+    }, [todayTips]);
+
+
+
     // 만족도 평가 안한 지출내역들을 넣는 미평가 큐
     useEffect(() => {
       //console.log("🎯 useEffect 실행됨. refreshKey=", refreshKey);
@@ -268,10 +318,27 @@ export default function SaveMateApp() {
         </View>
 
         <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>{homeData.motivationalQuote.title}</Text>
-            <Text style={styles.cardText}>{homeData.motivationalQuote.content}</Text>
+          <View style={[styles.card, styles.tipCard]}>
+            <Text style={styles.cardTitle}>오늘의 절약팁</Text>
+
+            {/* 로딩 */}
+            {tipLoading ? (
+              <Text style={styles.cardText}>불러오는 중…</Text>
+            ) : tipError ? (
+              <Text style={[styles.cardText, { color: '#B43A22' }]}>
+                {tipError}
+              </Text>
+            ) : todayTips.length === 0 ? (
+              <Text style={styles.cardText}>표시할 팁이 없어요.</Text>
+            ) : (
+              <>
+                <Text style={styles.cardText}>
+                  {todayTips[tipIndex]?.content}
+                </Text>                
+              </>
+            )}
           </View>
+
 
           <TouchableOpacity style={styles.card} onPress={() => setCurrentPage('detail')}>
             <View style={styles.rowBetween}>

@@ -43,3 +43,7 @@ app.listen(port, '0.0.0.0', () => {
 
 const reportRoutes = require('./routes/reports');
 app.use('/api/reports', reportRoutes);
+
+const tipsRouter = require('./routes/tips');
+app.use('/api/tips', tipsRouter);
+
