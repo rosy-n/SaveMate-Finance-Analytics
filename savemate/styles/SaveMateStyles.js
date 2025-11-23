@@ -148,6 +148,10 @@ export const SaveMateStyles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 12,
   },
+  categoryIcon: {
+  fontSize: 24,
+  color: '#7C3AED', // 앱 메인 색상 (보라색)
+  },
   txnBody: { flex: 1 },
   amountText: { fontSize: 18, fontWeight: '700' },
   income: { color: '#10B981' },

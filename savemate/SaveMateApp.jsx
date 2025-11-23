@@ -5,6 +5,7 @@ import { appBus } from './app/eventBus';
 import { loadPendingByCreatedAt } from './hooks/loadPendingByCreatedAt';
 import Challenge from './components/Challenge';
 import ChallengeDetail from './components/ChallengeDetail';
+import { getCategoryIcon } from './constants/categoryIcons';
 
 const Stack = createStackNavigator();
 
@@ -591,6 +592,8 @@ export default function SaveMateApp() {
               {selectedDayTransactions.map((transaction, index) => {
                 const isIncome = (transaction.type || '').toLowerCase() === 'income';
                 const displayAmount = Math.abs(Number(transaction.amount) || 0);
+                const category = transaction.category || (isIncome ? '수입' : '지출');
+                const icon = getCategoryIcon(category); 
 
                 return (
                   <View
@@ -600,7 +603,9 @@ export default function SaveMateApp() {
                       index < selectedDayTransactions.length - 1 && styles.txnDivider,
                     ]}
                   >
-                    <View style={styles.avatar}></View>
+                    <View style={styles.avatar}>
+                      <Text style={styles.categoryIcon}>{icon}</Text>
+                    </View>
                     <View style={styles.txnBody}>
                       <Text
                         style={[styles.amountText, isIncome ? styles.income : styles.expense]}
@@ -609,7 +614,7 @@ export default function SaveMateApp() {
                         {displayAmount.toLocaleString()}원
                       </Text>
                       <Text style={styles.txnMeta} numberOfLines={1}>
-                        {(transaction.category || (isIncome ? '수입' : '지출'))} | {transaction.memo || ''}
+                        {category} | {transaction.memo || ''}
                       </Text>
                     </View>
                   </View>

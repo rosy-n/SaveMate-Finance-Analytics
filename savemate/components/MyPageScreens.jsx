@@ -37,7 +37,7 @@ const RowItem = ({ label, onPress, right, danger }) => (
 export function MyPageMain() {
   const user = useMemo(
     () => ({
-      name: "노지은",
+      name: "유은서",
       daysTogether: 127,
     }),
     []
