@@ -307,14 +307,14 @@ export default function ReportHome() {
     return () => (mounted = false);
   }, [api, uid, year, month, refreshKey]);
 
-  // 카테고리 집계 (지출만, spendingCategory → category 폴백)
-  const { total, top3, chartData } = useMemo(() => {
+  // 카테고리 집계 (지출만)
+  const { total, top3, displayChartData } = useMemo(() => {
     const sums = {};
     let t = 0;
+
     for (const it of items) {
-      // ⬇️ 지출만 집계
       if (String(it?.type || '').toLowerCase() !== 'expense') continue;
-      // ⬇️ 서버가 내려주는 base.category까지 폴백
+
       const cat = it.spendingCategory || it.category || '기타';
       const amount = Number(it.amount || 0);
       sums[cat] = (sums[cat] || 0) + amount;
@@ -323,7 +323,25 @@ export default function ReportHome() {
 
     const entries = Object.entries(sums).sort((a, b) => b[1] - a[1]);
 
-    const chart = entries.map(([name, value], i) => {
+    const top3 = entries.slice(0, 3);
+    const others = entries.slice(3);
+    const othersSum = others.reduce((acc, [, v]) => acc + v, 0);
+
+    // ⭐ 범례 & 원그래프에 표시할 데이터 = 상위3 + 기타
+    const displayEntries = [...top3];
+    if (othersSum > 0) displayEntries.push(['기타', othersSum]);
+
+    const displayChartData = displayEntries.map(([name, value], i) => {
+      if (name === '기타') {
+        return {
+          name,
+          amount: value,
+          color: '#DADDE2',
+          legendFontColor: '#6b6b6b',
+          legendFontSize: 12,
+        };
+      }
+
       if (!CAT_COLORS[name]) CAT_COLORS[name] = PALETTE[i % PALETTE.length];
       return {
         name,
@@ -334,12 +352,13 @@ export default function ReportHome() {
       };
     });
 
-    return { total: t, top3: entries.slice(0, 3), chartData: chart };
+    return { total: t, top3, displayChartData };
   }, [items]);
+
 
   // chartData 결과를 기반으로 pieData 생성
   const pieData = useMemo(() => {
-    const src = Array.isArray(chartData) ? chartData : [];
+    const src = Array.isArray(displayChartData) ? displayChartData : [];
     return src
       .filter(Boolean)
       .filter(d => Number(d?.amount) > 0)
@@ -350,7 +369,8 @@ export default function ReportHome() {
         legendFontColor: d.legendFontColor ?? '#6b6b6b',
         legendFontSize: d.legendFontSize ?? 12,
       }));
-  }, [chartData]);
+  }, [displayChartData]);
+
 
   // ✅ LLM 항목이 문자열/객체 둘 다 올 수 있어서 안전 렌더링
   const renderLlmItem = (item) => {
