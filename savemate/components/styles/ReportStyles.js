@@ -153,7 +153,7 @@ export const ReportStyles = StyleSheet.create({
     marginBottom: 4,
   },
   worstAmount: {
-    fontSize: 22,    
+    fontSize: 20,    
     fontWeight: '800',
     color: '#000',
   },
