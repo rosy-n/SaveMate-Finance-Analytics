@@ -99,7 +99,6 @@ export const ReportStyles = StyleSheet.create({
 
 
   // 이번달 지출 worst 3 스타일
-
   worstRow: {
     flexDirection: 'row',
     alignItems: 'center',   
@@ -112,7 +111,6 @@ export const ReportStyles = StyleSheet.create({
     color: '#7C3AED',
     width: 18,
     textAlign: 'center',
-    // marginTop 제거
   },
 
   worstLeft: {
@@ -156,6 +154,35 @@ export const ReportStyles = StyleSheet.create({
     fontSize: 20,    
     fontWeight: '800',
     color: '#000',
+  },
+  highlightText: {
+    //fontWeight: "800",
+    color: "#222",
+    backgroundColor: "#EEE7FF",
+    paddingHorizontal: 3,
+    borderRadius: 4,
+  },
+
+  highlightText1: {
+    //fontWeight: "800",
+    color: "#F4A7A7",
+    //backgroundColor: "#F4A7A7",
+    paddingHorizontal: 3,
+    borderRadius: 4,
+  },
+  highlightText2: {
+    //fontWeight: "800",
+    color: "#F7D8A4",
+    //backgroundColor: "#F7D8A4",
+    paddingHorizontal: 3,
+    borderRadius: 4,
+  },
+  highlightText3: {
+    //fontWeight: "800",
+    color: "#BFF8AA",
+    //backgroundColor: "#BFF8AA",
+    paddingHorizontal: 3,
+    borderRadius: 4,
   },
 
 });
