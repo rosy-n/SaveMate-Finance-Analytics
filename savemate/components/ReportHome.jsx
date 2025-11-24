@@ -124,7 +124,7 @@ export default function ReportHome() {
         }
 
         // 2) transactionId만 추출 → bulk 조회
-        const ids = [...new Set(satItems.map(s => s.transactionId))];
+        const ids = Array.from(new Set(satItems.map(s => s.transactionId)));
 
         const txRes = await api.post(`/api/transactions/bulk`, { ids, uid });
         const txMap = {};
@@ -158,6 +158,7 @@ export default function ReportHome() {
             pN: Math.round((obj.neutral / total) * 100),
             pS: Math.round((obj.satisfied / total) * 100),
           };
+
         });
 
         arr.sort((a, b) => b.pD - a.pD);
