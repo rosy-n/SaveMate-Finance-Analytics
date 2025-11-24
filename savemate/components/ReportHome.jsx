@@ -308,7 +308,7 @@ export default function ReportHome() {
   }, [api, uid, year, month, refreshKey]);
 
   // 카테고리 집계 (지출만)
-  const { total, top3, displayChartData } = useMemo(() => {
+  const { total, top5, displayChartData } = useMemo(() => {
     const sums = {};
     let t = 0;
 
@@ -323,12 +323,12 @@ export default function ReportHome() {
 
     const entries = Object.entries(sums).sort((a, b) => b[1] - a[1]);
 
-    const top3 = entries.slice(0, 3);
-    const others = entries.slice(3);
+    const top5 = entries.slice(0, 5);
+    const others = entries.slice(5);
     const othersSum = others.reduce((acc, [, v]) => acc + v, 0);
 
-    // ⭐ 범례 & 원그래프에 표시할 데이터 = 상위3 + 기타
-    const displayEntries = [...top3];
+    // 범례 & 원그래프에 표시할 데이터 = 상위5 + 기타
+    const displayEntries = [...top5];
     if (othersSum > 0) displayEntries.push(['기타', othersSum]);
 
     const displayChartData = displayEntries.map(([name, value], i) => {
@@ -352,7 +352,7 @@ export default function ReportHome() {
       };
     });
 
-    return { total: t, top3, displayChartData };
+    return { total: t, top5, displayChartData };
   }, [items]);
 
 
@@ -371,8 +371,6 @@ export default function ReportHome() {
       }));
   }, [displayChartData]);
 
-
-  // ✅ LLM 항목이 문자열/객체 둘 다 올 수 있어서 안전 렌더링
   const renderLlmItem = (item) => {
     if (item == null) return null;
 
@@ -420,7 +418,7 @@ export default function ReportHome() {
       <View style={reportStyles.header}><Text style={reportStyles.appTitle}>리포트</Text></View>
 
       <ScrollView contentContainerStyle={reportStyles.content} showsVerticalScrollIndicator={false}>
-        {/* ① 원그래프 + 상위 3개 카테고리 */}
+        {/* ① 원그래프 + 상위 5개 카테고리 */}
         <View style={reportStyles.card}>
           <View style={reportStyles.rowBetween}>
             <Text style={reportStyles.cardTitle}>{year}년 {month}월</Text>
@@ -451,7 +449,7 @@ export default function ReportHome() {
               </View>
 
               <View style={{ marginTop: 8 }}>
-                {top3.map(([cat, sum]) => (
+                {top5.map(([cat, sum]) => (
                   <TouchableOpacity
                     key={cat}
                     activeOpacity={0.9}

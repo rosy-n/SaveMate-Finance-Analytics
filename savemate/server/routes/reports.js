@@ -116,7 +116,7 @@ router.get('/consumption', async (req, res) => {
 
     const txIds = new Set(monthTx.map((t) => t.id));
 
-    // ⭐ 2) 만족도 평가 읽기 (users/{uid}/satisfactionRatings)
+    // 2) 만족도 평가 읽기 (users/{uid}/satisfactionRatings)
     const satSnap = await db
       .collection('users')
       .doc(uid)
@@ -174,7 +174,7 @@ router.get('/consumption', async (req, res) => {
         };
       });
 
-    // ⭐ 4) LLM 입력 데이터 (satisfactionRecords 포함)
+    // 4) LLM 입력 데이터 (satisfactionRecords 포함)
     const llmInput = {
       period: `${year}-${String(month).padStart(2, '0')}`,
       totals: {
@@ -189,10 +189,10 @@ router.get('/consumption', async (req, res) => {
       emotions,
       reasons,
       dissatisfiedSamples,
-      satisfactionRecords: sats, // ⭐ 중요!
+      satisfactionRecords: sats,
     };
 
-    // ⭐ LLM 출력 스키마
+    // LLM 출력 스키마
     const schema = {
       summary: "",
       habits: [],
@@ -206,7 +206,6 @@ router.get('/consumption', async (req, res) => {
       challenge_suggestions: []
     };
 
-    // ⭐ 프롬프트 확장됨 (감정/만족도 포함)
     const prompt = `
 당신은 개인 재무/소비 심리 코치입니다. 
 주어진 데이터만 근거로 한국어 존댓말로 작성하세요.

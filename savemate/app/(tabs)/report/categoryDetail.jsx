@@ -48,7 +48,7 @@ export default function CategoryDetail() {
         const res = await api.get(path);
         const items = Array.isArray(res?.items) ? res.items : [];
 
-        // ✅ 지출(expense)만 + 카테고리 매칭(상위/하위 둘 다 대응)
+        // 지출(expense)만 + 카테고리 매칭(상위/하위 둘 다 대응)
         const filtered = items.filter((it) => {
           const type = String(it?.type || '').toLowerCase();
           if (type !== 'expense') return false;

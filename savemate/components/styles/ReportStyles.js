@@ -158,5 +158,4 @@ export const ReportStyles = StyleSheet.create({
     color: '#000',
   },
 
-
 });
