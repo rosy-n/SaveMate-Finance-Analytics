@@ -52,6 +52,45 @@ router.post('/', async (req, res) => {
       .doc(transactionId)
       .update({ isRated: true, updatedAt: now });
 
+    // --- LLM 리포트 캐시 삭제 시작 ---
+    try {
+      // 1) 해당 거래 날짜 가져오기
+      const txSnap = await db
+        .collection('users')
+        .doc(uid)
+        .collection('transactions')
+        .doc(transactionId)
+        .get();
+
+      if (txSnap.exists) {
+        const t = txSnap.data() || {};
+        const baseDate = t.date?.toDate
+          ? t.date.toDate()
+          : t.occurredAt?.toDate
+          ? t.occurredAt.toDate()
+          : t.date
+          ? new Date(t.date)
+          : null;
+
+        if (baseDate) {
+          const year = baseDate.getFullYear();
+          const month = String(baseDate.getMonth() + 1).padStart(2, '0');
+
+          // 2) 캐시 삭제
+          await db
+            .collection('users')
+            .doc(uid)
+            .collection('cachedReports')
+            .doc(`${year}-${month}`)
+            .delete();
+
+          console.log(`[satisfaction] 캐시 삭제됨: ${year}-${month}`);
+        }
+      }
+    } catch (err) {
+      console.error('[satisfaction] 캐시 삭제 오류', err);
+    }
+
     return res.status(201).json({ ok: true, id: satRef.id });
 
   } catch (e) {

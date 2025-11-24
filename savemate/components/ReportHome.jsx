@@ -397,6 +397,34 @@ export default function ReportHome() {
     return String(item);
   };
 
+  // 스키마 모두 지원하도록 정규화
+  const normalizeLlmReport = (rep) => {
+    if (!rep) return null;
+
+    // 새 스키마면 그대로 사용
+    if (rep.persona || rep.insights || rep.actions) return rep;
+
+    // 옛 스키마 → 새 스키마로 fallback 변환
+    return {
+      persona: "",
+      summary: rep.summary ?? "",
+      insights: {
+        key_insights: Array.isArray(rep.habits) ? rep.habits : [],
+        cost_efficiency: Array.isArray(rep.spending_risks) ? rep.spending_risks : [],
+        emotion_patterns: {
+          dissatisfied: rep.emotion_patterns?.dissatisfied_top_reasons ?? [],
+          neutral: rep.emotion_patterns?.neutral_insights ?? [],
+          satisfied: rep.emotion_patterns?.satisfied_top_reasons ?? [],
+        },
+      },
+      actions: {
+        improvements: Array.isArray(rep.actions_next_week) ? rep.actions_next_week : [],
+        saving_opportunities: [],
+        challenge_suggestions: Array.isArray(rep.challenge_suggestions) ? rep.challenge_suggestions : [],
+      },
+    };
+  };
+
   const LoadingBlock = () => (
     <View style={reportStyles.center}>
       <ActivityIndicator />
@@ -489,11 +517,11 @@ export default function ReportHome() {
               withInnerLines={true}
               withOuterLines={false}
 
-              // ✅ y축 라벨은 형식 지정자로 비워 없애기
+              // y축 라벨은 형식 지정자로 비워 없애기
               withVerticalLabels={true}
               formatYLabel={() => ''}
 
-              // ✅ x축 라벨 기본 표시 (라이브러리에게 맡김)
+              // x축 라벨 기본 표시 (라이브러리에게 맡김)
               withHorizontalLabels={true}
               formatXLabel={(s) => (String(s).endsWith('월') ? s : `${s}월`)}
 
@@ -525,105 +553,151 @@ export default function ReportHome() {
           )}
         </View>
 
-        {/* --- AI 소비 리포트 (카드 분리) --- */}
-        <View>
+        {/* --- AI 소비 리포트 --- */}
+        {(() => {
+          const rep = normalizeLlmReport(llmReport);
 
-          {/* 1) 요약 */}
-          <View style={reportStyles.card}>
-            <Text style={reportStyles.cardTitle}>AI 소비 요약</Text>
-            {llmLoading ? (
-              <LoadingBlock />
-            ) : llmError ? (
-              <ErrorBlock message={llmError} />
-            ) : !llmReport ? (
-              <Text style={[reportStyles.cardText, { marginTop: 8 }]}>
-                리포트를 불러오지 못했습니다.
-              </Text>
-            ) : (
-              <Text style={[reportStyles.cardText, { marginTop: 8, lineHeight: 20 }]}>
-                {llmReport.summary}
-              </Text>
-            )}
-          </View>
+          return (
+            <View>
 
-          {/* 소비 습관 + 소비 리스크 (통합 카드) */}
-          {(Array.isArray(llmReport?.habits) && llmReport.habits.length > 0) ||
-            (Array.isArray(llmReport?.spending_risks) && llmReport.spending_risks.length > 0) ? (
-            <View style={[reportStyles.card, { marginTop: 12 }]}>
+              {/* 1) summary + persona */}
+              <View style={reportStyles.card}>
+                <Text style={reportStyles.cardTitle}>AI 소비 요약</Text>
+                {llmLoading ? (
+                  <LoadingBlock />
+                ) : llmError ? (
+                  <ErrorBlock message={llmError} />
+                ) : !rep ? (
+                  <Text style={[reportStyles.cardText, { marginTop: 8 }]}>
+                    리포트를 불러오지 못했습니다.
+                  </Text>
+                ) : (
+                  <>
+                    {!!rep.persona && (
+                      <Text style={[reportStyles.cardText, { marginTop: 8, lineHeight: 20, fontWeight: '700' }]}>
+                        {rep.persona}
+                      </Text>
+                    )}
+                    {!!rep.summary && (
+                      <Text style={[reportStyles.cardText, { marginTop: 8, lineHeight: 20 }]}>
+                        {rep.summary}
+                      </Text>
+                    )}
+                  </>
+                )}
+              </View>
 
-              {/* 제목 */}
-              <Text style={reportStyles.cardTitle}>💡 소비 습관 & ⚠️ 소비 리스크</Text>
-
-              {/* 소비 습관 */}
-              {Array.isArray(llmReport?.habits) && llmReport.habits.length > 0 && (
-                <>
-                  <Text style={[reportStyles.listTitle, { marginTop: 8 }]}>소비 습관</Text>
-                  {llmReport.habits.map((h, i) => (
-                    <Text key={i} style={reportStyles.cardText}>
-                      • {renderLlmItem(h)}
+              {/* 2) key_insights */}
+              {Array.isArray(rep?.insights?.key_insights) && rep.insights.key_insights.length > 0 && (
+                <View style={[reportStyles.card, { marginTop: 12 }]}>
+                  <Text style={reportStyles.cardTitle}>🔹 핵심 인사이트</Text>
+                  {rep.insights.key_insights.map((x, i) => (
+                    <Text key={i} style={[reportStyles.cardText, { marginTop: 6 }]}>
+                      • {renderLlmItem(x)}
                     </Text>
                   ))}
-                </>
+                </View>
               )}
 
-              {/* 소비 리스크 */}
-              {Array.isArray(llmReport?.spending_risks) && llmReport.spending_risks.length > 0 && (
-                <>
-                  <Text style={[reportStyles.listTitle, { marginTop: 12 }]}>소비 리스크</Text>
-                  {llmReport.spending_risks.map((r, i) => (
-                    <Text key={i} style={reportStyles.cardText}>
-                      • {renderLlmItem(r)}
+              {/* 3) cost_efficiency */}
+              {Array.isArray(rep?.insights?.cost_efficiency) && rep.insights.cost_efficiency.length > 0 && (
+                <View style={[reportStyles.card, { marginTop: 12 }]}>
+                  <Text style={reportStyles.cardTitle}>🔹 비용 대비 만족 효율</Text>
+                  {rep.insights.cost_efficiency.map((x, i) => (
+                    <Text key={i} style={[reportStyles.cardText, { marginTop: 6 }]}>
+                      • {renderLlmItem(x)}
                     </Text>
                   ))}
-                </>
+                </View>
+              )}
+
+              {/* 4) emotion_patterns */}
+              {rep?.insights?.emotion_patterns && (
+                <View style={[reportStyles.card, { marginTop: 12 }]}>
+                  <Text style={reportStyles.cardTitle}>🙂 감정 패턴</Text>
+
+                  {Array.isArray(rep.insights.emotion_patterns.dissatisfied) &&
+                    rep.insights.emotion_patterns.dissatisfied.length > 0 && (
+                      <>
+                        <Text style={[reportStyles.listTitle, { marginTop: 8 }]}>😣 불만족</Text>
+                        {rep.insights.emotion_patterns.dissatisfied.map((e, i) => (
+                          <Text key={`d-${i}`} style={reportStyles.cardText}>
+                            • {renderLlmItem(e)}
+                          </Text>
+                        ))}
+                      </>
+                    )}
+
+                  {Array.isArray(rep.insights.emotion_patterns.neutral) &&
+                    rep.insights.emotion_patterns.neutral.length > 0 && (
+                      <>
+                        <Text style={[reportStyles.listTitle, { marginTop: 10 }]}>😐 보통</Text>
+                        {rep.insights.emotion_patterns.neutral.map((e, i) => (
+                          <Text key={`n-${i}`} style={reportStyles.cardText}>
+                            • {renderLlmItem(e)}
+                          </Text>
+                        ))}
+                      </>
+                    )}
+
+                  {Array.isArray(rep.insights.emotion_patterns.satisfied) &&
+                    rep.insights.emotion_patterns.satisfied.length > 0 && (
+                      <>
+                        <Text style={[reportStyles.listTitle, { marginTop: 10 }]}>🙂 만족</Text>
+                        {rep.insights.emotion_patterns.satisfied.map((e, i) => (
+                          <Text key={`s-${i}`} style={reportStyles.cardText}>
+                            • {renderLlmItem(e)}
+                          </Text>
+                        ))}
+                      </>
+                    )}
+                </View>
+              )}
+
+              {/* 5) actions */}
+              {rep?.actions && (
+                <View style={[reportStyles.card, { marginTop: 12 }]}>
+                  <Text style={reportStyles.cardTitle}>🎯 다음 행동 제안</Text>
+
+                  {Array.isArray(rep.actions.improvements) && rep.actions.improvements.length > 0 && (
+                    <>
+                      <Text style={[reportStyles.listTitle, { marginTop: 8 }]}>🔧 개선 제안</Text>
+                      {rep.actions.improvements.map((a, i) => (
+                        <Text key={`imp-${i}`} style={reportStyles.cardText}>
+                          • {renderLlmItem(a)}
+                        </Text>
+                      ))}
+                    </>
+                  )}
+
+                  {Array.isArray(rep.actions.saving_opportunities) && rep.actions.saving_opportunities.length > 0 && (
+                    <>
+                      <Text style={[reportStyles.listTitle, { marginTop: 10 }]}>💸 절약 기회</Text>
+                      {rep.actions.saving_opportunities.map((a, i) => (
+                        <Text key={`sav-${i}`} style={reportStyles.cardText}>
+                          • {renderLlmItem(a)}
+                        </Text>
+                      ))}
+                    </>
+                  )}
+
+                  {Array.isArray(rep.actions.challenge_suggestions) && rep.actions.challenge_suggestions.length > 0 && (
+                    <>
+                      <Text style={[reportStyles.listTitle, { marginTop: 10 }]}>🏃 챌린지 추천</Text>
+                      {rep.actions.challenge_suggestions.map((a, i) => (
+                        <Text key={`ch-${i}`} style={reportStyles.cardText}>
+                          • {renderLlmItem(a)}
+                        </Text>
+                      ))}
+                    </>
+                  )}
+                </View>
               )}
 
             </View>
-          ) : null}
+          );
+        })()}
 
-
-          {/* 4) 감정 패턴 */}
-          {llmReport?.emotion_patterns && (
-            <View style={[reportStyles.card, { marginTop: 12 }]}>
-              <Text style={reportStyles.cardTitle}>🙂 감정 패턴</Text>
-
-              {Array.isArray(llmReport.emotion_patterns.neutral_insights) &&
-                llmReport.emotion_patterns.neutral_insights.length > 0 && (
-                  <>
-                    <Text style={reportStyles.listTitle}>중립 소비</Text>
-                    {llmReport.emotion_patterns.neutral_insights.map((e, i) => (
-                      <Text key={i} style={reportStyles.cardText}>
-                        • {renderLlmItem(e)}
-                      </Text>
-                    ))}
-                  </>
-                )}
-
-              {Array.isArray(llmReport.emotion_patterns.satisfied_top_reasons) &&
-                llmReport.emotion_patterns.satisfied_top_reasons.length > 0 && (
-                  <>
-                    <Text style={[reportStyles.listTitle, { marginTop: 10 }]}>만족 소비</Text>
-                    {llmReport.emotion_patterns.satisfied_top_reasons.map((e, i) => (
-                      <Text key={i} style={reportStyles.cardText}>
-                        • {renderLlmItem(e)}
-                      </Text>
-                    ))}
-                  </>
-                )}
-
-              {Array.isArray(llmReport.emotion_patterns.dissatisfied_top_reasons) &&
-                llmReport.emotion_patterns.dissatisfied_top_reasons.length > 0 && (
-                  <>
-                    <Text style={[reportStyles.listTitle, { marginTop: 10 }]}>불만족 소비</Text>
-                    {llmReport.emotion_patterns.dissatisfied_top_reasons.map((e, i) => (
-                      <Text key={i} style={reportStyles.cardText}>
-                        • {renderLlmItem(e)}
-                      </Text>
-                    ))}
-                  </>
-                )}
-            </View>
-          )}
           {/* ⑤ 지출배경별 만족도 분석 */}
           <View style={[reportStyles.card, { marginTop: 12 }]}>
             <Text style={reportStyles.cardTitle}>지출배경별 만족도</Text>
@@ -748,20 +822,12 @@ export default function ReportHome() {
                           </Text>
                         )}
                       </View>
-
                     </View>
                   </View>
                 );
               })}
             </View>
           )}
-
-
-
-
-
-        </View>
-
         <View style={{ height: 24 }} />
       </ScrollView>
     </SafeAreaView>

@@ -86,13 +86,16 @@ router.get('/consumption', async (req, res) => {
       .doc(cKey);
 
     const cached = await cacheRef.get();
-    if (cached.exists && cached.data()?.summary) {
-      return res.json({
-        ok: true,
-        report: cached.data(),
-        meta: { cached: true, model: MODEL_ID },
-      });
-    }
+      if (cached.exists) {
+        const c = cached.data() || {};
+        if (c.summary || c.persona || c.insights) {
+          return res.json({
+            ok: true,
+            report: c,
+            meta: { cached: true, model: MODEL_ID },
+          });
+        }
+      }
 
     // 1) 월별 거래 읽기
     const txSnap = await db
@@ -123,9 +126,31 @@ router.get('/consumption', async (req, res) => {
       .collection('satisfactionRatings')
       .get();
 
-    const sats = satSnap.docs
-      .map((doc) => ({ id: doc.id, ...doc.data() }))
-      .filter((s) => txIds.has(s.transactionId));
+    const monthTxIds = new Set(
+      monthTx.map(
+        (tx) => String(tx.id || tx.tid || tx.transactionId || "")
+      )
+    );
+
+    const allSats = satSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+    const sats = allSats.filter((s) => {
+      const tid = String(
+        s.transactionId || s.tid || s.txnId || ""
+      ).trim();
+
+      if (!tid) return false;
+      return monthTxIds.has(tid);
+    });
+
+    const normSats = sats.map((s) => ({
+      transactionId: String(s.transactionId || s.tid || s.txnId),
+      emotion: (s.emotion || "").toLowerCase(),
+      reasons: Array.isArray(s.reasons) ? s.reasons : [],
+      memo: s.memo || "",
+      createdAt: s.createdAt || null,
+    }));
+
 
     // 3) 통계 계산
     const expense = monthTx.filter(
@@ -194,29 +219,45 @@ router.get('/consumption', async (req, res) => {
 
     // LLM 출력 스키마
     const schema = {
+      persona: "",
       summary: "",
-      habits: [],
-      emotion_patterns: {
-        dissatisfied_top_reasons: [],
-        neutral_insights: [],
-        satisfied_top_reasons: []
+      insights: {
+        key_insights: [],
+        cost_efficiency: [],
+        emotion_patterns: {
+          dissatisfied: [],
+          neutral: [],
+          satisfied: []
+        }
       },
-      spending_risks: [{ trigger: "", why: "", suggestion: "" }],
-      actions_next_week: [],
-      challenge_suggestions: []
+      actions: {
+        improvements: [],
+        saving_opportunities: [],
+        challenge_suggestions: []
+      }
     };
 
     const prompt = `
-당신은 개인 재무/소비 심리 코치입니다. 
-주어진 데이터만 근거로 한국어 존댓말로 작성하세요.
-반드시 JSON만 출력하고 코드블록은 금지합니다.
+    당신은 개인 재무/소비 심리 코치입니다.
+    아래 [데이터]만 근거로 한국어 존댓말로 분석하세요.
+    반드시 JSON만 출력하고, 코드블록/설명 문장은 절대 포함하지 마세요.
 
-[데이터]
-${JSON.stringify(llmInput, null, 2)}
+    [목표]
+    - 사용자 소비 페르소나를 1~2문장으로 정의 (persona)
+    - 월 전체 요약 2~3문장 (summary)
+    - 핵심 인사이트 3개 내외 (insights.key_insights)
+    - 카테고리별 비용-만족 효율 분석 4개 내외 (insights.cost_efficiency)
+    - 감정패턴은 불만족/보통/만족 각각 2~3개 내외 (insights.emotion_patterns)
+    - 개선 행동 2~3개 (actions.improvements)
+    - 절약 기회 1~2개 (actions.saving_opportunities)
+    - 실천 가능한 챌린지 2~3개 (actions.challenge_suggestions)
 
-[출력 스키마]
-${JSON.stringify(schema, null, 2)}
-`.trim();
+    [데이터]
+    ${JSON.stringify(llmInput, null, 2)}
+
+    [출력 스키마]
+    ${JSON.stringify(schema, null, 2)}
+    `.trim();
 
     // 5) 모델 페일오버 목록
     const modelIds = [
@@ -275,30 +316,43 @@ ${JSON.stringify(schema, null, 2)}
     // 7) 실패 → 폴백
     if (!parsed) {
       parsed = {
+        persona: "소비 페르소나를 생성하지 못했습니다.",
         summary: `${year}년 ${month}월 AI 요약 생성이 지연되어 간단 요약만 제공합니다.`,
-        habits: [],
-        emotion_patterns: {
-          dissatisfied_top_reasons: [],
-          neutral_insights: [],
-          satisfied_top_reasons: [],
+        insights: {
+          key_insights: [],
+          cost_efficiency: [],
+          emotion_patterns: { dissatisfied: [], neutral: [], satisfied: [] }
         },
-        spending_risks: [],
-        actions_next_week: [],
-        challenge_suggestions: [],
+        actions: {
+          improvements: [],
+          saving_opportunities: [],
+          challenge_suggestions: []
+        }
       };
 
-      await cacheRef.set(parsed, { merge: true });
+      // 8) 정상 생성 → 캐시 저장 (✅ 항상 저장 + 메타 포함)
+        await cacheRef.set(
+          {
+            ...parsed,
+            generatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            period: `${year}-${String(month).padStart(2, '0')}`,
+            version: 'v2-persona-insights-actions', // 스키마 버전 태그(선택)
+          },
+          { merge: true }
+        );
 
-      return res.json({
-        ok: true,
-        report: parsed,
-        meta: {
-          cached: false,
-          model: usedModel || MODEL_ID,
-          degraded: true,
-        },
-      });
+        return res.json({
+          ok: true,
+          report: parsed,
+          meta: {
+            counts: { tx: monthTx.length, sats: normSats.length },
+            model: usedModel || MODEL_ID,
+            cached: false,
+          },
+        });
+
     }
+
 
     // 8) 정상 생성 → 캐시 저장
     await cacheRef.set(parsed, { merge: true });
@@ -317,17 +371,18 @@ ${JSON.stringify(schema, null, 2)}
     return res.json({
       ok: true,
       report: {
-        summary:
-          'AI 리포트를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.',
-        habits: [],
-        emotion_patterns: {
-          dissatisfied_top_reasons: [],
-          neutral_insights: [],
-          satisfied_top_reasons: [],
+        persona: "AI 리포트를 불러오지 못했습니다.",
+        summary: "AI 리포트를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        insights: {
+          key_insights: [],
+          cost_efficiency: [],
+          emotion_patterns: { dissatisfied: [], neutral: [], satisfied: [] }
         },
-        spending_risks: [],
-        actions_next_week: [],
-        challenge_suggestions: [],
+        actions: {
+          improvements: [],
+          saving_opportunities: [],
+          challenge_suggestions: []
+        }
       },
       meta: {
         cached: false,
