@@ -384,7 +384,7 @@ export default function SaveMateApp() {
                 const t = pendingList[pendingIndex % pendingList.length];
                 return (
                   <Text style={[styles.cardText, { marginBottom: 12 }]}>
-                    {fmtMonthDayKR(t.date)}에 지출한 ‘{t.category || '지출'}’에 대한 만족도를 기록해주세요.
+                    {fmtMonthDayKR(t.date)}에 지출한 ‘{t.memo || '지출'}’에 대한 만족도를 기록해주세요.
                   </Text>
                 );
               })()}
