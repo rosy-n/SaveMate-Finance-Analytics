@@ -6,7 +6,7 @@ export const ReportStyles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#F7F8FA' },
   header: { backgroundColor: '#FFFFFF', paddingVertical: 16, alignItems: 'center' },
   appTitle: { fontSize: 22, fontWeight: '700', color: '#7C3AED' },
-  
+
   content: { paddingHorizontal: 16, paddingBottom: 32 },
 
   // 카드
@@ -165,24 +165,23 @@ export const ReportStyles = StyleSheet.create({
 
   highlightText1: {
     //fontWeight: "800",
-    color: "#F4A7A7",
-    //backgroundColor: "#F4A7A7",
+    color: "#222",
+    backgroundColor: "#f5d5d5ff",
     paddingHorizontal: 3,
     borderRadius: 4,
   },
   highlightText2: {
     //fontWeight: "800",
-    color: "#F7D8A4",
-    //backgroundColor: "#F7D8A4",
+    color: "#222",
+    backgroundColor: "#f4e4c8ff",
     paddingHorizontal: 3,
     borderRadius: 4,
   },
   highlightText3: {
     //fontWeight: "800",
-    color: "#BFF8AA",
-    //backgroundColor: "#BFF8AA",
+    color: "#222",
+    backgroundColor: "#daefd3ff",
     paddingHorizontal: 3,
     borderRadius: 4,
   },
-
 });

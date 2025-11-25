@@ -277,7 +277,7 @@ export default function ReportHome() {
         mounted && setWorst3(merged);
 
       } catch (e) {
-        console.error('🔥 Worst3 새 알고리즘 오류:', e);
+        console.error('Worst3 새 알고리즘 오류:', e);
         mounted && setWorst3([]);
       }
     })();
@@ -399,7 +399,7 @@ export default function ReportHome() {
   };
 
   // LLM이 달아준 <hl>...</hl> 태그만 하이라이트로 렌더링
-  const renderTaggedText = (text) => {
+  const renderTaggedText = (text, highlightStyle) => {
     const s = String(text ?? "");
     const parts = s.split(/(<hl>.*?<\/hl>)/g).filter(Boolean);
 
@@ -408,7 +408,7 @@ export default function ReportHome() {
       const content = isHl ? p.replace(/^<hl>|<\/hl>$/g, "") : p;
 
       return (
-        <Text key={i} style={isHl ? reportStyles.highlightText : null}>
+        <Text key={i} style={isHl ? highlightStyle : null}>
           {content}
         </Text>
       );
@@ -416,8 +416,8 @@ export default function ReportHome() {
   };
 
   // 기존 renderLlmItem 결과를 “태그 하이라이트 렌더링”까지 한 번에
-  const renderLlmText = (item) => renderTaggedText(renderLlmItem(item));
-
+  const renderLlmText = (item, highlightStyle = reportStyles.highlightText) =>
+    renderTaggedText(renderLlmItem(item), highlightStyle);
 
   // 스키마 모두 지원하도록 정규화
   const normalizeLlmReport = (rep) => {
@@ -644,28 +644,32 @@ export default function ReportHome() {
                       <>
                         <Text style={[reportStyles.listTitle, { marginTop: 8 }]}>
                           <Text style={reportStyles.highlightText1}>불만족</Text>
-                          </Text>
+                        </Text>
+
                         {rep.insights.emotion_patterns.dissatisfied.map((e, i) => (
                           <Text key={`d-${i}`} style={reportStyles.cardText}>
-                            • {renderLlmText(e)}
+                            • {renderLlmText(e, reportStyles.highlightText1)}
                           </Text>
                         ))}
                       </>
                     )}
 
+
                   {Array.isArray(rep.insights.emotion_patterns.neutral) &&
                     rep.insights.emotion_patterns.neutral.length > 0 && (
                       <>
                         <Text style={[reportStyles.listTitle, { marginTop: 10 }]}>
-                           <Text style={reportStyles.highlightText2}>보통</Text>
-                          </Text>
+                          <Text style={reportStyles.highlightText2}>보통</Text>
+                        </Text>
+
                         {rep.insights.emotion_patterns.neutral.map((e, i) => (
                           <Text key={`n-${i}`} style={reportStyles.cardText}>
-                            • {renderLlmText(e)}
+                            • {renderLlmText(e, reportStyles.highlightText2)}
                           </Text>
                         ))}
                       </>
                     )}
+
 
                   {Array.isArray(rep.insights.emotion_patterns.satisfied) &&
                     rep.insights.emotion_patterns.satisfied.length > 0 && (
@@ -673,13 +677,15 @@ export default function ReportHome() {
                         <Text style={[reportStyles.listTitle, { marginTop: 10 }]}>
                           <Text style={reportStyles.highlightText3}>만족</Text>
                         </Text>
+
                         {rep.insights.emotion_patterns.satisfied.map((e, i) => (
                           <Text key={`s-${i}`} style={reportStyles.cardText}>
-                            • {renderLlmText(e)}
+                            • {renderLlmText(e, reportStyles.highlightText3)}
                           </Text>
                         ))}
                       </>
                     )}
+
                 </View>
               )}
 
@@ -692,7 +698,7 @@ export default function ReportHome() {
                     <>
                       <Text style={[reportStyles.listTitle, { marginTop: 8 }]}>개선 제안</Text>
                       {rep.actions.improvements.map((a, i) => (
-                        <Text key={`imp-${i}`} style={[reportStyles.cardText, { color: '#7C3AED' }]}>
+                        <Text key={`imp-${i}`} style={reportStyles.cardText}>
                           • {renderLlmText(a)}
                         </Text>
                       ))}
@@ -703,7 +709,7 @@ export default function ReportHome() {
                     <>
                       <Text style={[reportStyles.listTitle, { marginTop: 10 }]}>절약 기회</Text>
                       {rep.actions.saving_opportunities.map((a, i) => (
-                        <Text key={`sav-${i}`} style={[reportStyles.cardText, { color: '#7C3AED' }]}>
+                        <Text key={`sav-${i}`} style={reportStyles.cardText}>
                           • {renderLlmText(a)}
                         </Text>
                       ))}
@@ -714,7 +720,7 @@ export default function ReportHome() {
                     <>
                       <Text style={[reportStyles.listTitle, { marginTop: 10 }]}>챌린지 추천</Text>
                       {rep.actions.challenge_suggestions.map((a, i) => (
-                        <Text key={`ch-${i}`} style={[reportStyles.cardText, { color: '#7C3AED' }]}>
+                        <Text key={`ch-${i}`} style={reportStyles.cardText}>
                           • {renderLlmText(a)}
                         </Text>
                       ))}
