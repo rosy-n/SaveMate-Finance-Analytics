@@ -102,19 +102,45 @@ const ChallengeHome = () => {
   };
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <View style={styles.challengeHeaderFix}>
-      <View style={{ width: 40, height: 40 }} />
-
-      <Text style={styles.challengeTitle}>챌린지</Text>
-
-      <TouchableOpacity
-        style={styles.addChallengeButton}
-        onPress={handleAddPress}
+    <SafeAreaView style={styles.screen}>      
+      <View
+        style={[
+          styles.header,
+          {
+            flexDirection: "row",
+            justifyContent: "center",
+            alignItems: "center",
+            position: "relative",
+          },
+        ]}
       >
-        <Text style={styles.addChallengeButtonText}>+</Text>
-      </TouchableOpacity>
-    </View>
+        <Text style={styles.appTitle}>챌린지</Text>
+
+        <TouchableOpacity
+          onPress={() => router.push("/challenge/add")}
+          hitSlop={8}
+          style={{
+            position: "absolute",
+            right: 16,
+            top: 0,
+            bottom: 0,
+            justifyContent: "center",
+            alignItems: "center",
+            width: 44,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 32,
+              color: "#7C3AED",
+              fontWeight: "700",
+              lineHeight: 34,
+            }}
+          >
+            ＋
+          </Text>
+        </TouchableOpacity>
+      </View>
 
 
       {/* 서브헤더(기존 스타일 유지) */}

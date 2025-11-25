@@ -4,9 +4,9 @@ import { StyleSheet } from 'react-native';
 export const ReportStyles = StyleSheet.create({
   // 공통 레이아웃
   screen: { flex: 1, backgroundColor: '#F7F8FA' },
-  header: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
-  appTitle: { fontSize: 22, fontWeight: '800', color: '#7C3AED', textAlign: 'center' },
-
+  header: { backgroundColor: '#FFFFFF', paddingVertical: 16, alignItems: 'center' },
+  appTitle: { fontSize: 22, fontWeight: '700', color: '#7C3AED' },
+  
   content: { paddingHorizontal: 16, paddingBottom: 32 },
 
   // 카드

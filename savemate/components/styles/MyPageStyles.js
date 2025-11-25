@@ -15,17 +15,8 @@ export const BRAND = {
 export const myPageStyles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: BRAND.gray0 },
 
-  header: {
-    paddingTop: 8,
-    paddingBottom: 10,
-    alignItems: "center",
-    backgroundColor: BRAND.gray0,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: BRAND.purple,
-  },
+  header: { backgroundColor: '#FFFFFF', paddingVertical: 16, alignItems: 'center' },
+  headerTitle: { fontSize: 22, fontWeight: '700', color: '#7C3AED' },
 
   subHeader: {
     flexDirection: "row",
