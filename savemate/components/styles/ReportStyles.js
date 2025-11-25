@@ -3,8 +3,8 @@ import { StyleSheet } from 'react-native';
 
 export const ReportStyles = StyleSheet.create({
   // 공통 레이아웃
-  screen: { flex: 1, backgroundColor: '#F7F8FA' },
-  header: { backgroundColor: '#FFFFFF', paddingVertical: 16, alignItems: 'center' },
+  screen: { flex: 1, backgroundColor: '#F9FAFB' },
+  header: { backgroundColor: '#F9FAFB', paddingVertical: 16, alignItems: 'center' },
   appTitle: { fontSize: 22, fontWeight: '700', color: '#7C3AED' },
 
   content: { paddingHorizontal: 16, paddingBottom: 32 },

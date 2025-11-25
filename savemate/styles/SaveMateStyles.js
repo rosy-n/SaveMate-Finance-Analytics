@@ -6,7 +6,7 @@ const PILL_RADIUS = 12;
 
 export const SaveMateStyles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#F9FAFB' },
-  header: { backgroundColor: '#FFFFFF', paddingVertical: 16, alignItems: 'center' },
+  header: { backgroundColor: '#F9FAFB', paddingVertical: 16, alignItems: 'center' },
   appTitle: { fontSize: 22, fontWeight: '700', color: '#7C3AED' },
   content: { padding: 16, paddingBottom: 120, gap: 12 },
   card: {
@@ -90,7 +90,7 @@ export const SaveMateStyles = StyleSheet.create({
   navLabel: { fontSize: 12, color: '#9CA3AF', marginTop: 2, fontWeight: '500' },
   navActive: { color: '#7C3AED' },
   detailHeader: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F9FAFB',
     paddingVertical: 12,
     paddingHorizontal: 16,
     flexDirection: 'row',
