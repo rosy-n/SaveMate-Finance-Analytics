@@ -634,7 +634,7 @@ export default function SaveMateApp() {
 
   return (
     <>
-      <Stack.Navigator>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
         {currentPage === 'home' ? (
           <Stack.Screen name="Home">
             {() => <HomePage />}
