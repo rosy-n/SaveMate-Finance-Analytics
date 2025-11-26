@@ -29,7 +29,7 @@ export const ReportStyles = StyleSheet.create({
   cardText: { fontSize: 14, color: '#444' },
   listTitle: { fontSize: 16, fontWeight: '600', color: '#222' },
   caption: { fontSize: 12, color: '#8a8f9c' },
-  totalAmountSm: { fontSize: 16, fontWeight: '700', color: '#222' },
+  totalAmountSm: { fontSize: 17, fontWeight: '700', color: '#222' },
   totalAmount: { fontSize: 28, fontWeight: '800', color: '#111' },
 
   // 차트/리스트

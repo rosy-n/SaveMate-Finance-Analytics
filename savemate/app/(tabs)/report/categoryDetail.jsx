@@ -163,12 +163,22 @@ export default function CategoryDetail() {
                 return (
                   <View key={it.id || `${itemName}-${it.createdAt}`} style={styles.itemRow}>
                     <Text style={styles.caption}>{dateText}</Text>
-                    <View style={{ flexDirection:'row', alignItems:'center', marginTop:2 }}>
+                    <View style={{ 
+                      flexDirection: 'row', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between', 
+                      marginTop: 2 
+                    }}>
                       <Text style={styles.totalAmountSm}>{formatKRW(amount)}</Text>
-                      <Text style={[styles.cardText,{ marginLeft: 8 }]} numberOfLines={1}>
+
+                      <Text 
+                        style={[styles.cardText, { marginLeft: 8, flexShrink: 1, textAlign: 'right', fontSize: 16, fontWeight: '700' }]} 
+                        numberOfLines={1}
+                      >
                         {itemName}
                       </Text>
                     </View>
+
                     <Text style={[styles.caption, { marginTop: 2 }]}>{pay}</Text>
                   </View>
                 );
