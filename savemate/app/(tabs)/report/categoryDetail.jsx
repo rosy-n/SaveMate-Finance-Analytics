@@ -29,7 +29,7 @@ export default function CategoryDetail() {
   const [loading, setLoading] = useState(true);
   const [list, setList] = useState([]);
   const [error, setError] = useState(null);
-  const uid = process.env.EXPO_PUBLIC_UID || '2312736';
+  const uid = process.env.EXPO_PUBLIC_UID || '2314513';
 
   const now = new Date();
   const y = Number(year) || now.getFullYear();
@@ -89,12 +89,31 @@ export default function CategoryDetail() {
   return (
     <SafeAreaView style={styles.screen}>
       {/* 헤더 + 뒤로가기 */}
-      <View style={[styles.header, { flexDirection: 'row', alignItems: 'center' }]}>
-        <TouchableOpacity onPress={() => router.back()} style={{ paddingRight: 8, paddingVertical: 4 }}>
-          <Text style={{ fontSize: 22 }}>‹</Text>
+      <View
+        style={{
+          backgroundColor: '#F9FAFB',
+          paddingVertical: 16,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: 16
+        }}
+      >
+        {/* 왼쪽: 뒤로가기 */}
+        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Text style={[styles.appTitle, { fontSize: 22 }]}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.appTitle}>{catName}</Text>
+
+        {/* 가운데: 카테고리명 */}
+        <Text style={[styles.appTitle, { textAlign: 'center', flex: 1 }]}>
+          {catName}
+        </Text>
+
+        {/* 오른쪽: 균형 맞추기용 빈 View */}
+        <View style={{ width: 22 }} />
       </View>
+
+
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* 총액 카드 */}

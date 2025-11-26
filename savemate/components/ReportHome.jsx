@@ -470,9 +470,13 @@ export default function ReportHome() {
       <ScrollView contentContainerStyle={reportStyles.content} showsVerticalScrollIndicator={false}>
         {/* ① 원그래프 + 상위 5개 카테고리 */}
         <View style={reportStyles.card}>
-          <View style={reportStyles.rowBetween}>
-            <Text style={reportStyles.cardTitle}>{year}년 {month}월</Text>
+          <View style={{ flexDirection: 'row' }}>
+            <Text style={reportStyles.cardTitle}>
+              &lt;   {year}년 {month}월 
+              <Text style={{ color: '#cfceceff' }}>   &gt;</Text>
+            </Text>
           </View>
+
 
           {loading ? (
             <View style={reportStyles.center}><ActivityIndicator /></View>
