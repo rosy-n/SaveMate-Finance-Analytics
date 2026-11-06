@@ -81,7 +81,6 @@ export const ReportStyles = StyleSheet.create({
     fontWeight: '700',
     color: '#3B2463',
   },
-  aiSummaryText: { marginTop: 7, fontSize: 14, lineHeight: 20, color: '#4B5563' },
   aiInsightRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -109,9 +108,6 @@ export const ReportStyles = StyleSheet.create({
     fontWeight: '700',
     color: '#5B21B6',
   },
-  aiBulletDissatisfied: { backgroundColor: '#E58B8B' },
-  aiBulletNeutral: { backgroundColor: '#E7B963' },
-  aiBulletSatisfied: { backgroundColor: '#78BF72' },
 
   // 차트/리스트
   chartWrap: { alignItems: 'center', marginTop: 10 },
@@ -365,16 +361,6 @@ export const ReportStyles = StyleSheet.create({
     color: '#25212D',
   },
   highlightText: {
-    fontWeight: '700',
-  },
-
-  highlightText1: {
-    fontWeight: '700',
-  },
-  highlightText2: {
-    fontWeight: '700',
-  },
-  highlightText3: {
     fontWeight: '700',
   },
 });

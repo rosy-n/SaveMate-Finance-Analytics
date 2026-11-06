@@ -6,12 +6,17 @@ const txRepo = require('../db/transactions');
 const ratingRepo = require('../db/satisfaction');
 const reportCache = require('../db/cache');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { analyzeFinances } = require('../analytics/financeAnalytics');
+const { analyzeFinances, REPORT_VERSION } = require('../analytics/financeAnalytics');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const MODEL_ID = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 
 const model = genAI.getGenerativeModel({ model: MODEL_ID });
+
+// 이보다 평가가 적으면 패턴을 찾기 어려워 숨은 소비 패턴을 만들지 않는다.
+const MIN_RATINGS_FOR_PATTERNS = 5;
+const NO_EXPENSE_NOTICE = '이번 달 지출 내역이 없어요. 지출을 기록하면 AI 인사이트를 볼 수 있어요.';
+const AI_ERROR_NOTICE = 'AI 인사이트를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
 
 function redact(text = '') {
   return String(text)
@@ -83,8 +88,8 @@ router.get('/consumption', async (req, res) => {
     const cached = await reportCache.getReport(userId, y, m);
     if (
       cached &&
-      (cached.summary || cached.persona || cached.insights) &&
-      cached.analytics?.version === 'v12-category-transactions'
+      cached.persona &&
+      cached.analytics?.version === REPORT_VERSION
     ) {
       return res.json({
         ok: true,
@@ -121,6 +126,15 @@ router.get('/consumption', async (req, res) => {
     const expense = monthTx.filter(
       (t) => String(t.type).toLowerCase() === 'expense'
     );
+
+    // 지출이 없으면 해석할 내용이 없으므로 LLM을 호출하지 않는다.
+    if (expense.length === 0) {
+      return res.json({
+        ok: true,
+        report: { notice: NO_EXPENSE_NOTICE, analytics },
+        meta: { counts: { tx: monthTx.length, sats: normSats.length }, cached: false, llmSkipped: true },
+      });
+    }
 
     const sumBy = (arr, key) =>
       arr.reduce((m, t) => {
@@ -186,56 +200,40 @@ router.get('/consumption', async (req, res) => {
     // LLM 출력 스키마
     const schema = {
       persona: "",
-      summary: "",
-      insights: {
-        key_insights: [],
-        cost_efficiency: [],
-        emotion_patterns: {
-          dissatisfied: [],
-          neutral: [],
-          satisfied: []
-        }
-      },
-      actions: {
-        improvements: [],
-        saving_opportunities: [],
-        challenge_suggestions: []
-      }
+      patterns: [{ pattern: "", evidence: "" }],
+      next_actions: { action: "", challenge: "" },
     };
 
+    const canFindPatterns = normSats.length >= MIN_RATINGS_FOR_PATTERNS;
+
     const prompt = `
-    당신은 개인 재무/소비 심리 코치입니다.
-    아래 [데이터]만 근거로 한국어 존댓말로 분석하세요.
+    당신은 개인 소비 심리 코치입니다.
+    아래 [데이터]만 근거로 한국어 존댓말로 작성하세요.
     반드시 JSON만 출력하고, 코드블록/설명 문장은 절대 포함하지 마세요.
 
-    - codeCalculatedAnalytics는 서버 코드가 계산한 확정 분석 결과입니다.
-    - 해당 수치를 새로 계산하거나 변경하지 말고 의미와 행동만 설명하세요.
-    - sufficient가 false인 분석은 추측하지 말고 데이터가 부족하다고 설명하세요.
-    - 상관관계를 인과관계로 표현하지 마세요.
+    [역할]
+    앱 화면이 금액, 카테고리 비중, 월별 추이, 만족 효율 점수, 평소보다 큰 지출, 불만족 지출 순위를 이미 보여줍니다.
+    당신은 숫자를 설명하지 않고, 화면에 없는 해석과 다음 행동만 제공합니다.
 
-    // 중요 구절 태그 규칙 추가
-    - 사용자가 꼭 봐야 할 핵심 단어/구절(큰 변화, 원인, 위험, 행동 키워드)은 문자열 안에서 <hl>...</hl> 로 감싸서 표시하세요.
-    - 각 문장당 <hl> 태그는 최대 1~2개만 사용하세요. 남발 금지.
+    [규칙]
+    - 화면에 이미 표시되는 금액, 비중, 순위, 만족 효율 점수, 상관계수를 다시 나열하지 마세요.
+    - 메모, 불만족 이유, 지출 배경, 날짜를 엮어 화면에 없는 해석만 쓰세요.
+    - 근거 기록이 부족한 내용은 쓰지 말고, 지어내지 마세요.
+    - codeCalculatedAnalytics는 서버 코드가 계산한 확정 결과이므로 값을 바꾸지 마세요.
+    - 상관관계를 인과관계로 단정하지 말고 "~로 보여요"처럼 표현하세요.
 
-    - 강조는 오직 <hl>...</hl> 태그만 사용하세요.
-    - Markdown 문법(**, *, __, ~~ 등)은 절대 사용하지 마세요.
-    - 특히 **텍스트** 처럼 별표(**)로 감싸는 굵게 표기 방식은 사용하면 안 됩니다.
-    - 만약 스스로 만든 응답 안에 **, *, __, ~~ 가 들어가 있다고 인식되면,
-      그 응답은 잘못된 것이므로 해당 기호를 모두 제거한 버전으로 다시 생성하세요.
+    [작성 항목]
+    - persona: 이번 달 소비 성향을 한 문장으로 정의
+    - patterns: ${canFindPatterns
+      ? '숨은 소비 패턴 최대 2개. pattern은 해석 1문장, evidence는 판단 근거가 된 기록 1문장. 뚜렷한 패턴이 없으면 빈 배열'
+      : '평가 기록이 부족하므로 반드시 빈 배열'}
+    - next_actions.action: 다음 달에 바로 해볼 구체적인 행동 1개
+    - next_actions.challenge: 실천할 수 있는 챌린지 1개
 
-    - 태그는 반드시 text 내부에만 넣고, JSON 구조(키 이름 등)는 절대 바꾸지 마세요.
-
-
-
-    [목표]
-    - 사용자 소비 페르소나를 1~2문장으로 정의 (persona)
-    - 월 전체 요약 2~3문장 (summary)
-    - 핵심 인사이트 3개 내외 (insights.key_insights)
-    - 카테고리별 비용-만족 효율 분석 4개 내외 (insights.cost_efficiency)
-    - 감정패턴은 불만족/보통/만족 각각 2~3개 내외 (insights.emotion_patterns)
-    - 개선 행동 2~3개 (actions.improvements)
-    - 절약 기회 1~2개 (actions.saving_opportunities)
-    - 실천 가능한 챌린지 2~3개 (actions.challenge_suggestions)
+    [강조 표기]
+    - 핵심 단어/구절은 문자열 안에서 <hl>...</hl> 로 감싸세요. 문장당 최대 1개만 사용하세요.
+    - 강조는 <hl>...</hl> 태그만 사용하고 Markdown 문법(**, *, __, ~~ 등)은 절대 쓰지 마세요.
+    - 태그는 문자열 값 안에만 넣고, JSON 구조(키 이름 등)는 바꾸지 마세요.
 
     [데이터]
     ${JSON.stringify(llmInput, null, 2)}
@@ -244,7 +242,8 @@ router.get('/consumption', async (req, res) => {
     ${JSON.stringify(schema, null, 2)}
     `.trim();
 
-    // 5) 모델 페일오버 목록
+    
+// 5) 모델 페일오버 목록
     const modelIds = [
       MODEL_ID,
       'gemini-3.5-flash-lite',
@@ -276,7 +275,7 @@ router.get('/consumption', async (req, res) => {
           clearTimeout(timer);
           const text = result.response.text();
           const p = safeParseJSON(text);
-          if (!p)
+          if (typeof p?.persona !== 'string' || !p.persona.trim())
             throw Object.assign(
               new Error('JSON parse failed'),
               { status: 500 }
@@ -298,50 +297,32 @@ router.get('/consumption', async (req, res) => {
       }
     }
 
-    // 7) 실패 → 폴백
+    // 7) 실패 → 안내만 반환. 캐시하면 복구 후에도 실패 문구가 남으므로 저장하지 않는다.
     if (!parsed) {
-      parsed = {
-        persona: "소비 페르소나를 생성하지 못했습니다.",
-        summary: `${year}년 ${month}월 AI 요약 생성이 지연되어 간단 요약만 제공합니다.`,
-        insights: {
-          key_insights: [],
-          cost_efficiency: [],
-          emotion_patterns: { dissatisfied: [], neutral: [], satisfied: [] }
-        },
-        actions: {
-          improvements: [],
-          saving_opportunities: [],
-          challenge_suggestions: []
-        }
-      };
-
-      parsed.analytics = analytics;
-
-      // 8) 정상 생성 → 캐시 저장 (✅ 항상 저장 + 메타 포함)
-        await reportCache.setReport(
-          userId,
-          y,
-          m,
-          {
-            ...parsed,
-            generatedAt: new Date().toISOString(),
-            period: `${year}-${String(month).padStart(2, '0')}`,
-            version: 'v12-category-transactions',
-          },
-          usedModel || MODEL_ID
-        );
-
-        return res.json({
-          ok: true,
-          report: parsed,
-          meta: {
-            counts: { tx: monthTx.length, sats: normSats.length },
-            model: usedModel || MODEL_ID,
-            cached: false,
-          },
-        });
-
+      return res.json({
+        ok: true,
+        report: { notice: AI_ERROR_NOTICE, analytics },
+        meta: { counts: { tx: monthTx.length, sats: normSats.length }, cached: false, degraded: true },
+      });
     }
+
+    parsed = {
+      persona: parsed.persona.trim(),
+      patterns: canFindPatterns && Array.isArray(parsed.patterns)
+        ? parsed.patterns
+          .map((p) => ({
+            pattern: String(p?.pattern || '').trim(),
+            evidence: String(p?.evidence || '').trim(),
+          }))
+          .filter((p) => p.pattern)
+          .slice(0, 2)
+        : [],
+      next_actions: {
+        action: String(parsed.next_actions?.action || '').trim(),
+        challenge: String(parsed.next_actions?.challenge || '').trim(),
+      },
+    };
+
 
 
     // 8) 정상 생성 → 캐시 저장
@@ -352,7 +333,7 @@ router.get('/consumption', async (req, res) => {
       m,
       {
         ...parsed,
-        version: 'v12-category-transactions',
+        version: REPORT_VERSION,
         period: `${year}-${String(month).padStart(2, '0')}`,
         generatedAt: new Date().toISOString(),
       },
@@ -372,20 +353,7 @@ router.get('/consumption', async (req, res) => {
 
     return res.json({
       ok: true,
-      report: {
-        persona: "AI 리포트를 불러오지 못했습니다.",
-        summary: "AI 리포트를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
-        insights: {
-          key_insights: [],
-          cost_efficiency: [],
-          emotion_patterns: { dissatisfied: [], neutral: [], satisfied: [] }
-        },
-        actions: {
-          improvements: [],
-          saving_opportunities: [],
-          challenge_suggestions: []
-        }
-      },
+      report: { notice: AI_ERROR_NOTICE },
       meta: {
         cached: false,
         model: MODEL_ID,

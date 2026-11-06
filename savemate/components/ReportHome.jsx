@@ -233,7 +233,7 @@ export default function ReportHome() {
         if (!mounted) return;
 
         const rep = res?.report;
-        if (!rep || typeof rep.summary !== 'string') {
+        if (!rep) {
           throw new Error('서버 응답에 report가 없거나 형식이 올바르지 않습니다.');
         }
         setLlmReport(rep);
@@ -581,41 +581,13 @@ export default function ReportHome() {
   const renderLlmText = (item, highlightStyle = reportStyles.highlightText) =>
     renderTaggedText(renderLlmItem(item), highlightStyle);
 
-  // 스키마 모두 지원하도록 정규화
-  const normalizeLlmReport = (rep) => {
-    if (!rep) return null;
-
-    // 새 스키마면 그대로 사용
-    if (rep.persona || rep.insights || rep.actions) return rep;
-
-    // 옛 스키마 → 새 스키마로 fallback 변환
-    return {
-      persona: "",
-      summary: rep.summary ?? "",
-      insights: {
-        key_insights: Array.isArray(rep.habits) ? rep.habits : [],
-        cost_efficiency: Array.isArray(rep.spending_risks) ? rep.spending_risks : [],
-        emotion_patterns: {
-          dissatisfied: rep.emotion_patterns?.dissatisfied_top_reasons ?? [],
-          neutral: rep.emotion_patterns?.neutral_insights ?? [],
-          satisfied: rep.emotion_patterns?.satisfied_top_reasons ?? [],
-        },
-      },
-      actions: {
-        improvements: Array.isArray(rep.actions_next_week) ? rep.actions_next_week : [],
-        saving_opportunities: [],
-        challenge_suggestions: Array.isArray(rep.challenge_suggestions) ? rep.challenge_suggestions : [],
-      },
-    };
-  };
-
   const sectionItems = [
     ['overview', '월간 소비 현황'],
     ['trend', '월별 지출 추이'],
     ['analytics', '소비 패턴 분석'],
     ['satisfaction', '소비 목적별 만족도'],
     ['worst', '불만족 지출 상위 3건'],
-    ['ai', 'AI 소비 요약'],
+    ['ai', 'AI 인사이트'],
   ];
 
   const saveSectionOffset = (key) => (event) => {
@@ -1150,177 +1122,72 @@ export default function ReportHome() {
         {/* ScrollView 직접 자식으로 두어 AI 섹션 이동 좌표를 정확히 측정한다. */}
         <View onLayout={saveSectionOffset('ai')} />
 
-        {/* --- AI 소비 리포트 --- */}
-        {(() => {
-          const rep = normalizeLlmReport(llmReport);
-
-          return (
-            <View>
-
-              {/* 1) summary + persona */}
-              <View style={[reportStyles.card, reportStyles.aiReportCard, reportStyles.aiSummaryCard]}>
-                <View style={reportStyles.aiTitleRow}>
-                  <Text style={reportStyles.cardTitle}>AI 소비 요약</Text>
-                  <View style={reportStyles.aiBadge}>
-                    <Text style={reportStyles.aiBadgeText}>AI 해석</Text>
-                  </View>
-                </View>
-                <Text style={reportStyles.aiDescription}>이번 달 소비 기록을 바탕으로 핵심 내용만 정리했어요.</Text>
-                {llmLoading ? (
-                  <LoadingBlock />
-                ) : llmError ? (
-                  <ErrorBlock message={llmError} />
-                ) : !rep ? (
-                  <Text style={[reportStyles.cardText, { marginTop: 8 }]}>
-                    리포트를 불러오지 못했습니다.
-                  </Text>
-                ) : (
-                  <>
-                    {!!rep.persona && (
-                      <Text style={reportStyles.aiPersona}>
-                        {renderLlmText(rep.persona)}
-                      </Text>
-                    )}
-                    {!!rep.summary && (
-                      <Text style={reportStyles.aiSummaryText}>
-                        {renderLlmText(rep.summary)}
-                      </Text>
-                    )}
-
-                  </>
-                )}
-              </View>
-
-              {/* 2) key_insights */}
-              {Array.isArray(rep?.insights?.key_insights) && rep.insights.key_insights.length > 0 && (
-                <View style={[reportStyles.card, reportStyles.aiReportCard, { marginTop: 12 }]}>
-                  <Text style={reportStyles.cardTitle}>핵심 인사이트</Text>
-                  {rep.insights.key_insights.map((x, i) => (
-                    <View key={i} style={reportStyles.aiInsightRow}>
-                      <View style={reportStyles.aiBullet} />
-                      <Text style={reportStyles.aiInsightText}>{renderLlmText(x)}</Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-
-              {/* 3) cost_efficiency */}
-              {Array.isArray(rep?.insights?.cost_efficiency) && rep.insights.cost_efficiency.length > 0 && (
-                <View style={[reportStyles.card, reportStyles.aiReportCard, { marginTop: 12 }]}>
-                  <Text style={reportStyles.cardTitle}>비용 대비 만족 효율</Text>
-                  {rep.insights.cost_efficiency.map((x, i) => (
-                    <View key={i} style={reportStyles.aiInsightRow}>
-                      <View style={reportStyles.aiBullet} />
-                      <Text style={reportStyles.aiInsightText}>{renderLlmText(x)}</Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-
-              {/* 4) emotion_patterns */}
-              {rep?.insights?.emotion_patterns && (
-                <View style={[reportStyles.card, reportStyles.aiReportCard, { marginTop: 12 }]}>
-                  <Text style={reportStyles.cardTitle}>감정 패턴</Text>
-
-                  {Array.isArray(rep.insights.emotion_patterns.dissatisfied) &&
-                    rep.insights.emotion_patterns.dissatisfied.length > 0 && (
-                      <>
-                        <Text style={reportStyles.aiSubsectionTitle}>
-                          <Text style={reportStyles.highlightText1}>불만족</Text>
-                        </Text>
-
-                        {rep.insights.emotion_patterns.dissatisfied.map((e, i) => (
-                          <View key={`d-${i}`} style={reportStyles.aiInsightRow}>
-                            <View style={[reportStyles.aiBullet, reportStyles.aiBulletDissatisfied]} />
-                            <Text style={reportStyles.aiInsightText}>{renderLlmText(e, reportStyles.highlightText1)}</Text>
-                          </View>
-                        ))}
-                      </>
-                    )}
-
-
-                  {Array.isArray(rep.insights.emotion_patterns.neutral) &&
-                    rep.insights.emotion_patterns.neutral.length > 0 && (
-                      <>
-                        <Text style={reportStyles.aiSubsectionTitle}>
-                          <Text style={reportStyles.highlightText2}>보통</Text>
-                        </Text>
-
-                        {rep.insights.emotion_patterns.neutral.map((e, i) => (
-                          <View key={`n-${i}`} style={reportStyles.aiInsightRow}>
-                            <View style={[reportStyles.aiBullet, reportStyles.aiBulletNeutral]} />
-                            <Text style={reportStyles.aiInsightText}>{renderLlmText(e, reportStyles.highlightText2)}</Text>
-                          </View>
-                        ))}
-                      </>
-                    )}
-
-
-                  {Array.isArray(rep.insights.emotion_patterns.satisfied) &&
-                    rep.insights.emotion_patterns.satisfied.length > 0 && (
-                      <>
-                        <Text style={reportStyles.aiSubsectionTitle}>
-                          <Text style={reportStyles.highlightText3}>만족</Text>
-                        </Text>
-
-                        {rep.insights.emotion_patterns.satisfied.map((e, i) => (
-                          <View key={`s-${i}`} style={reportStyles.aiInsightRow}>
-                            <View style={[reportStyles.aiBullet, reportStyles.aiBulletSatisfied]} />
-                            <Text style={reportStyles.aiInsightText}>{renderLlmText(e, reportStyles.highlightText3)}</Text>
-                          </View>
-                        ))}
-                      </>
-                    )}
-
-                </View>
-              )}
-
-              {/* 5) actions */}
-              {rep?.actions && (
-                <View style={[reportStyles.card, reportStyles.aiReportCard, { marginTop: 12 }]}>
-                  <Text style={reportStyles.cardTitle}>다음 행동 제안</Text>
-
-                  {Array.isArray(rep.actions.improvements) && rep.actions.improvements.length > 0 && (
-                    <>
-                      <Text style={reportStyles.aiSubsectionTitle}>개선 제안</Text>
-                      {rep.actions.improvements.map((a, i) => (
-                        <View key={`imp-${i}`} style={reportStyles.aiInsightRow}>
-                          <View style={reportStyles.aiBullet} />
-                          <Text style={reportStyles.aiInsightText}>{renderLlmText(a)}</Text>
-                        </View>
-                      ))}
-                    </>
-                  )}
-
-                  {Array.isArray(rep.actions.saving_opportunities) && rep.actions.saving_opportunities.length > 0 && (
-                    <>
-                      <Text style={reportStyles.aiSubsectionTitle}>절약 기회</Text>
-                      {rep.actions.saving_opportunities.map((a, i) => (
-                        <View key={`sav-${i}`} style={reportStyles.aiInsightRow}>
-                          <View style={reportStyles.aiBullet} />
-                          <Text style={reportStyles.aiInsightText}>{renderLlmText(a)}</Text>
-                        </View>
-                      ))}
-                    </>
-                  )}
-
-                  {Array.isArray(rep.actions.challenge_suggestions) && rep.actions.challenge_suggestions.length > 0 && (
-                    <>
-                      <Text style={reportStyles.aiSubsectionTitle}>챌린지 추천</Text>
-                      {rep.actions.challenge_suggestions.map((a, i) => (
-                        <View key={`ch-${i}`} style={reportStyles.aiInsightRow}>
-                          <View style={reportStyles.aiBullet} />
-                          <Text style={reportStyles.aiInsightText}>{renderLlmText(a)}</Text>
-                        </View>
-                      ))}
-                    </>
-                  )}
-                </View>
-              )}
-
+        {/* --- AI 인사이트: 화면의 수치와 겹치지 않는 해석과 다음 행동만 보여준다 --- */}
+        <View style={[reportStyles.card, reportStyles.aiReportCard, reportStyles.aiSummaryCard]}>
+          <View style={reportStyles.aiTitleRow}>
+            <Text style={reportStyles.cardTitle}>AI 인사이트</Text>
+            <View style={reportStyles.aiBadge}>
+              <Text style={reportStyles.aiBadgeText}>AI 해석</Text>
             </View>
-          );
-        })()}
+          </View>
+          {llmLoading ? (
+            <LoadingBlock />
+          ) : llmError ? (
+            <ErrorBlock message={llmError} />
+          ) : llmReport?.notice ? (
+            <Text style={[reportStyles.cardText, { marginTop: 8 }]}>{llmReport.notice}</Text>
+          ) : !llmReport?.persona ? (
+            <Text style={[reportStyles.cardText, { marginTop: 8 }]}>AI 인사이트를 불러오지 못했어요.</Text>
+          ) : (
+            <>
+              <Text style={reportStyles.aiDescription}>이번 달 소비 기록을 바탕으로 AI가 해석했어요.</Text>
+              <Text style={reportStyles.aiPersona}>{renderLlmText(llmReport.persona)}</Text>
+            </>
+          )}
+        </View>
+
+        {!llmLoading && !llmError && llmReport?.patterns?.length > 0 && (
+          <View style={[reportStyles.card, reportStyles.aiReportCard, { marginTop: 12 }]}>
+            <Text style={reportStyles.cardTitle}>숨은 소비 패턴</Text>
+            {llmReport.patterns.map((item, i) => (
+              <View key={i} style={reportStyles.aiInsightRow}>
+                <View style={reportStyles.aiBullet} />
+                <View style={{ flex: 1 }}>
+                  <Text style={reportStyles.aiInsightText}>{renderLlmText(item.pattern)}</Text>
+                  {!!item.evidence && (
+                    <Text style={[reportStyles.caption, { marginTop: 4 }]}>{renderLlmText(item.evidence)}</Text>
+                  )}
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {!llmLoading && !llmError && (llmReport?.next_actions?.action || llmReport?.next_actions?.challenge) ? (
+          <View style={[reportStyles.card, reportStyles.aiReportCard, { marginTop: 12 }]}>
+            <Text style={reportStyles.cardTitle}>다음 달 실천</Text>
+            {!!llmReport.next_actions.action && (
+              <>
+                <Text style={reportStyles.aiSubsectionTitle}>실천 행동</Text>
+                <View style={reportStyles.aiInsightRow}>
+                  <View style={reportStyles.aiBullet} />
+                  <Text style={reportStyles.aiInsightText}>{renderLlmText(llmReport.next_actions.action)}</Text>
+                </View>
+              </>
+            )}
+            {!!llmReport.next_actions.challenge && (
+              <>
+                <Text style={reportStyles.aiSubsectionTitle}>챌린지 추천</Text>
+                <View style={reportStyles.aiInsightRow}>
+                  <View style={reportStyles.aiBullet} />
+                  <Text style={reportStyles.aiInsightText}>{renderLlmText(llmReport.next_actions.challenge)}</Text>
+                </View>
+              </>
+            )}
+          </View>
+        ) : null}
+
+
 
         <View style={{ height: 24 }} />
       </ScrollView>

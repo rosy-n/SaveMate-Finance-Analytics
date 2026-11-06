@@ -1,3 +1,6 @@
+// 리포트 구조나 프롬프트가 바뀌면 값을 올린다. 다른 버전의 캐시는 사용하지 않는다.
+const REPORT_VERSION = 'v14-ai-patterns';
+
 const EMOTION_SCORE = {
   dissatisfied: 1,
   neutral: 3,
@@ -223,7 +226,7 @@ function analyzeFinances(transactions = [], satisfactionRecords = []) {
   outliers.sort((a, b) => b.amount - a.amount);
 
   return {
-    version: 'v12-category-transactions',
+    version: REPORT_VERSION,
     methodology: {
       satisfactionScale: 'dissatisfied=1, neutral=3, satisfied=5 (maximum 5)',
       correlation: 'Pearson correlation; requires at least 3 rated expenses',
@@ -242,4 +245,4 @@ function analyzeFinances(transactions = [], satisfactionRecords = []) {
   };
 }
 
-module.exports = { analyzeFinances };
+module.exports = { analyzeFinances, REPORT_VERSION };
