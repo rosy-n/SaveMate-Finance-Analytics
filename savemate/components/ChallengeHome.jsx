@@ -1,4 +1,5 @@
 // components/ChallengeHome.jsx
+import { getAppNow } from '@/constants/appDate';
 import React, { useEffect, useState, useMemo } from "react";
 import {
   SafeAreaView,
@@ -35,7 +36,7 @@ const ChallengeHome = () => {
   ]);
 
   useEffect(() => {
-    const today = new Date();
+    const today = getAppNow();
     const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
     setDDay(lastDay - today.getDate() + 1);
   }, []);

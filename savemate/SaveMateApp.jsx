@@ -1,3 +1,4 @@
+import { getAppNow } from './constants/appDate';
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -32,7 +33,7 @@ import { useApi } from './hooks/useApi';
 import useMonthlyTransactionsFromApi from './hooks/useMonthlyTransactionsFromApi';
 
 
-const NOW = new Date();
+const NOW = getAppNow();
 const CURRENT_YEAR = NOW.getFullYear();
 const CURRENT_MONTH = NOW.getMonth() + 1;
 const TODAY = NOW.getDate();
@@ -190,7 +191,7 @@ export default function SaveMateApp() {
         ? raw
         : raw
           ? new Date(raw)
-          : new Date();
+          : getAppNow();
 
     if (type === 'income') {
       setTempIncomeData({ amount: isNaN(amt) ? 0 : amt, date: dateObj });
@@ -634,9 +635,9 @@ export default function SaveMateApp() {
 
   return (
     <>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
       {/* expo-router 58은 react-navigation을 내장해서 쓰므로, 이 Stack은 독립 컨테이너가 필요함 */}
       <NavigationContainer independent>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
         {currentPage === 'home' ? (
           <Stack.Screen name="Home">
             {() => <HomePage />}
@@ -675,8 +676,8 @@ export default function SaveMateApp() {
           </Stack.Screen>
         )}
       </Stack.Navigator>
-
       </NavigationContainer>
+
       {/* 거래 입력 모달 */}
       <Modal
         visible={entryModal.visible}
@@ -697,13 +698,13 @@ export default function SaveMateApp() {
                 amount: Number(tempIncomeData?.amount || 0),
                 category: incomeMethod,
                 memo: incomeText?.trim() || '',
-                date: toLocalDateString(tempIncomeData?.date || new Date()),
+                date: toLocalDateString(tempIncomeData?.date || getAppNow()),
                 incomeDetail: { incomeSource: incomeMethod, memo: incomeText?.trim() || '' }
               };
               await api.post('/api/transactions', payload);
               setEntryModal({ visible: false, step: 'amount' });
-              setSelectedMonth((tempIncomeData?.date?.getMonth?.() ?? new Date().getMonth()) + 1);
-              setSelectedDate(tempIncomeData?.date?.getDate?.() ?? new Date().getDate());
+              setSelectedMonth((tempIncomeData?.date?.getMonth?.() ?? getAppNow().getMonth()) + 1);
+              setSelectedDate(tempIncomeData?.date?.getDate?.() ?? getAppNow().getDate());
               setRefreshKey(k => k + 1);
               setCurrentPage('home');
               Alert.alert('저장 완료', '수입이 기록되었어요 ✅');
@@ -716,7 +717,7 @@ export default function SaveMateApp() {
           onExpenseSubmit={async ({ memo, method, category, background }) => {
             try {
               const amount = Number(tempExpenseData?.amount || 0);
-              const dateISO = toLocalDateString(tempExpenseData?.date || new Date());
+              const dateISO = toLocalDateString(tempExpenseData?.date || getAppNow());
               const uid = homeData.userId;
 
               const body = { uid, amount, type: 'expense', category, memo, date: dateISO, method, background };
@@ -729,8 +730,8 @@ export default function SaveMateApp() {
               if (!data.ok) throw new Error(data.error || '저장 실패');
 
               setEntryModal({ visible: false, step: 'amount' });
-              setSelectedMonth((tempExpenseData?.date?.getMonth?.() ?? new Date().getMonth()) + 1);
-              setSelectedDate(tempExpenseData?.date?.getDate?.() ?? new Date().getDate());
+              setSelectedMonth((tempExpenseData?.date?.getMonth?.() ?? getAppNow().getMonth()) + 1);
+              setSelectedDate(tempExpenseData?.date?.getDate?.() ?? getAppNow().getDate());
               setRefreshKey(k => k + 1);
               setCurrentPage('home');
               Alert.alert('저장 완료', '지출이 기록되었어요 ✅');

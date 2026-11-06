@@ -1,4 +1,5 @@
 // app/(tabs)/report/categoryDetail.jsx
+import { getAppNow } from '@/constants/appDate';
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -31,7 +32,7 @@ export default function CategoryDetail() {
   const [error, setError] = useState(null);
   const uid = process.env.EXPO_PUBLIC_UID || '2314513';
 
-  const now = new Date();
+  const now = getAppNow();
   const y = Number(year) || now.getFullYear();
   const m = Number(month) || (now.getMonth() + 1);
   const catName = String(category || '기타');

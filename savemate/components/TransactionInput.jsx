@@ -1,3 +1,4 @@
+import { getAppNow } from '@/constants/appDate';
 import React, { useState } from 'react';
 import {
   SafeAreaView,
@@ -11,7 +12,7 @@ import {
 const TransactionInput = ({ onClose, onSave }) => {
   const [expression, setExpression] = useState('');
   const [transactionType, setTransactionType] = useState('expense');
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(getAppNow());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   const handleNumberPress = (num) => {
@@ -131,7 +132,7 @@ const TransactionInput = ({ onClose, onSave }) => {
 
   // 간단한 달력 컴포넌트
   const SimpleDatePicker = () => {
-    const today = new Date();
+    const today = getAppNow();
     const [viewMonth, setViewMonth] = useState(selectedDate.getMonth());
     const [viewYear, setViewYear] = useState(selectedDate.getFullYear());
 

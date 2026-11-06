@@ -1,3 +1,4 @@
+import { getAppNow } from '@/constants/appDate';
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
@@ -44,7 +45,7 @@ export default function ReportHome() {
 
   // ✅ refreshKey마다 "현재 월" 재계산 (앱 켜둔 채로 월 넘어가도 안전)
   const [year, month] = useMemo(() => {
-    const now = new Date();
+    const now = getAppNow();
     return [now.getFullYear(), now.getMonth() + 1];
   }, [refreshKey]);
 
