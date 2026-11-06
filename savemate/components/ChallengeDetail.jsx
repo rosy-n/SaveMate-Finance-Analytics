@@ -51,7 +51,7 @@ export default function ChallengeDetail() {
       try {
         setLoading(true);
         setLoadFailed(false);
-        const res = await api.get(`/api/challenges/${id}?uid=${uid}&today=${getAppToday()}`);
+        const res = await api.get(`/api/challenges/${id}?today=${getAppToday()}`);
         if (!mounted) return;
         setChallenge(res?.challenge);
         setMonthlyExpenses(res?.monthlyExpenses ?? []);
@@ -90,7 +90,7 @@ export default function ChallengeDetail() {
         style: "destructive",
         onPress: async () => {
           try {
-            await api.post(`/api/challenges/${id}/giveup`, { uid, today: getAppToday() });
+            await api.post(`/api/challenges/${id}/giveup`, { today: getAppToday() });
             router.back();
           } catch {
             setGivingUp(false);

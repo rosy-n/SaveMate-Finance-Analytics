@@ -34,9 +34,10 @@ export default function ChallengeHistory() {
 
   useFocusEffect(
     useCallback(() => {
+      if (!uid) return;
       (async () => {
         try {
-          const res = await api.get(`/api/challenges/history?uid=${uid}&today=${getAppToday()}`);
+          const res = await api.get(`/api/challenges/history?today=${getAppToday()}`);
           setChallenges(res?.challenges ?? []);
           setLoadError(false);
         } catch {

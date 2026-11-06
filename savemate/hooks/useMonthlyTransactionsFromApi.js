@@ -25,7 +25,7 @@ export default function useMonthlyTransactionsFromApi({ userId, year, month, ref
     if (!userId || !year || !month) return;
 
     const key = `${userId}:${year}-${String(month).padStart(2,'0')}`;
-    const path = `/api/transactions?uid=${encodeURIComponent(userId)}&year=${year}&month=${month}&expand=true`;
+    const path = `/api/transactions?year=${year}&month=${month}&expand=true`;
 
     async function run() {
       try {

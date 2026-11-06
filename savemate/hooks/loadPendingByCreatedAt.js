@@ -47,7 +47,7 @@ export async function loadPendingByCreatedAt({
 
   const p = (async () => {
     // 단일 최적화 쿼리: isRated=false인 expense만 요청
-    const txURL = `/api/transactions/unrated?uid=${encodeURIComponent(uid)}&limit=${cap}&before=${today}`;
+    const txURL = `/api/transactions/unrated?limit=${cap}&before=${today}`;
 
     let items = [];
     try {

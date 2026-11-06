@@ -22,8 +22,9 @@ export default function HomeChallengeCard({ refreshKey }) {
   const [loadError, setLoadError] = useState(false);
 
   const load = useCallback(async () => {
+    if (!uid) return;
     try {
-      const res = await api.get(`/api/challenges?uid=${uid}&today=${getAppToday()}`);
+      const res = await api.get(`/api/challenges?today=${getAppToday()}`);
       setChallenges(res?.challenges ?? []);
       setLoadError(false);
     } catch {

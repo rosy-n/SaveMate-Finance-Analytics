@@ -123,7 +123,7 @@ export function SatisfactionAlarmSettings() {
     let mounted = true;
     (async () => {
       try {
-        const data = await api.get(`/api/alarm-settings?uid=${user.id}`);
+        const data = await api.get(`/api/alarm-settings`);
         if (!mounted || !data?.ok) return;
         setEnabled(data.settings.enabled);
         setReminderEnabled(data.settings.reminder_enabled);
@@ -142,7 +142,7 @@ export function SatisfactionAlarmSettings() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.put("/api/alarm-settings", { uid: user?.id, enabled, reminderEnabled, times });
+      await api.put("/api/alarm-settings", { enabled, reminderEnabled, times });
       Alert.alert("저장 완료", "알림 설정이 저장되었어요 ✅");
     } catch (e) {
       Alert.alert("저장 실패", e.message || "설정을 저장하지 못했어요. 다시 시도해주세요.");
@@ -415,7 +415,6 @@ export function FAQScreen() {
 
 /* =============== 5) 오류/의견 보내기 =============== */
 export function FeedbackScreen() {
-  const { user } = useAuth();
   const api = useApi();
   const [category, setCategory] = useState();
   const [title, setTitle] = useState("");
@@ -432,7 +431,6 @@ export function FeedbackScreen() {
     setSubmitting(true);
     try {
       await api.post("/api/feedback", {
-        uid: user?.id,
         category,
         title: title.trim(),
         content: content.trim(),

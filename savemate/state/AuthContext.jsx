@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useApi } from '../hooks/useApi';
+import { setAuthToken, setUnauthorizedHandler } from './authToken';
 
 const STORAGE_KEY = '@savemate/auth';
 
@@ -30,6 +31,7 @@ export function AuthProvider({ children }) {
         const data = await res.json();
         if (!mounted) return;
         if (data?.ok) {
+          setAuthToken(saved.token);
           setUser(data.user);
           setToken(saved.token);
         } else {
@@ -47,6 +49,7 @@ export function AuthProvider({ children }) {
   const login = async (username, password, remember) => {
     const data = await api.post('/api/auth/login', { username, password });
 
+    setAuthToken(data.token);
     setUser(data.user);
     setToken(data.token);
 
@@ -64,10 +67,17 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
+    setAuthToken(null);
     setUser(null);
     setToken(null);
     await AsyncStorage.removeItem(STORAGE_KEY);
   };
+
+  // 서버가 토큰을 거부(401)하면 자동 로그아웃 → 로그인 화면으로 이동
+  useEffect(() => {
+    setUnauthorizedHandler(() => { logout(); });
+    return () => setUnauthorizedHandler(null);
+  }, []);
 
   const value = useMemo(
     () => ({ user, token, loading, login, signup, logout }),

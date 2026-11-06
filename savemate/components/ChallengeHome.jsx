@@ -29,8 +29,9 @@ const ChallengeHome = () => {
   const [loadError, setLoadError] = useState(false);
 
   const loadChallenges = useCallback(async () => {
+    if (!uid) return;
     try {
-      const res = await api.get(`/api/challenges?uid=${uid}&today=${getAppToday()}`);
+      const res = await api.get(`/api/challenges?today=${getAppToday()}`);
       setChallenges(res?.challenges ?? []);
       setLoadError(false);
     } catch {
@@ -62,7 +63,7 @@ const ChallengeHome = () => {
 
   const giveUp = async (id) => {
     try {
-      await api.post(`/api/challenges/${id}/giveup`, { uid, today: getAppToday() });
+      await api.post(`/api/challenges/${id}/giveup`, { today: getAppToday() });
       await loadChallenges();
     } catch {
       Alert.alert("챌린지 포기", "포기 처리에 실패했어요. 다시 시도해 주세요.");

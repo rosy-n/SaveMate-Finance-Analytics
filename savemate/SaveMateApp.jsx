@@ -177,7 +177,6 @@ export default function SaveMateApp() {
   const handleSatisfactionSubmit = async (payload) => {
     try {
       const data = await api.post('/api/satisfaction', {
-        uid: payload.uid,
         transactionId: payload.transactionId,
         emotion: payload.emotion,
         reasons: payload.reasons,
@@ -643,7 +642,6 @@ export default function SaveMateApp() {
                   } = payloadFromUI;
 
                   handleSatisfactionSubmit({
-                    uid: homeData.userId,
                     transactionId: transactionId,
                     emotion: emotion ?? rating, // emotion이 우선, 없으면 rating 사용
                     reasons: reason,             // reason 필드 명확히 전달
@@ -676,7 +674,6 @@ export default function SaveMateApp() {
           onIncomeSubmit={async ({ incomeText, incomeMethod }) => {
             try {
               const payload = {
-                uid: homeData.userId,
                 type: 'income',
                 amount: Number(tempIncomeData?.amount || 0),
                 category: incomeMethod,
@@ -701,16 +698,10 @@ export default function SaveMateApp() {
             try {
               const amount = Number(tempExpenseData?.amount || 0);
               const dateISO = toLocalDateString(tempExpenseData?.date || getAppNow());
-              const uid = homeData.userId;
 
-              const body = { uid, amount, type: 'expense', category, memo, date: dateISO, method, background };
-              const res = await fetch(`${api.baseURL}/api/transactions`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body),
-              });
-              const data = await res.json();
-              if (!data.ok) throw new Error(data.error || '저장 실패');
+              const body = { amount, type: 'expense', category, memo, date: dateISO, method, background };
+              // useApi 가 Authorization 헤더를 붙이고, 서버가 보낸 에러 메시지를 Error 로 던진다.
+              await api.post('/api/transactions', body);
 
               setEntryModal({ visible: false, step: 'amount' });
               setSelectedMonth((tempExpenseData?.date?.getMonth?.() ?? getAppNow().getMonth()) + 1);

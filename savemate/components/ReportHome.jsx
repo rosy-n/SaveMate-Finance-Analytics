@@ -224,7 +224,7 @@ export default function ReportHome() {
 
         if (!uid) return; // 로그인 정보가 없으면 요청하지 않음
 
-        const path = `/api/reports/consumption?uid=${uid}&year=${year}&month=${month}`;
+        const path = `/api/reports/consumption?year=${year}&month=${month}`;
         console.log('📡 GET', api.baseURL + path);
 
         // (선택) 8초 타임아웃: 네트워크 지연 시 무한 대기 방지
@@ -269,7 +269,7 @@ export default function ReportHome() {
         setBgLoading(true);
 
         // 1) 만족도 평가 전체 가져오기
-        const satRes = await api.get(`/api/satisfaction/${uid}`);
+        const satRes = await api.get(`/api/satisfaction`);
         const satItems = Array.isArray(satRes?.items) ? satRes.items : [];
 
         if (satItems.length === 0) {
@@ -280,7 +280,7 @@ export default function ReportHome() {
         // 2) transactionId만 추출 → bulk 조회
         const ids = Array.from(new Set(satItems.map(s => s.transactionId)));
 
-        const txRes = await api.post(`/api/transactions/bulk`, { ids, uid });
+        const txRes = await api.post(`/api/transactions/bulk`, { ids });
         const txMap = {};
         (txRes?.items || []).forEach(tx => {
           txMap[tx.id] = tx;
@@ -347,7 +347,7 @@ export default function ReportHome() {
     (async () => {
       try {
         setLoading(true);
-        const path = `/api/transactions?uid=${uid}&year=${year}&month=${month}&expand=true`;
+        const path = `/api/transactions?year=${year}&month=${month}&expand=true`;
         const res = await api.get(path);
         mounted && setItems(Array.isArray(res?.items) ? res.items : []);
       } catch {
@@ -370,7 +370,7 @@ export default function ReportHome() {
     (async () => {
       try {
         // 1) 전체 만족도 가져오기
-        const satRes = await api.get(`/api/satisfaction/${uid}`);
+        const satRes = await api.get(`/api/satisfaction`);
         const satItems = Array.isArray(satRes?.items) ? satRes.items : [];
 
         // 2) 불만족만 추출
@@ -385,7 +385,7 @@ export default function ReportHome() {
         const ids = disliked.map(r => r.transactionId);
 
         // 4) bulk로 모든 트랜잭션 로드
-        const bulk = await api.post(`/api/transactions/bulk`, { ids, uid });
+        const bulk = await api.post(`/api/transactions/bulk`, { ids });
         const txList = Array.isArray(bulk?.items) ? bulk.items : [];
 
         // 5) 지출(expense)만 남기기
@@ -453,7 +453,7 @@ export default function ReportHome() {
     (async () => {
       try {
         setSeriesLoading(true);
-        const path = `/api/transactions/monthly-sum?uid=${uid}&months=4&endYear=${year}&endMonth=${month}&day=${trendDay}`;
+        const path = `/api/transactions/monthly-sum?months=4&endYear=${year}&endMonth=${month}&day=${trendDay}`;
         const res = await api.get(path); // useApi() 사용
         const arr = Array.isArray(res?.items) ? res.items : [];
 

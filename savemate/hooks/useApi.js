@@ -2,6 +2,7 @@
 import { useMemo } from 'react';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
+import { getAuthToken, notifyUnauthorized } from '../state/authToken';
 
 /**
  * 개발 중 Expo(Metro) 서버가 떠 있는 Mac의 IP를 읽어온다.
@@ -60,10 +61,14 @@ export function useApi() {
 
     const req = async (method, path, body) => {
       let res;
+      const token = getAuthToken();
       try {
         res = await fetch(`${BASE_URL}${path}`, {
           method,
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
           body: body ? JSON.stringify(body) : undefined,
         });
       } catch {
@@ -77,6 +82,9 @@ export function useApi() {
       } catch {
         data = null;
       }
+
+      // 토큰을 보냈는데 401 이면 만료/무효 토큰이므로 자동 로그아웃한다.
+      if (res.status === 401 && token) notifyUnauthorized();
 
       if (!res.ok) {
         // 서버가 { ok:false, error } 형태로 이유를 내려주면 그 메시지를 그대로 쓴다.
