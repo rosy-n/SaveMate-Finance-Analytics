@@ -225,10 +225,10 @@ const ChallengeHome = () => {
             alignItems: "center",
             borderRadius: 12,
             borderWidth: 1,
-            borderColor: "#D8B4FE",
+            borderColor: "#D1D5DB",
           }}
         >
-          <Text style={{ fontSize: 15, fontWeight: "600", color: "#7C3AED" }}>지난 챌린지 보기</Text>
+          <Text style={{ fontSize: 15, fontWeight: "600", color: "#6B7280" }}>지난 챌린지 보기</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
