@@ -191,6 +191,10 @@ export default function ReportHome() {
   });
   const { year, month } = period;
 
+  // 아직 오지 않은 달로는 넘어가지 않는다.
+  const canGoNext = year < now.getFullYear()
+    || (year === now.getFullYear() && month < now.getMonth() + 1);
+
   const moveMonth = (delta) => {
     setPeriod((current) => {
       const next = new Date(current.year, current.month - 1 + delta, 1);
@@ -770,10 +774,12 @@ export default function ReportHome() {
             <TouchableOpacity
               accessibilityRole="button"
               accessibilityLabel="다음 달"
+              accessibilityState={{ disabled: !canGoNext }}
+              disabled={!canGoNext}
               onPress={() => moveMonth(1)}
               style={{ paddingHorizontal: 12, paddingVertical: 8 }}
             >
-              <Text style={[reportStyles.cardTitle, { fontSize: 24 }]}>›</Text>
+              <Text style={[reportStyles.cardTitle, { fontSize: 24 }, !canGoNext && { color: '#D1D5DB' }]}>›</Text>
             </TouchableOpacity>
           </View>
 
