@@ -12,7 +12,8 @@ const SELECT_CHALLENGE = `
          ch.period_start::text AS period_start,
          ch.period_end::text   AS period_end,
          ch.status,
-         COALESCE(s.total, 0)::bigint AS spent
+         COALESCE(s.total, 0)::bigint AS spent,
+         f.occurred_on::text AS failed_on
   FROM challenges ch
   JOIN categories c ON c.id = ch.category_id
   LEFT JOIN LATERAL (
@@ -22,7 +23,22 @@ const SELECT_CHALLENGE = `
       AND t.type = 'expense'
       AND t.category_id = ch.category_id
       AND t.occurred_on BETWEEN ch.period_start AND ch.period_end
-  ) s ON true`;
+  ) s ON true
+  LEFT JOIN LATERAL (
+    -- 누적 지출이 목표 금액을 처음 넘은 날
+    SELECT d.occurred_on
+    FROM (
+      SELECT t.occurred_on, SUM(t.amount) OVER (ORDER BY t.occurred_on) AS running
+      FROM transactions t
+      WHERE t.user_id = ch.user_id
+        AND t.type = 'expense'
+        AND t.category_id = ch.category_id
+        AND t.occurred_on BETWEEN ch.period_start AND ch.period_end
+    ) d
+    WHERE d.running > ch.target_amount
+    ORDER BY d.occurred_on
+    LIMIT 1
+  ) f ON true`;
 
 /** 저장된 status 와 지출 합계, 오늘 날짜('YYYY-MM-DD')로 현재 상태를 계산한다. */
 function deriveStatus(row, spent, today) {
@@ -34,6 +50,7 @@ function deriveStatus(row, spent, today) {
 
 function toApi(row, today) {
   const spent = Number(row.spent);
+  const status = deriveStatus(row, spent, today);
   return {
     id: String(row.id),
     title: `${row.category} 챌린지`,
@@ -41,9 +58,10 @@ function toApi(row, today) {
     targetAmount: row.target_amount,
     currentAmount: spent,
     progress: Math.round((spent / row.target_amount) * 100),
-    status: deriveStatus(row, spent, today),
+    status,
     periodStart: row.period_start,
     periodEnd: row.period_end,
+    failedOn: status === 'failed' ? row.failed_on : null,
   };
 }
 

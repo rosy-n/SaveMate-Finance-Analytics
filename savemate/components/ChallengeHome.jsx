@@ -13,6 +13,7 @@ import {
 import { router, useFocusEffect } from "expo-router";
 import { useApi } from "../hooks/useApi";
 import { SaveMateStyles as styles } from "../styles/SaveMateStyles";
+import { formatFailedOn } from "../constants/challengeFormat";
 
 const ChallengeHome = () => {
   const [dDay, setDDay] = useState(0);
@@ -111,6 +112,9 @@ const ChallengeHome = () => {
             <Text style={styles.challengeCardAmount}>
               {c.currentAmount.toLocaleString()}원 / {c.targetAmount.toLocaleString()}원
             </Text>
+            {isFailed && (
+              <Text style={{ fontSize: 12, color: "#6B7280", marginTop: 2 }}>{formatFailedOn(c)}</Text>
+            )}
 
             <View style={styles.challengeProgressTrack}>
               <View

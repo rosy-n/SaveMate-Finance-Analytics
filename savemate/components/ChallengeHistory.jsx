@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { getAppToday } from "../constants/appDate";
+import { formatFailedOn, formatPeriod } from "../constants/challengeFormat";
 import { useApi } from "../hooks/useApi";
 import { SaveMateStyles } from "../styles/SaveMateStyles";
 
@@ -20,9 +21,6 @@ const STATUS = {
   failed: { label: "실패", color: "#DC2626", background: "#FEE2E2" },
   given_up: { label: "포기", color: "#6B7280", background: "#F3F4F6" },
 };
-
-const formatPeriod = (start, end) =>
-  `${start.replaceAll("-", ".")} ~ ${end.slice(5).replaceAll("-", ".")}`;
 
 export default function ChallengeHistory() {
   const api = useApi();
@@ -70,6 +68,7 @@ export default function ChallengeHistory() {
           {c.currentAmount.toLocaleString()}원 / {c.targetAmount.toLocaleString()}원 ({c.progress}%)
         </Text>
         <Text style={styles.period}>{formatPeriod(c.periodStart, c.periodEnd)}</Text>
+        {c.status === "failed" && <Text style={styles.period}>{formatFailedOn(c)}</Text>}
       </TouchableOpacity>
     );
   };

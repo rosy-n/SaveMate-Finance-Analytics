@@ -12,6 +12,7 @@ import {
 import { router, useLocalSearchParams } from "expo-router";
 import { useApi } from "../hooks/useApi";
 import { getAppToday } from "../constants/appDate";
+import { formatFailedOn, formatPeriod } from "../constants/challengeFormat";
 import { SafeAreaView } from "react-native";
 
 const BRAND = {
@@ -144,6 +145,12 @@ export default function ChallengeDetail() {
           <Text style={styles.remainingLine}>
             남은 예산 : {formatKRW(remaining)}
           </Text>
+          <Text style={styles.remainingLine}>
+            기간 : {formatPeriod(challenge.periodStart, challenge.periodEnd)}
+          </Text>
+          {challenge.status === "failed" && (
+            <Text style={styles.remainingLine}>{formatFailedOn(challenge)}</Text>
+          )}
         </View>
 
         {/* 이번 달 지출 카드 */}
