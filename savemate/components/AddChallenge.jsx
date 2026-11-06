@@ -15,6 +15,7 @@ import {
 import { router } from "expo-router";
 import { useApi } from "../hooks/useApi";
 import { getAppToday } from "../constants/appDate";
+import { formatChallengeRange } from "../constants/challengeFormat";
 
 const BRAND = {
   tint: "#7C3AED",
@@ -108,7 +109,7 @@ export default function ChallengeAdd() {
         <Text style={styles.recoTitle}>추천 챌린지</Text>
         <Text style={styles.recoText}>
           {recommendation
-            ? `지난 달 ${recommendation.category} 지출이 ${recommendation.lastMonthTotal.toLocaleString("ko-KR")}원이었어요. ${recommendation.category} 지출을 ${recommendation.targetAmount / 10000}만원으로 제한해 보는 것은 어떨까요?`
+            ? `지난 달 ${recommendation.category} 지출이 ${recommendation.lastMonthTotal.toLocaleString("ko-KR")}원이었어요. 이번 달 남은 ${recommendation.remainingDays}일 동안 ${recommendation.category} 지출을 ${recommendation.targetAmount / 10000}만원으로 제한해 보는 것은 어떨까요?`
             : "추천할 지난 달 지출 내역이 없어요. 줄이고 싶은 카테고리와 목표 금액을 직접 정해 보세요."}
         </Text>
       </View>
@@ -131,6 +132,8 @@ export default function ChallengeAdd() {
           placeholder="200,000"
           style={styles.textInput}
         />
+
+        <Text style={styles.periodText}>{formatChallengeRange(getAppToday())}</Text>
 
         <TouchableOpacity style={styles.startBtn} onPress={onStart}>
           <Text style={styles.startBtnText}>챌린지 시작</Text>
@@ -239,8 +242,10 @@ const styles = StyleSheet.create({
     color: BRAND.text,
   },
 
+  periodText: { marginTop: 12, fontSize: 13, color: BRAND.sub },
+
   startBtn: {
-    marginTop: 14,
+    marginTop: 10,
     borderRadius: 999,
     borderWidth: 1.5,
     borderColor: BRAND.tint,

@@ -173,7 +173,8 @@ const RECOMMEND_RATIO = 0.8;
 
 /**
  * 지난달 지출이 가장 많은 카테고리를 추천한다. (이미 진행 중인 카테고리 제외)
- * 목표 금액은 지난달 지출의 80%를 만원 단위로 내림한 값. 추천할 항목이 없으면 null.
+ * 목표 금액은 지난달 지출의 80%를 이번 달 남은 기간 비율만큼 줄여 만원 단위로 내림한 값.
+ * 추천할 항목이 없으면 null.
  */
 async function recommend(userId, today) {
   const prev = shiftYearMonth(Number(today.slice(0, 4)), Number(today.slice(5, 7)), -1);
@@ -205,12 +206,16 @@ async function recommend(userId, today) {
   if (!rows[0]) return null;
 
   const lastMonthTotal = Number(rows[0].total);
+  const daysInMonth = new Date(Date.UTC(Number(today.slice(0, 4)), Number(today.slice(5, 7)), 0)).getUTCDate();
+  const remainingDays = daysInMonth - Number(today.slice(8, 10)) + 1;
+  const proratedTarget = lastMonthTotal * RECOMMEND_RATIO * (remainingDays / daysInMonth);
   return {
     category: rows[0].category,
     lastMonthTotal,
+    remainingDays,
     targetAmount: Math.max(
       MIN_RECOMMEND_TOTAL,
-      Math.floor((lastMonthTotal * RECOMMEND_RATIO) / MIN_RECOMMEND_TOTAL) * MIN_RECOMMEND_TOTAL
+      Math.floor(proratedTarget / MIN_RECOMMEND_TOTAL) * MIN_RECOMMEND_TOTAL
     ),
   };
 }

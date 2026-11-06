@@ -13,3 +13,10 @@ export const formatFailedOn = ({ failedOn, periodStart }) => {
   const [, month, day] = failedOn.split('-').map(Number);
   return `${month}월 ${day}일 실패 (시작 ${dayNumber(failedOn) - dayNumber(periodStart) + 1}일째)`;
 };
+
+/** 새 챌린지 기간 안내: '2026-11-06' -> '기간: 오늘부터 11월 30일까지 (25일)' */
+export const formatChallengeRange = (today) => {
+  const [year, month, day] = today.split('-').map(Number);
+  const lastDay = new Date(year, month, 0).getDate();
+  return `기간: 오늘부터 ${month}월 ${lastDay}일까지 (${lastDay - day + 1}일)`;
+};
