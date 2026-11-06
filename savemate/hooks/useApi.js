@@ -4,15 +4,34 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
 /**
+ * 개발 중 Expo(Metro) 서버가 떠 있는 Mac의 IP를 읽어온다.
+ * hostUri 예: "192.168.0.10:8081" → "192.168.0.10"
+ * 터널(--tunnel) 주소나 localhost로는 API 서버에 접속할 수 없으므로 사용하지 않는다.
+ */
+const getDevServerHost = () => {
+  if (!__DEV__) return null;
+
+  const hostUri =
+    Constants.expoConfig?.hostUri ?? Constants.expoGoConfig?.debuggerHost;
+  const host = hostUri?.split(':')[0];
+
+  if (!host || !/^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host === '127.0.0.1') {
+    return null;
+  }
+  return host;
+};
+
+/**
  * 기본 추론 규칙
- * - ANDROID 에뮬레이터: 10.0.2.2
- * - iOS 시뮬레이터/웹: localhost
+ * - HOST: .env의 EXPO_PUBLIC_API_HOST → Expo 서버의 IP(자동) → 기본값
+ * - 기본값: ANDROID 에뮬레이터 10.0.2.2, iOS 시뮬레이터/웹 localhost
  * - 포트 기본값: 8080
  */
 const guessBaseURL = () => {
   const PORT = process.env.EXPO_PUBLIC_API_PORT ?? '8080';
   const HOST =
-    process.env.EXPO_PUBLIC_API_HOST ??
+    process.env.EXPO_PUBLIC_API_HOST ||
+    getDevServerHost() ||
     (Platform.OS === 'android' ? '10.0.2.2' : 'localhost');
   return `http://${HOST}:${PORT}`;
 };
@@ -24,8 +43,8 @@ const guessBaseURL = () => {
  * 3) guessBaseURL()
  */
 const resolvedBaseURL =
-  process.env.EXPO_PUBLIC_API_BASE_URL ??
-  Constants.expoConfig?.extra?.API_BASE_URL ??
+  process.env.EXPO_PUBLIC_API_BASE_URL ||
+  Constants.expoConfig?.extra?.API_BASE_URL || // 값이 없으면 ""로 주입되므로 || 사용
   guessBaseURL();
 
 export function useApi() {
