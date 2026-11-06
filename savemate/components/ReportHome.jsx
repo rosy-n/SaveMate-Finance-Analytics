@@ -7,7 +7,7 @@ import { Text as SvgText } from 'react-native-svg';
 import { useApi } from '../hooks/useApi';
 import { SaveMateStyles as styles } from '../styles/SaveMateStyles';
 import { ReportStyles as reportStyles } from './styles/ReportStyles';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router';
 import { appBus } from '../app/eventBus';
 
 const screenWidth = Dimensions.get('window').width;

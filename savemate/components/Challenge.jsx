@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation } from 'expo-router';
 import { SaveMateStyles as styles } from '../styles/SaveMateStyles';
 
 const Challenge = () => {

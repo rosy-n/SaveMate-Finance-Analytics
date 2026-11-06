@@ -635,6 +635,8 @@ export default function SaveMateApp() {
   return (
     <>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {/* expo-router 58은 react-navigation을 내장해서 쓰므로, 이 Stack은 독립 컨테이너가 필요함 */}
+      <NavigationContainer independent>
         {currentPage === 'home' ? (
           <Stack.Screen name="Home">
             {() => <HomePage />}
@@ -674,6 +676,7 @@ export default function SaveMateApp() {
         )}
       </Stack.Navigator>
 
+      </NavigationContainer>
       {/* 거래 입력 모달 */}
       <Modal
         visible={entryModal.visible}
