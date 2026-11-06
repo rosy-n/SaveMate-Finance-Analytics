@@ -6,6 +6,7 @@ const txRepo = require('../db/transactions');
 const ratingRepo = require('../db/satisfaction');
 const reportCache = require('../db/cache');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { analyzeFinances } = require('../analytics/financeAnalytics');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const MODEL_ID = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
@@ -80,7 +81,11 @@ router.get('/consumption', async (req, res) => {
 
     // 0) 캐시 체크
     const cached = await reportCache.getReport(userId, y, m);
-    if (cached && (cached.summary || cached.persona || cached.insights)) {
+    if (
+      cached &&
+      (cached.summary || cached.persona || cached.insights) &&
+      cached.analytics?.version === 'v12-category-transactions'
+    ) {
       return res.json({
         ok: true,
         report: cached,
@@ -107,6 +112,9 @@ router.get('/consumption', async (req, res) => {
       memo: s.memo || "",
       createdAt: s.createdAt || null,
     }));
+
+    // 수치는 서버 코드가 계산하고 Gemini는 결과를 설명만 한다.
+    const analytics = analyzeFinances(monthTx, normSats);
 
 
     // 3) 통계 계산
@@ -172,6 +180,7 @@ router.get('/consumption', async (req, res) => {
       reasons,
       dissatisfiedSamples,
       satisfactionRecords: sats,
+      codeCalculatedAnalytics: analytics,
     };
 
     // LLM 출력 스키마
@@ -198,6 +207,11 @@ router.get('/consumption', async (req, res) => {
     당신은 개인 재무/소비 심리 코치입니다.
     아래 [데이터]만 근거로 한국어 존댓말로 분석하세요.
     반드시 JSON만 출력하고, 코드블록/설명 문장은 절대 포함하지 마세요.
+
+    - codeCalculatedAnalytics는 서버 코드가 계산한 확정 분석 결과입니다.
+    - 해당 수치를 새로 계산하거나 변경하지 말고 의미와 행동만 설명하세요.
+    - sufficient가 false인 분석은 추측하지 말고 데이터가 부족하다고 설명하세요.
+    - 상관관계를 인과관계로 표현하지 마세요.
 
     // 중요 구절 태그 규칙 추가
     - 사용자가 꼭 봐야 할 핵심 단어/구절(큰 변화, 원인, 위험, 행동 키워드)은 문자열 안에서 <hl>...</hl> 로 감싸서 표시하세요.
@@ -301,6 +315,8 @@ router.get('/consumption', async (req, res) => {
         }
       };
 
+      parsed.analytics = analytics;
+
       // 8) 정상 생성 → 캐시 저장 (✅ 항상 저장 + 메타 포함)
         await reportCache.setReport(
           userId,
@@ -310,7 +326,7 @@ router.get('/consumption', async (req, res) => {
             ...parsed,
             generatedAt: new Date().toISOString(),
             period: `${year}-${String(month).padStart(2, '0')}`,
-            version: 'v2-persona-insights-actions', // 스키마 버전 태그(선택)
+            version: 'v12-category-transactions',
           },
           usedModel || MODEL_ID
         );
@@ -329,7 +345,19 @@ router.get('/consumption', async (req, res) => {
 
 
     // 8) 정상 생성 → 캐시 저장
-    await reportCache.setReport(userId, y, m, parsed, usedModel || MODEL_ID);
+    parsed.analytics = analytics;
+    await reportCache.setReport(
+      userId,
+      y,
+      m,
+      {
+        ...parsed,
+        version: 'v12-category-transactions',
+        period: `${year}-${String(month).padStart(2, '0')}`,
+        generatedAt: new Date().toISOString(),
+      },
+      usedModel || MODEL_ID
+    );
 
     return res.json({
       ok: true,
