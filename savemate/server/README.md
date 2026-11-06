@@ -48,7 +48,7 @@ npm run dev
 | `DATABASE_URL` | Neon 연결 문자열 (풀러 경유). 서버가 사용 |
 | `DATABASE_URL_UNPOOLED` | Neon 직접 연결 문자열. `npm run migrate` 가 사용 |
 | `GEMINI_API_KEY` | Gemini API 키 |
-| `GEMINI_MODEL` | 기본 모델 (예: `gemini-3.5-flash-lite`). 실패하면 코드의 폴백 모델로 넘어감 |
+| `GEMINI_MODEL` | 기본 모델. 설정하지 않으면 코드 기본값 `gemini-3.6-flash` 를 씀. 실패하면 코드의 폴백 모델(`gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`)로 넘어감. 무료 한도(429)에 자주 걸리면 `gemini-3.5-flash-lite` 처럼 더 가벼운 모델로 바꿔 보세요 |
 | `JWT_SECRET` | 로그인 토큰(JWT) 서명 키. **필수**이며 없으면 로그인과 모든 보호된 API가 동작하지 않음. 임의의 긴 문자열 (예: `openssl rand -hex 48`) |
 | `LOGIN_MAX_FAILURES` | (선택) 같은 IP에서 15분 동안 허용하는 로그인 실패 횟수. 기본 10 |
 | `SIGNUP_MAX_PER_HOUR` | (선택) 같은 IP에서 1시간 동안 허용하는 회원가입 요청 횟수. 기본 10 |
