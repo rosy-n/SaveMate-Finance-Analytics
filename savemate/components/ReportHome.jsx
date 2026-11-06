@@ -54,7 +54,7 @@ function TrendChart({ labels, values, sameDayValues }) {
       ))}
 
       {sameDayValues.length > 0 && (
-        <Polyline points={toPoints(sameDayValues)} fill="none" stroke={TREND_SAME_DAY_COLOR} strokeWidth={3} strokeLinejoin="round" />
+        <Polyline points={toPoints(sameDayValues)} fill="none" stroke={TREND_SAME_DAY_COLOR} strokeOpacity={0.2} strokeWidth={3} strokeLinejoin="round" />
       )}
       <Polyline points={toPoints(values)} fill="none" stroke={TREND_LINE_COLOR} strokeWidth={3} strokeLinejoin="round" />
 
