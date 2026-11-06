@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useApi } from "../hooks/useApi";
+import { getAppToday } from "../constants/appDate";
 import { SafeAreaView } from "react-native";
 
 const BRAND = {
@@ -25,6 +26,8 @@ const BRAND = {
   pillBorder: "#D8B4FE", // 연보라 테두리
 };
 
+const PREVIEW_COUNT = 3;
+
 const formatKRW = (n) =>
   (Number(n || 0)).toLocaleString("ko-KR") + "원";
 
@@ -36,31 +39,22 @@ export default function ChallengeDetail() {
   const [loading, setLoading] = useState(true);
   const [challenge, setChallenge] = useState(null);
   const [monthlyExpenses, setMonthlyExpenses] = useState([]);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
         setLoading(true);
-        const res = await api.get(`/api/challenges/${id}?uid=${uid}`);
+        setLoadFailed(false);
+        const res = await api.get(`/api/challenges/${id}?uid=${uid}&today=${getAppToday()}`);
         if (!mounted) return;
         setChallenge(res?.challenge);
         setMonthlyExpenses(res?.monthlyExpenses ?? []);
       } catch (e) {
         if (!mounted) return;
-        // 더미
-        setChallenge({
-          id,
-          title: "카페/간식 챌린지",
-          category: "카페",
-          targetAmount: 200000,
-          currentAmount: 146000,
-        });
-        setMonthlyExpenses([
-          { id: "1", store: "스타벅스 프라푸치노", date: "2025.09.16", amount: 6500 },
-          { id: "2", store: "투썸 플레이스 라떼", date: "2025.09.14", amount: 5800 },
-          { id: "3", store: "투썸 플레이스 라떼", date: "2025.09.14", amount: 5800 },
-        ]);
+        setLoadFailed(true);
       } finally {
         mounted && setLoading(false);
       }
@@ -89,15 +83,32 @@ export default function ChallengeDetail() {
         style: "destructive",
         onPress: async () => {
           try {
-            await api.post(`/api/challenges/${id}/giveup`, { uid });
-          } catch {}
-          router.back();
+            await api.post(`/api/challenges/${id}/giveup`, { uid, today: getAppToday() });
+            router.back();
+          } catch {
+            Alert.alert("챌린지 포기", "포기 처리에 실패했어요. 다시 시도해 주세요.");
+          }
         },
       },
     ]);
   };
 
-  if (loading || !challenge) {
+  if (!loading && (loadFailed || !challenge)) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <Text style={styles.backText}>‹</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>챌린지 상세</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <Text style={styles.emptyText}>챌린지를 불러오지 못했어요.</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (loading) {
     return (
       <View style={[styles.screen, { justifyContent: "center" }]}>
         <ActivityIndicator />
@@ -139,7 +150,11 @@ export default function ChallengeDetail() {
             이번 달 {challenge.category} 지출
           </Text>
 
-          {monthlyExpenses.map((e) => (
+          {monthlyExpenses.length === 0 && (
+            <Text style={styles.emptyText}>아직 지출 내역이 없어요.</Text>
+          )}
+
+          {(showAll ? monthlyExpenses : monthlyExpenses.slice(0, PREVIEW_COUNT)).map((e) => (
             <View key={e.id} style={styles.expensePill}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.storeText} numberOfLines={1}>
@@ -151,15 +166,25 @@ export default function ChallengeDetail() {
             </View>
           ))}
 
-          <TouchableOpacity style={styles.fullListBtn} activeOpacity={0.8}>
-            <Text style={styles.fullListBtnText}>전체 내역 보기</Text>
-          </TouchableOpacity>
+          {monthlyExpenses.length > PREVIEW_COUNT && (
+            <TouchableOpacity
+              style={styles.fullListBtn}
+              activeOpacity={0.8}
+              onPress={() => setShowAll((v) => !v)}
+            >
+              <Text style={styles.fullListBtnText}>
+                {showAll ? "접기" : "전체 내역 보기"}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
-        {/* 포기하기 버튼 */}
-        <TouchableOpacity style={styles.giveUpBtn} onPress={onGiveUp} activeOpacity={0.85}>
-          <Text style={styles.giveUpBtnText}>포기하기</Text>
-        </TouchableOpacity>
+        {/* 포기하기 버튼 (이미 끝난 챌린지에는 표시하지 않음) */}
+        {(challenge.status === "active" || challenge.status === "failed") && (
+          <TouchableOpacity style={styles.giveUpBtn} onPress={onGiveUp} activeOpacity={0.85}>
+            <Text style={styles.giveUpBtnText}>포기하기</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -167,6 +192,13 @@ export default function ChallengeDetail() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BRAND.bg },
+
+  emptyText: {
+    fontSize: 13,
+    color: BRAND.sub,
+    textAlign: "center",
+    paddingVertical: 16,
+  },
 
   screen: { flex: 1, backgroundColor: BRAND.bg },
 

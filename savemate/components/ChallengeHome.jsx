@@ -1,39 +1,48 @@
 // components/ChallengeHome.jsx
-import { getAppNow } from '@/constants/appDate';
-import React, { useEffect, useState, useMemo } from "react";
+import { getAppNow, getAppToday } from '@/constants/appDate';
+import React, { useCallback, useEffect, useState, useMemo } from "react";
 import {
   SafeAreaView,
   View,
   Text,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
+import { useApi } from "../hooks/useApi";
 import { SaveMateStyles as styles } from "../styles/SaveMateStyles";
 
 const ChallengeHome = () => {
   const [dDay, setDDay] = useState(0);
   const [sortOption, setSortOption] = useState("위험도순");
 
-  // ✅ 더미(기존 유지)
-  const [challenges] = useState([
-    {
-      id: 42,
-      title: "카페/간식 챌린지",
-      currentAmount: 146000,
-      targetAmount: 200000,
-      progress: 73,
-      status: "ongoing",
-    },
-    {
-      id: 43,
-      title: "카페/간식 챌린지",
-      currentAmount: 250000,
-      targetAmount: 200000,
-      progress: 125,
-      status: "failed",
-    },
-  ]);
+  const api = useApi();
+  const uid = process.env.EXPO_PUBLIC_UID;
+
+  const [challenges, setChallenges] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+
+  const loadChallenges = useCallback(async () => {
+    try {
+      const res = await api.get(`/api/challenges?uid=${uid}&today=${getAppToday()}`);
+      setChallenges(res?.challenges ?? []);
+      setLoadError(false);
+    } catch {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [api, uid]);
+
+  // 추가/상세 화면에서 돌아올 때와 다른 탭에서 지출을 입력하고 돌아올 때 진행률을 갱신한다.
+  useFocusEffect(
+    useCallback(() => {
+      loadChallenges();
+    }, [loadChallenges])
+  );
 
   useEffect(() => {
     const today = getAppNow();
@@ -48,19 +57,45 @@ const ChallengeHome = () => {
   const handleAddPress = () => router.push("/challenge/add");
   const handleDetailPress = (id) => router.push(`/challenge/${id}`);
 
-  const ongoing = useMemo(
-    () => challenges.filter((c) => c.progress <= 100),
-    [challenges]
-  );
-  const failed = useMemo(
-    () => challenges.filter((c) => c.progress > 100),
-    [challenges]
-  );
+  const giveUp = async (id) => {
+    try {
+      await api.post(`/api/challenges/${id}/giveup`, { uid, today: getAppToday() });
+      await loadChallenges();
+    } catch {
+      Alert.alert("챌린지 포기", "포기 처리에 실패했어요. 다시 시도해 주세요.");
+    }
+  };
+
+  const handleMorePress = (c) => {
+    Alert.alert(c.title, undefined, [
+      { text: "상세 보기", onPress: () => handleDetailPress(c.id) },
+      {
+        text: "포기하기",
+        style: "destructive",
+        onPress: () =>
+          Alert.alert("챌린지 포기", "정말 포기하시겠어요?", [
+            { text: "취소", style: "cancel" },
+            { text: "포기하기", style: "destructive", onPress: () => giveUp(c.id) },
+          ]),
+      },
+      { text: "취소", style: "cancel" },
+    ]);
+  };
+
+  const sorted = useMemo(() => {
+    const list = [...challenges];
+    return sortOption === "위험도순"
+      ? list.sort((a, b) => b.progress - a.progress)
+      : list.sort((a, b) => a.title.localeCompare(b.title, "ko"));
+  }, [challenges, sortOption]);
+
+  const ongoing = useMemo(() => sorted.filter((c) => c.status !== "failed"), [sorted]);
+  const failed = useMemo(() => sorted.filter((c) => c.status === "failed"), [sorted]);
 
   const renderCard = (c) => {
-    const pctRaw = Math.round((c.currentAmount / c.targetAmount) * 100);
+    const pctRaw = c.progress;
     const pctForBar = Math.min(pctRaw, 100);
-    const isFailed = pctRaw > 100;
+    const isFailed = c.status === "failed";
 
     return (
       <TouchableOpacity
@@ -93,7 +128,7 @@ const ChallengeHome = () => {
             <Text style={[styles.challengeCardPct, isFailed && styles.challengeCardPctFail]}>
               {pctRaw}%
             </Text>
-            <TouchableOpacity style={styles.challengeMoreBtn}>
+            <TouchableOpacity style={styles.challengeMoreBtn} onPress={() => handleMorePress(c)}>
               <Text style={styles.challengeMoreBtnText}>...</Text>
             </TouchableOpacity>
           </View>
@@ -153,6 +188,20 @@ const ChallengeHome = () => {
       </View>
 
       <ScrollView style={styles.challengeList}>
+        {loading && <ActivityIndicator style={{ marginTop: 24 }} />}
+
+        {!loading && loadError && (
+          <Text style={[styles.emptyText, { textAlign: "center", marginTop: 24 }]}>
+            챌린지를 불러오지 못했어요.
+          </Text>
+        )}
+
+        {!loading && !loadError && challenges.length === 0 && (
+          <Text style={[styles.emptyText, { textAlign: "center", marginTop: 24 }]}>
+            진행 중인 챌린지가 없어요. ＋를 눌러 시작해 보세요.
+          </Text>
+        )}
+
         {ongoing.map(renderCard)}
 
         {failed.length > 0 && (
