@@ -60,6 +60,25 @@ npm run dev
 
 ---
 
+## 🧪 테스트
+
+```bash
+npm test
+```
+
+Node 내장 test runner(`node --test`)를 쓰므로 별도 패키지 설치가 필요 없고, DB나 Gemini 키 없이 실행됩니다. 테스트 파일은 `test/` 에 있습니다.
+
+| 파일 | 검증하는 것 |
+|---|---|
+| `financeAnalytics.test.js` | 리포트 수치 계산 (상관계수, 카테고리 만족 효율, 이상치, 되돌아볼 소비) |
+| `requireAuth.test.js` | 토큰 검증 (없음/잘못됨/만료/위조 → 401, 유효하면 `req.userId` 설정) |
+| `rateLimit.test.js` | 로그인 실패 횟수 제한, 회원가입 횟수 제한 |
+| `llmGuard.test.js` | Gemini 생성 한도와 실패 쿨다운 |
+
+새 기능을 추가하면 같은 방식으로 `test/*.test.js` 를 추가하세요. GitHub 에 올리면 CI 가 같은 테스트를 자동으로 실행합니다.
+
+---
+
 ## 🗄️ 데이터베이스
 
 팀원 모두 같은 Neon DB 를 사용하고, 데이터는 `user_id` 로 사용자별로 구분됩니다.

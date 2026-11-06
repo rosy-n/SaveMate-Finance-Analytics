@@ -27,7 +27,9 @@ npx expo start
 |---|---|
 | `npm start` | 개발 서버 실행 |
 | `npm run android` / `npm run ios` / `npm run web` | 해당 플랫폼으로 실행 |
-| `npm run lint` | 린트 검사 |
+| `npm run lint` | 앱 폴더 린트 검사 (`expo lint`) |
+| `npm run lint:all` | 서버 파일까지 포함한 프로젝트 전체 린트 검사. CI 가 이 명령을 씁니다 |
+| `npm test` | 금액 입력 계산기(`constants/calculate.js`) 테스트 |
 
 ## 환경 변수 (`savemate/.env`)
 
@@ -65,8 +67,9 @@ savemate/
 ├── components/     # 화면을 구성하는 UI 컴포넌트
 ├── hooks/          # API 호출(useApi), 오늘의 팁 등 커스텀 훅
 ├── state/          # 로그인 상태(AuthContext), 토큰 보관(authToken)
-├── constants/      # API 주소, 앱 기준 날짜, 아이콘 등
-└── server/         # API 서버
+├── constants/      # API 주소, 앱 기준 날짜, 아이콘, 계산기 수식 계산(calculate.js) 등
+├── __tests__/      # 앱 로직 테스트 (Node 내장 test runner)
+└── server/         # API 서버 (서버 테스트는 server/test/)
 ```
 
 ## 문제 해결

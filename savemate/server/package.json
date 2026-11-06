@@ -5,7 +5,8 @@
     "migrate": "node db/migrate.js",
     "seed": "node db/seed.js",
     "seed:accounts": "node db/seed.js --accounts-only",
-    "seed:generate": "node db/seeds/generatePersonas.js"
+    "seed:generate": "node db/seeds/generatePersonas.js",
+    "test": "node --test"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

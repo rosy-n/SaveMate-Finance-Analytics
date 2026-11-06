@@ -59,6 +59,12 @@
 - 회원가입 후 로그인해야 앱을 사용할 수 있습니다. 서버는 토큰(JWT)에 담긴 사용자만 인식하며, 사용자는 자신의 데이터에만 접근할 수 있습니다.
 - 개인화 리포트가 어떻게 달라지는지 확인할 수 있도록 20대 페르소나 4명의 더미데이터를 제공합니다. 넣는 방법은 서버 README의 "페르소나 더미데이터"를 참고하세요.
 
+## 테스트와 CI
+
+- 서버: `cd savemate/server && npm test` (리포트 수치 계산, 인증 미들웨어, rate limit, Gemini 호출 제한)
+- 앱: `cd savemate && npm test` (금액 입력 계산기), `npm run lint:all` (서버까지 포함한 전체 린트)
+- `main` 에 올리거나 PR 을 열면 GitHub Actions(`.github/workflows/ci.yml`)가 위 검사를 자동으로 실행합니다.
+
 ## 문서
 
 - [앱 실행/환경 변수](savemate/README.md)
