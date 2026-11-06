@@ -50,6 +50,9 @@ npm run dev
 | `GEMINI_API_KEY` | Gemini API 키 |
 | `GEMINI_MODEL` | 기본 모델 (예: `gemini-3.5-flash-lite`). 실패하면 코드의 폴백 모델로 넘어감 |
 | `JWT_SECRET` | 로그인 토큰(JWT) 서명 키. **필수**이며 없으면 로그인과 모든 보호된 API가 동작하지 않음. 임의의 긴 문자열 (예: `openssl rand -hex 48`) |
+| `LOGIN_MAX_FAILURES` | (선택) 같은 IP에서 15분 동안 허용하는 로그인 실패 횟수. 기본 10 |
+| `SIGNUP_MAX_PER_HOUR` | (선택) 같은 IP에서 1시간 동안 허용하는 회원가입 요청 횟수. 기본 10 |
+| `TRUST_PROXY` | (선택) 서버가 프록시(Render, Nginx 등) 뒤에 있을 때만 설정. 프록시 단계 수 (예: `1`). 설정하지 않으면 프록시 IP 하나로 보여 모든 사용자가 제한을 함께 씀 |
 | `LLM_REPORTS_PER_HOUR` | (선택) 사용자당 시간당 AI 리포트 새로 생성 횟수 한도. 기본 10 |
 | `LLM_TIMEOUT_MS` | (선택) Gemini 요청 1건의 제한 시간(ms). 기본 15000 |
 
@@ -111,6 +114,7 @@ server/
 
 - 인증 없이 호출할 수 있는 경로는 `/api/health`, `/api/auth/signup`, `/api/auth/login` 뿐입니다. (`/api/auth/me` 는 토큰을 직접 확인합니다)
 - 나머지 모든 `/api/*` 는 `lib/requireAuth.js` 를 거치며, 토큰이 없거나 만료되면 **401** 을 응답합니다.
+- 로그인/회원가입에는 IP 단위 횟수 제한이 있습니다 (`lib/rateLimit.js`). 로그인은 실패한 시도만 세고(성공은 제외), 한도를 넘으면 **429** 와 안내 문구를 응답합니다. 상태는 서버 메모리에 있어 재시작하면 초기화됩니다.
 - 사용자는 토큰에서 꺼낸 `req.userId` 로만 식별합니다. 요청에 `uid` 를 실어 보내지 않으며, 보내도 무시됩니다. **새 라우트에서도 `req.userId` 만 사용하세요.**
 
 ## 🧭 API 목록
@@ -152,6 +156,7 @@ server/
 | `PORT already in use` | 포트 충돌 | `.env` 의 `PORT` 를 다른 값으로 |
 | 리포트/팁이 기본 문구만 나옴 | Gemini 키 오류 또는 무료 한도(429) 초과 | 키 확인, 잠시 후 재시도 또는 `GEMINI_MODEL` 변경 |
 | 리포트에 "너무 많이 요청했어요"가 나옴 | 시간당 생성 한도 초과 | 잠시 후 다시 시도하거나 `LLM_REPORTS_PER_HOUR` 조정 |
+| 로그인/회원가입이 429 ("시도가 너무 많아요") | 같은 IP에서 한도 초과 (같은 Wi-Fi 사용자는 한도를 함께 씀) | 15분(회원가입은 1시간) 기다리거나 `LOGIN_MAX_FAILURES`, `SIGNUP_MAX_PER_HOUR` 조정 |
 | 모든 API가 401 | 토큰 없음/만료, 또는 서버의 `JWT_SECRET` 이 바뀜 | 앱에서 다시 로그인 |
 | 로그인/보호된 API가 500 (`server misconfigured`) | `.env` 에 `JWT_SECRET` 누락 | `JWT_SECRET` 추가 후 서버 재시작 |
 

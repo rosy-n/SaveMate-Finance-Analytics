@@ -14,8 +14,16 @@ const reportRoutes = require('./routes/reports');
 const tipsRouter = require('./routes/tips');
 const challengeRoutes = require('./routes/challenges');
 const { requireAuth } = require('./lib/requireAuth');
+const { loginLimiter, signupLimiter } = require('./lib/rateLimit');
 
 const app = express();
+
+// 프록시(Render, Nginx 등) 뒤에서 실행할 때만 설정한다. 설정하지 않으면 프록시 IP 하나로 보여 모든 사용자가 한도를 같이 쓴다.
+// 예: TRUST_PROXY=1 (프록시 1단계)
+if (process.env.TRUST_PROXY) {
+  const v = process.env.TRUST_PROXY;
+  app.set('trust proxy', /^\d+$/.test(v) ? Number(v) : v === 'true' ? true : v);
+}
 
 // CORS + JSON
 app.use(cors());
@@ -38,6 +46,8 @@ app.get('/api/health', (req, res) => {
 });
 
 // 인증 불필요: 회원가입/로그인 (/me 는 라우트 안에서 토큰을 직접 검증)
+app.use('/api/auth/login', loginLimiter);
+app.use('/api/auth/signup', signupLimiter);
 app.use('/api/auth', authRoutes);
 
 // 이하 모든 라우트는 로그인(JWT) 필수. 사용자는 req.userId 로만 식별한다.
