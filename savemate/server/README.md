@@ -1,140 +1,116 @@
-# SaveMate Server - Firebase Setup Guide
+# SaveMate Server
 
-SaveMate 서버를 로컬 환경에서 실행하기 위한 Firebase Admin SDK 연동 가이드입니다.
+SaveMate 앱의 API 서버입니다. Express + PostgreSQL(Neon) + Google Gemini 로 구성됩니다.
+
+```
+앱(Expo)  ──HTTP──▶  Express 서버  ──SQL──▶  PostgreSQL (Neon, 팀 공용)
+                         └──────────────▶  Google Gemini (리포트/절약팁 생성)
+```
+
+앱은 DB 에 직접 접속하지 않고 서버의 API 만 호출합니다. DB 접속 정보는 서버의 `.env` 에만 둡니다.
 
 ---
 
 ## 📋 사전 준비
 
 - Node.js 18 이상
-- Firebase 프로젝트 접근 권한
-- Git 설치
+- 팀 공용 Neon DB 연결 문자열 (팀에서 개인 메시지로 전달받기)
+- Gemini API 키 (각자 [Google AI Studio](https://aistudio.google.com/apikey) 에서 발급)
 
 ---
 
 ## 🚀 빠른 시작
+
 ```bash
 # 1. 패키지 설치
 npm install
 
 # 2. 환경 변수 파일 생성
-cp .env.example .env
+cp .env.example .env        # Windows PowerShell: copy .env.example .env
 
-# 3. .env 파일 수정 (아래 단계 참고)
-# PORT와 FIREBASE_SERVICE_ACCOUNT_BASE64 값 입력
+# 3. .env 값 채우기 (아래 표 참고)
 
-# 4. 서버 실행
+# 4. DB 스키마 적용 (이미 적용된 DB 라면 "up to date" 로 끝남)
+npm run migrate
+
+# 5. 서버 실행
 npm run dev
 
-# 5. 브라우저에서 확인
-# http://localhost:8080/health → "OK" 출력 확인
+# 6. 확인
+# http://localhost:8080/api/health → {"status":"ok", ...}
 ```
+
+### 환경 변수
+
+| 이름 | 설명 |
+|---|---|
+| `PORT` | 서버 포트 (기본 8080) |
+| `DATABASE_URL` | Neon 연결 문자열 (풀러 경유). 서버가 사용 |
+| `DATABASE_URL_UNPOOLED` | Neon 직접 연결 문자열. `npm run migrate` 가 사용 |
+| `GEMINI_API_KEY` | Gemini API 키 |
+| `GEMINI_MODEL` | 기본 모델 (예: `gemini-3.5-flash-lite`). 실패하면 코드의 폴백 모델로 넘어감 |
+
+> ⚠️ `.env` 는 비밀번호/키가 들어 있으므로 절대 커밋하지 않습니다. (`.gitignore` 에 등록됨)
 
 ---
 
-## 🔧 상세 설정 가이드
+## 🗄️ 데이터베이스
 
-### 1. Firebase 서비스 계정 키 생성
+팀원 모두 같은 Neon DB 를 사용하고, 데이터는 `user_id` 로 사용자별로 구분됩니다.
 
-1. [Firebase Console](https://console.firebase.google.com) 접속
-2. SaveMate 프로젝트 선택
-3. 상단 톱니바퀴(⚙️) → **프로젝트 설정** 선택
-4. **서비스 계정** 탭으로 이동
-5. **새 비공개 키 생성** 클릭
-6. `service-account.json` 파일 다운로드
+| 테이블 | 설명 |
+|---|---|
+| `users` | 사용자 (아이디, 닉네임, 이메일, 비밀번호 해시) |
+| `categories` | 소비/수입 카테고리 (고정 목록) |
+| `transactions` | 수입/지출 거래 |
+| `satisfaction_ratings`, `satisfaction_reasons` | 지출 만족도 평가와 사유 |
+| `challenges` | 챌린지 (테이블만 있음, API 는 구현 예정) |
+| `report_cache`, `tip_cache` | Gemini 가 만든 월간 리포트 / 오늘의 절약팁 캐시 |
 
-> ⚠️ **보안 주의**: 이 파일은 Firebase 관리자 권한을 포함합니다. 절대 GitHub나 외부에 공유하지 마세요.
+스키마는 `db/migrations/*.sql` 로 관리합니다.
 
-### 2. Base64 인코딩
+- 스키마를 바꿀 때는 **기존 파일을 수정하지 말고** `002_xxx.sql` 처럼 새 파일을 추가하세요.
+- `npm run migrate` 는 아직 적용하지 않은 파일만 순서대로 실행하고, 이력을 `schema_migrations` 에 기록합니다.
 
-다운로드한 `service-account.json` 파일을 Base64 문자열로 변환합니다.
+### 코드 구조
 
-**macOS / Linux**
-```bash
-base64 -i service-account.json | tr -d '\n' | pbcopy
-```
-
-**Windows PowerShell**
-```powershell
-[Convert]::ToBase64String([IO.File]::ReadAllBytes("C:\경로\service-account.json")) | Set-Clipboard
-```
-
-### 3. 환경 변수 설정
-
-`server/.env` 파일을 열어 다음과 같이 설정합니다:
-```env
-PORT=8080
-FIREBASE_SERVICE_ACCOUNT_BASE64=복사한_Base64_문자열_한_줄로_붙여넣기
-```
-
-**주의사항**
-- `=` 뒤에 공백을 넣지 않습니다
-- Base64 문자열은 반드시 한 줄로 입력해야 합니다
-- 파일 인코딩은 UTF-8 (BOM 없음)으로 저장해야 합니다
-
-### 4. 서버 실행
-```bash
-npm run dev
-```
-
-**정상 실행 시 출력 예시**
-```
-[OK] service-account.json 생성 완료
-[nodemon] starting `node index.js`
-API listening on http://localhost:8080
-```
-
-브라우저에서 `http://localhost:8080/health` 접속 → `OK` 출력 확인
-
----
-
-## 📁 프로젝트 구조
 ```
 server/
-├── .env                          # 환경 변수 (gitignore)
-├── .env.example                  # 환경 변수 템플릿
-├── service-account.json          # Firebase 키 (자동 생성, gitignore)
-├── firebaseAdmin.js              # Firebase Admin 초기화
-├── index.js                      # 서버 진입점
-├── package.json
-└── ../scripts/make-service-account.js
+├── index.js              # 서버 진입점
+├── routes/               # API 라우트 (transactions, satisfaction, reports, tips)
+├── db/
+│   ├── pool.js           # PostgreSQL 연결 풀
+│   ├── migrate.js        # 마이그레이션 실행기
+│   ├── migrations/       # 스키마 SQL
+│   ├── users.js          # uid -> 사용자 id 변환
+│   ├── transactions.js   # 거래 조회/저장
+│   ├── satisfaction.js   # 만족도 평가
+│   └── cache.js          # LLM 결과 캐시
+├── lib/                  # 날짜(KST) / 공통 응답 헬퍼
+└── neon.ts               # Neon 프로젝트 설정
 ```
+
+### 사용자 식별 (로그인 연동 시 참고)
+
+라우트는 현재 요청의 `uid` 를 `users` 테이블에서 찾아 사용합니다 (`lib/http.js` 의 `userOr404`).
+기존 데이터는 `users.legacy_uid` 로 연결된 임시 계정입니다.
+로그인 기능이 붙으면 `uid` 파라미터 대신 인증된 사용자(`req.user.id`)를 쓰도록 `userOr404` 부분만 교체하면 됩니다.
 
 ---
 
 ## 🐛 문제 해결
 
-| 오류 메시지 | 원인 | 해결 방법 |
-|------------|------|-----------|
-| `FIREBASE_SERVICE_ACCOUNT_BASE64가 .env에 없습니다` | `.env` 파일 누락 또는 값 비어있음 | `.env` 파일이 `server/` 폴더에 존재하고 Base64 값이 입력되어 있는지 확인 |
-| `Base64가 올바른 JSON이 아닙니다` | Base64 값 손상 | `service-account.json`을 다시 인코딩 후 복사 |
-| `nodemon: command not found` | nodemon 미설치 | `npm i -D nodemon` 실행 |
-| `Cannot find module 'express'` | 패키지 미설치 | `npm install` 실행 |
-| `PORT already in use` | 포트 충돌 | `.env`의 `PORT` 값을 다른 숫자(예: 8081)로 변경 |
+| 증상 | 원인 | 해결 |
+|---|---|---|
+| `DATABASE_URL이 .env에 없습니다` | `.env` 누락 | `.env.example` 을 복사해 값 입력 |
+| `password authentication failed` | 연결 문자열의 비밀번호 오류 | Neon 콘솔 Connect 에서 다시 복사 |
+| `Cannot find module 'pg'` 등 | 패키지 미설치 | `npm install` |
+| `PORT already in use` | 포트 충돌 | `.env` 의 `PORT` 를 다른 값으로 |
+| 리포트/팁이 기본 문구만 나옴 | Gemini 키 오류 또는 무료 한도(429) 초과 | 키 확인, 잠시 후 재시도 또는 `GEMINI_MODEL` 변경 |
 
 ---
 
 ## 🔒 보안 규칙
 
-`.gitignore`에 반드시 포함되어야 할 항목:
-```gitignore
-node_modules
-.env
-service-account.json
-```
-
-- `.env` 및 `service-account.json` 파일은 절대 GitHub에 커밋하지 않습니다
-- Base64 문자열만 안전하게 팀원과 공유하세요
-
----
-
-## 📝 라이선스
-
-이 프로젝트는 학습 및 내부 협업 목적으로 제작되었습니다.  
-Firebase 서비스 키 및 민감 데이터의 무단 배포는 금지됩니다.
-
----
-
-## 💬 문의
-
-프로젝트 관련 문의사항은 이슈를 통해 남겨주세요.
+- `.env` 는 커밋하지 않습니다. 연결 문자열/키는 공개 채널이 아니라 개인 메시지로 공유합니다.
+- DB 비밀번호가 노출되면 Neon 콘솔에서 비밀번호를 재설정하세요.

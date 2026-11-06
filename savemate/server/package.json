@@ -1,7 +1,5 @@
 {
   "scripts": {
-    "prestart": "node -r dotenv/config ../scripts/make-service-account.js dotenv_config_path=./.env",
-    "predev": "node -r dotenv/config ../scripts/make-service-account.js dotenv_config_path=./.env",
     "start": "node index.js",
     "dev": "nodemon index.js",
     "migrate": "node db/migrate.js"
@@ -17,7 +15,6 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
-    "firebase-admin": "^13.5.0",
     "morgan": "^1.10.1",
     "pg": "^8.23.1"
   }
