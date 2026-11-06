@@ -47,3 +47,6 @@ app.use('/api/reports', reportRoutes);
 const tipsRouter = require('./routes/tips');
 app.use('/api/tips', tipsRouter);
 
+const challengeRoutes = require('./routes/challenges');
+app.use('/api/challenges', challengeRoutes);
+
