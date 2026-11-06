@@ -1,8 +1,9 @@
 // 금액 입력 계산기(constants/calculate.js) 테스트
 // 실행: npm test   (Node 내장 test runner 사용, 별도 패키지 설치 없음)
 //
-// 기대값은 계산기를 eval 에서 직접 만든 함수로 바꾸기 전, 옛 eval 로 실제 계산한 결과를 그대로 옮긴 것이다.
-// 이 표가 통과하면 교체 전과 같은 값을 낸다는 뜻이므로, calculate 를 고칠 때는 이 표를 먼저 확인한다.
+// SAME_AS_EVAL 의 기대값은 계산기를 eval 에서 직접 만든 함수로 바꾸기 전, 옛 eval 로 실제 계산한 결과를 그대로 옮긴 것이다.
+// 이 표가 통과하면 교체 전과 같은 값을 낸다는 뜻이다. 옛 eval 의 버그라서 일부러 다르게 만든 두 가지는
+// 아래 CHANGED_ON_PURPOSE 에 따로 모아 두었다.
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { calculate } = require('../constants/calculate');
@@ -30,25 +31,15 @@ const SAME_AS_EVAL = [
   ['.5+.5', 1],
   ['1.5*2', 3],
   ['10/3', 3.3333333333333335],
-  // 앞자리가 0인 수. eval 은 0~7 로만 된 수를 8진수로 읽는다 (옛 동작을 그대로 유지)
+  // 앞자리가 0인 수. 8진수로 읽어도, 10진수로 읽어도 값이 같은 경우 (다른 경우는 CHANGED_ON_PURPOSE)
   ['0', 0],
   ['00', 0],
   ['000', 0],
   ['07', 7],
   ['08', 8],
   ['09', 9],
-  ['010', 8],
-  ['0100', 64],
-  ['0777', 511],
   ['0128', 128],
   ['08.5', 8.5],
-  // 0으로 나누기, NaN. 계산 결과가 문자열이 되어 다시 수식에 들어가므로 이런 값도 읽을 수 있어야 한다
-  ['5/0', Infinity],
-  ['-5/0', -Infinity],
-  ['0/0', NaN],
-  ['Infinity-Infinity', NaN],
-  ['Infinity', Infinity],
-  ['NaN+1', NaN],
   // 지수 표기 (아주 작거나 큰 계산 결과가 문자열로 돌아온 경우)
   ['1e-7', 1e-7],
   ['1e-7+3', 3.0000001],
@@ -66,9 +57,43 @@ for (const [expression, expected] of SAME_AS_EVAL) {
   });
 }
 
+// 일부러 옛 eval 과 다르게 만든 동작 (옛 eval 의 버그를 고침)
+const CHANGED_ON_PURPOSE = [
+  // 1) 앞자리가 0인 수를 10진수로 읽는다. 옛 eval 은 0~7 로만 된 수를 8진수로 읽어, 0 을 누르고 100 을 입력하면 64 가 됐다.
+  ['010', 10, '옛 eval: 8'],
+  ['0100', 100, '옛 eval: 64'],
+  ['0777', 777, '옛 eval: 511'],
+  ['010+1', 11, '옛 eval: 9'],
+  // 옛 eval 은 이런 수를 문법 오류로 거부했지만, 앞자리 0을 무시하면 자연스러운 값이 된다
+  ['01.5', 1.5, '옛 eval: 에러'],
+  ['00.5', 0.5, '옛 eval: 에러'],
+];
+
+for (const [expression, expected, note] of CHANGED_ON_PURPOSE) {
+  test(`일부러 바꾼 값: ${JSON.stringify(expression)} = ${expected} (${note})`, () => {
+    assert.strictEqual(calculate(expression), expected);
+  });
+}
+
+// 2) 유한하지 않은 결과는 에러다. 옛 eval 은 Infinity/NaN 을 돌려줘, 0으로 나눈 결과를 저장하면 금액이 Infinity 가 됐다.
+//    에러를 던지면 호출하는 쪽의 catch 로 빠져 저장되지 않고, 수식에 'Infinity' 글자가 끼어들지도 않는다.
+const NON_FINITE = ['5/0', '-5/0', '0/0', '1/0+5', '1e+999*10', '0/0*3'];
+
+for (const expression of NON_FINITE) {
+  test(`유한하지 않은 결과는 에러: ${JSON.stringify(expression)}`, () => {
+    assert.throws(() => calculate(expression));
+  });
+}
+
+test('수식에 Infinity, NaN 글자를 직접 넣을 수 없다', () => {
+  assert.throws(() => calculate('Infinity'));
+  assert.throws(() => calculate('NaN+1'));
+  assert.throws(() => calculate('Infinity-Infinity'));
+});
+
 // 옛 eval 도 문법 오류로 거부하던 수식. 호출하는 쪽이 catch 해서 입력한 그대로 보여 준다
 const INVALID = [
-  '01.5', '00.5', '1.2.3', '5..', '.', '5-', '5+', '*5', '/5', '5*/3', '5--3', '5++3', '++5', '--5',
+  '1.2.3', '5..', '.', '5-', '5+', '*5', '/5', '5*/3', '5--3', '5++3', '++5', '--5',
 ];
 
 for (const expression of INVALID) {
