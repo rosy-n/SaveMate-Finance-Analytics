@@ -49,6 +49,9 @@ npm run dev
 | `DATABASE_URL_UNPOOLED` | Neon 직접 연결 문자열. `npm run migrate` 가 사용 |
 | `GEMINI_API_KEY` | Gemini API 키 |
 | `GEMINI_MODEL` | 기본 모델 (예: `gemini-3.5-flash-lite`). 실패하면 코드의 폴백 모델로 넘어감 |
+| `JWT_SECRET` | 로그인 토큰(JWT) 서명 키. **필수**이며 없으면 로그인과 모든 보호된 API가 동작하지 않음. 임의의 긴 문자열 (예: `openssl rand -hex 48`) |
+| `LLM_REPORTS_PER_HOUR` | (선택) 사용자당 시간당 AI 리포트 새로 생성 횟수 한도. 기본 10 |
+| `LLM_TIMEOUT_MS` | (선택) Gemini 요청 1건의 제한 시간(ms). 기본 15000 |
 
 > ⚠️ `.env` 는 비밀번호/키가 들어 있으므로 절대 커밋하지 않습니다. (`.gitignore` 에 등록됨)
 
@@ -64,7 +67,9 @@ npm run dev
 | `categories` | 소비/수입 카테고리 (고정 목록) |
 | `transactions` | 수입/지출 거래 |
 | `satisfaction_ratings`, `satisfaction_reasons` | 지출 만족도 평가와 사유 |
-| `challenges` | 챌린지 (테이블만 있음, API 는 구현 예정) |
+| `challenges` | 카테고리별 소비 목표 챌린지 |
+| `feedback` | 마이페이지에서 보낸 오류 신고/의견 |
+| `alarm_settings` | 사용자별 만족도 알림 설정 |
 | `report_cache`, `tip_cache` | Gemini 가 만든 월간 리포트 / 오늘의 절약팁 캐시 |
 
 스키마는 `db/migrations/*.sql` 로 관리합니다.
@@ -77,24 +82,63 @@ npm run dev
 ```
 server/
 ├── index.js              # 서버 진입점
-├── routes/               # API 라우트 (transactions, satisfaction, reports, tips)
+├── routes/               # API 라우트 (auth, transactions, satisfaction, challenges, reports, tips, feedback, alarmSettings)
+├── analytics/            # 리포트 수치 계산 (financeAnalytics.js)
 ├── db/
 │   ├── pool.js           # PostgreSQL 연결 풀
 │   ├── migrate.js        # 마이그레이션 실행기
 │   ├── migrations/       # 스키마 SQL
-│   ├── users.js          # uid -> 사용자 id 변환
+│   ├── seed.js, seeds/   # 페르소나 더미데이터
+│   ├── users.js          # 사용자 조회/생성
 │   ├── transactions.js   # 거래 조회/저장
 │   ├── satisfaction.js   # 만족도 평가
+│   ├── challenges.js     # 챌린지
 │   └── cache.js          # LLM 결과 캐시
-├── lib/                  # 날짜(KST) / 공통 응답 헬퍼
+├── lib/
+│   ├── auth.js           # 비밀번호 해시, JWT 발급/검증
+│   ├── requireAuth.js    # 인증 미들웨어 (req.userId 설정)
+│   ├── llmGuard.js       # Gemini 호출 제한 시간 / 생성 한도 / 실패 쿨다운
+│   ├── dates.js          # 날짜(KST)
+│   └── http.js           # 공통 에러 응답 헬퍼
 └── neon.ts               # Neon 프로젝트 설정
 ```
 
-### 사용자 식별 (로그인 연동 시 참고)
+---
 
-라우트는 현재 요청의 `uid` 를 `users` 테이블에서 찾아 사용합니다 (`lib/http.js` 의 `userOr404`).
-기존 데이터는 `users.legacy_uid` 로 연결된 임시 계정입니다.
-로그인 기능이 붙으면 `uid` 파라미터 대신 인증된 사용자(`req.user.id`)를 쓰도록 `userOr404` 부분만 교체하면 됩니다.
+## 🔐 인증
+
+회원가입/로그인으로 받은 JWT를 `Authorization: Bearer <token>` 헤더로 보내야 합니다.
+
+- 인증 없이 호출할 수 있는 경로는 `/api/health`, `/api/auth/signup`, `/api/auth/login` 뿐입니다. (`/api/auth/me` 는 토큰을 직접 확인합니다)
+- 나머지 모든 `/api/*` 는 `lib/requireAuth.js` 를 거치며, 토큰이 없거나 만료되면 **401** 을 응답합니다.
+- 사용자는 토큰에서 꺼낸 `req.userId` 로만 식별합니다. 요청에 `uid` 를 실어 보내지 않으며, 보내도 무시됩니다. **새 라우트에서도 `req.userId` 만 사용하세요.**
+
+## 🧭 API 목록
+
+| 경로 | 설명 |
+|---|---|
+| `POST /api/auth/signup`, `POST /api/auth/login`, `GET /api/auth/me` | 회원가입, 로그인, 토큰으로 내 정보 확인 |
+| `POST /api/transactions` | 거래 기록 |
+| `GET /api/transactions?year=&month=` | 월별 거래 |
+| `GET /api/transactions/unrated`, `/monthly-sum`, `/all` | 미평가 지출, 월별 지출 추이, 전체 거래 |
+| `POST /api/transactions/bulk`, `DELETE /api/transactions/:tid` | id 목록으로 조회, 거래 삭제 |
+| `POST /api/satisfaction`, `GET /api/satisfaction` | 만족도 평가 저장, 내 평가 전체 조회 |
+| `GET /api/reports/consumption?year=&month=` | 월간 AI 리포트 |
+| `GET /api/tips/today` | 오늘의 절약팁 |
+| `GET /api/challenges/categories`, `/recommendation`, `/history` | 챌린지 카테고리, 추천, 지난 챌린지 |
+| `GET /api/challenges`, `POST /api/challenges` | 진행 중 챌린지 목록, 챌린지 생성 |
+| `GET /api/challenges/:id`, `POST /api/challenges/:id/giveup` | 챌린지 상세, 포기 |
+| `POST /api/feedback` | 오류 신고/의견 보내기 |
+| `GET /api/alarm-settings`, `PUT /api/alarm-settings` | 만족도 알림 설정 조회/저장 |
+
+## 🤖 Gemini 호출 제한
+
+리포트와 절약팁은 DB에 캐시되며, 캐시가 있으면 Gemini를 호출하지 않습니다. 거래/만족도가 바뀌어 캐시가 지워진 뒤 **새로 생성할 때만** 아래 제한이 적용됩니다.
+
+- Gemini 요청 1건은 `LLM_TIMEOUT_MS`(기본 15초)를 넘기면 중단됩니다.
+- 리포트는 사용자당 시간당 `LLM_REPORTS_PER_HOUR`(기본 10)회까지 새로 생성합니다. 초과하면 안내 문구를 응답합니다.
+- 생성에 실패하면 1분 동안 같은 안내를 응답하고 다시 호출하지 않습니다. (실패 결과는 캐시하지 않습니다)
+- 이 상태는 서버 메모리에만 있어 서버를 재시작하면 초기화됩니다.
 
 ---
 
@@ -107,6 +151,9 @@ server/
 | `Cannot find module 'pg'` 등 | 패키지 미설치 | `npm install` |
 | `PORT already in use` | 포트 충돌 | `.env` 의 `PORT` 를 다른 값으로 |
 | 리포트/팁이 기본 문구만 나옴 | Gemini 키 오류 또는 무료 한도(429) 초과 | 키 확인, 잠시 후 재시도 또는 `GEMINI_MODEL` 변경 |
+| 리포트에 "너무 많이 요청했어요"가 나옴 | 시간당 생성 한도 초과 | 잠시 후 다시 시도하거나 `LLM_REPORTS_PER_HOUR` 조정 |
+| 모든 API가 401 | 토큰 없음/만료, 또는 서버의 `JWT_SECRET` 이 바뀜 | 앱에서 다시 로그인 |
+| 로그인/보호된 API가 500 (`server misconfigured`) | `.env` 에 `JWT_SECRET` 누락 | `JWT_SECRET` 추가 후 서버 재시작 |
 
 ---
 
@@ -114,6 +161,7 @@ server/
 
 - `.env` 는 커밋하지 않습니다. 연결 문자열/키는 공개 채널이 아니라 개인 메시지로 공유합니다.
 - DB 비밀번호가 노출되면 Neon 콘솔에서 비밀번호를 재설정하세요.
+- `JWT_SECRET` 이 노출되면 누구나 로그인 토큰을 위조할 수 있습니다. 노출되면 새 값으로 바꾸세요. (바꾸면 모든 사용자가 다시 로그인해야 합니다)
 
 ---
 
