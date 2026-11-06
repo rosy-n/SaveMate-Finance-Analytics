@@ -1,0 +1,55 @@
+name: CI
+
+# main 에 올리거나 PR 을 열 때마다 린트와 테스트를 돌린다.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# 같은 브랜치에서 새 커밋이 올라오면 이전 실행은 취소한다.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  server:
+    name: 서버 테스트
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: savemate/server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: savemate/server/package-lock.json
+      - run: npm ci
+      - run: npm test
+
+  app:
+    name: 앱 린트와 테스트
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: savemate
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            savemate/package-lock.json
+            savemate/server/package-lock.json
+      - run: npm ci
+      # 전체 린트는 서버 파일(neon.ts 등)의 import 도 확인하므로, 서버 의존성도 설치해야 한다.
+      - run: npm ci
+        working-directory: savemate/server
+      # 앱 폴더만 보는 expo lint 와 달리, 서버 파일까지 포함해 프로젝트 전체를 검사한다.
+      - run: npm run lint:all
+      - run: npm test

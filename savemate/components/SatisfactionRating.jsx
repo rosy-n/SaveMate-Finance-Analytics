@@ -11,7 +11,6 @@ import {
   Platform,
   Keyboard,
   Alert,
-  StyleSheet
 } from 'react-native';
 
 const fmtMonthDayKR = (d) => {

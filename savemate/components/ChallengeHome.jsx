@@ -1,6 +1,6 @@
 // components/ChallengeHome.jsx
 import { getAppNow, getAppToday } from '@/constants/appDate';
-import React, { useCallback, useEffect, useState, useMemo } from "react";
+import React, { useCallback, useState, useMemo } from "react";
 import {
   SafeAreaView,
   View,
@@ -16,8 +16,15 @@ import { useAuth } from "../state/AuthContext";
 import { SaveMateStyles as styles } from "../styles/SaveMateStyles";
 import { formatFailedOn } from "../constants/challengeFormat";
 
+// 이번 달 남은 일수(오늘 포함). state 로 두지 않고 렌더링할 때 바로 계산한다.
+const getRemainingDays = () => {
+  const today = getAppNow();
+  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  return lastDay - today.getDate() + 1;
+};
+
 const ChallengeHome = () => {
-  const [dDay, setDDay] = useState(0);
+  const dDay = getRemainingDays();
   const [sortOption, setSortOption] = useState("위험도순");
 
   const api = useApi();
@@ -47,12 +54,6 @@ const ChallengeHome = () => {
       loadChallenges();
     }, [loadChallenges])
   );
-
-  useEffect(() => {
-    const today = getAppNow();
-    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-    setDDay(lastDay - today.getDate() + 1);
-  }, []);
 
   const toggleSortOption = () => {
     setSortOption((prev) => (prev === "위험도순" ? "ㄱㄴㄷ순" : "위험도순"));
@@ -160,7 +161,7 @@ const ChallengeHome = () => {
         <Text style={styles.appTitle}>챌린지</Text>
 
         <TouchableOpacity
-          onPress={() => router.push("/challenge/add")}
+          onPress={handleAddPress}
           hitSlop={8}
           style={{
             position: "absolute",

@@ -1,5 +1,5 @@
 // styles/MyPageStyles.js
-import { StyleSheet, Platform } from "react-native";
+import { StyleSheet } from "react-native";
 
 export const BRAND = {
   purple: "#7C3AED",

@@ -135,7 +135,7 @@ export function SatisfactionAlarmSettings() {
       }
     })();
     return () => { mounted = false; };
-  }, [user?.id]);
+  }, [api, user?.id]);
 
   const [saving, setSaving] = useState(false);
 
