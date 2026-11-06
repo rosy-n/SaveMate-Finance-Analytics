@@ -112,15 +112,16 @@ async function listAll(userId) {
   return rows.map(toApi);
 }
 
-/** 만족도 평가가 없는 지출 (최신순) */
-async function listUnrated(userId, limit) {
+/** 만족도 평가가 없는 지출 (최신순). before('YYYY-MM-DD')를 주면 그 날짜 이전 소비만 */
+async function listUnrated(userId, limit, before = null) {
   const { rows } = await query(
     `${SELECT_TX}
      WHERE t.user_id = $1 AND t.type = 'expense'
        AND NOT EXISTS (SELECT 1 FROM satisfaction_ratings r WHERE r.transaction_id = t.id)
+       AND ($3::date IS NULL OR t.occurred_on < $3::date)
      ORDER BY t.occurred_on DESC, t.id DESC
      LIMIT $2`,
-    [userId, limit]
+    [userId, limit, before]
   );
   return rows.map(toApi);
 }

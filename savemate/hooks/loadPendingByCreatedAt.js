@@ -1,4 +1,5 @@
 // hooks/loadPendingByCreatedAt.js
+import { getAppToday } from '../constants/appDate';
 
 // .env의 EXPO_PUBLIC_UID (없으면 null)
 const ENV_UID =
@@ -32,8 +33,12 @@ export async function loadPendingByCreatedAt({
   if (!api) throw new Error('loadPendingByCreatedAt: api가 필요합니다');
   if (!uid) console.warn('⚠️ uid가 비어 있습니다(.env 확인)');
 
+  // 만족도 기록은 소비 날짜 다음 날부터 올린다.
+  // 지난 날짜로 입력한 지출은 입력 날짜가 이미 소비 다음 날 이후이므로 바로 올라온다.
+  const today = getAppToday();
+
   // 캐싱/디듀프 키 설정
-  const key = `${uid || 'nouid'}:${cap}`;
+  const key = `${uid || 'nouid'}:${cap}:${today}`;
   const now = Date.now();
   const hit = _cache.get(key);
   
@@ -42,7 +47,7 @@ export async function loadPendingByCreatedAt({
 
   const p = (async () => {
     // 단일 최적화 쿼리: isRated=false인 expense만 요청
-    const txURL = `/api/transactions/unrated?uid=${encodeURIComponent(uid)}&limit=${cap}`;
+    const txURL = `/api/transactions/unrated?uid=${encodeURIComponent(uid)}&limit=${cap}&before=${today}`;
 
     let items = [];
     try {
