@@ -114,3 +114,21 @@ server/
 
 - `.env` 는 커밋하지 않습니다. 연결 문자열/키는 공개 채널이 아니라 개인 메시지로 공유합니다.
 - DB 비밀번호가 노출되면 Neon 콘솔에서 비밀번호를 재설정하세요.
+
+---
+
+## 🧪 페르소나 더미데이터
+
+개인화 리포트 차이를 확인하기 위한 20대 여성 페르소나 4명의 데이터입니다. (2026-08-01 ~ 2026-11-06)
+
+계정 정보와 페르소나 설명은 팀 노션을 확인하세요.
+
+```bash
+npm run seed:generate   # 생성기(db/seeds/generatePersonas.js)로 JSON 다시 만들기
+npm run seed            # 데이터 전체 다시 넣기 (계정 id 유지, 페르소나 데이터만 교체)
+npm run seed:accounts   # 계정 정보만 갱신 (거래/챌린지 유지)
+```
+
+- 시드는 `legacy_uid` 가 `persona_` 로 시작하는 계정만 건드리고, 실패하면 전체 롤백합니다.
+- 비밀번호는 bcrypt 해시로 저장하고, 저장소에는 올리지 않습니다. 바꾸려면 `db/seeds/passwords.local.json` 에 `{ "persona_xxx": "비밀번호" }` 를 만들어 실행하세요. 이 파일이 없으면 기존 비밀번호가 유지됩니다.
+- 로그인 방식이 확정되면 `db/seeds/personas/*.json` 의 `account` 를 고치고(해시 방식이 다르면 `db/seed.js` 도 함께) `npm run seed:accounts` 를 실행하세요.
