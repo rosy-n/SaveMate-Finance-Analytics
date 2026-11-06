@@ -31,7 +31,7 @@ export default function SignupScreen() {
 
   const validate = () => {
     if (!USERNAME_RE.test(username)) return "아이디는 영문/숫자/밑줄 4~20자로 입력해주세요.";
-    if (password.length < 8) return "비밀번호는 8자 이상이어야 해요.";
+    if (password.length < 6) return "비밀번호는 6자 이상이어야 해요.";
     if (password !== passwordConfirm) return "비밀번호가 일치하지 않아요.";
     if (nickname.trim().length < 2 || nickname.trim().length > 20)
       return "닉네임은 2~20자로 입력해주세요.";

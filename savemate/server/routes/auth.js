@@ -23,8 +23,8 @@ router.post('/signup', async (req, res) => {
     if (!USERNAME_RE.test(username)) {
       throw badRequest('아이디는 영문/숫자/밑줄 4~20자로 입력해 주세요.');
     }
-    if (String(password).length < 8) {
-      throw badRequest('비밀번호는 8자 이상이어야 해요.');
+    if (String(password).length < 6) {
+      throw badRequest('비밀번호는 6자 이상이어야 해요.');
     }
     if (nickname.length < 2 || nickname.length > 20) {
       throw badRequest('닉네임은 2~20자로 입력해 주세요.');
