@@ -5,7 +5,6 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 
-const healthRoutes = require('./routes/health');
 const transactionRoutes = require('./routes/transactions');
 const satisfactionRoutes = require('./routes/satisfaction');
 const authRoutes = require('./routes/auth');
@@ -21,6 +20,7 @@ const app = express();
 // CORS + JSON
 app.use(cors());
 app.use(express.json());
+app.use(morgan('dev'));
 
 // 304 방지: ETag 끄기 + 캐시 금지 헤더
 app.set('etag', false);
@@ -48,6 +48,19 @@ app.use('/api/alarm-settings', requireAuth, alarmSettingsRoutes);
 app.use('/api/reports', requireAuth, reportRoutes);
 app.use('/api/tips', requireAuth, tipsRouter);
 app.use('/api/challenges', requireAuth, challengeRoutes);
+
+// 존재하지 않는 경로
+app.use((req, res) => {
+  res.status(404).json({ ok: false, error: 'not found' });
+});
+
+// 처리되지 않은 에러(예: 잘못된 JSON 본문). 라우트는 fail() 로 직접 응답한다.
+app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err);
+  const status = err.status && err.status < 500 ? err.status : 500;
+  if (status === 500) console.error('[unhandled]', err);
+  res.status(status).json({ ok: false, error: status === 500 ? 'internal server error' : err.message });
+});
 
 const port = Number(process.env.PORT || 8080);
 // 외부(폰) 접근 가능하도록 0.0.0.0 바인딩
