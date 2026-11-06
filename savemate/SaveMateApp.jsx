@@ -1,11 +1,13 @@
 import { getAppNow } from './constants/appDate';
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { appBus } from './app/eventBus';
 import { loadPendingByCreatedAt } from './hooks/loadPendingByCreatedAt';
 import Challenge from './components/Challenge';
 import ChallengeDetail from './components/ChallengeDetail';
+import HomeChallengeCard from './components/HomeChallengeCard';
 import { getCategoryIcon } from './constants/categoryIcons';
 
 const Stack = createStackNavigator();
@@ -131,6 +133,14 @@ export default function SaveMateApp() {
     return () => off && off(); // 구현이 off()를 리턴하지 않으면 appBus.off('homeTabPressed', handler) 사용
   }, []);
 
+  // 홈 탭으로 돌아올 때 챌린지 카드를 갱신한다.
+  // (state 를 바꾸면 HomePage 전체가 다시 마운트되므로 이벤트로 카드에만 알린다.)
+  useFocusEffect(
+    useCallback(() => {
+      appBus.emit('home-focused');
+    }, [])
+  );
+
   // API 헬스체크로 대체
   const api = useApi();
   useEffect(() => {
@@ -212,10 +222,6 @@ export default function SaveMateApp() {
       motivationalQuote: {
         title: '오늘의 절약팁',
         content: '카페 대신 집에서 커피를 내려 마시면 한 달에 약 5만원을 절약할 수 있어요',
-      },
-      challengeProgress: {
-        title: '카페 챌린지',
-        progressRate: 73,
       },
     }),
     [UID]
@@ -361,22 +367,7 @@ export default function SaveMateApp() {
             ) : null}
           </TouchableOpacity>
 
-          <View style={styles.card}>
-            <View style={styles.rowBetween}>
-              <Text style={styles.cardTitle}>{homeData.challengeProgress.title}</Text>
-              <Text style={styles.progressText}>
-                {homeData.challengeProgress.progressRate}%
-              </Text>
-            </View>
-            <View style={styles.progressBarBg}>
-              <View
-                style={[
-                  styles.progressBarFill,
-                  { width: `${homeData.challengeProgress.progressRate}%` },
-                ]}
-              />
-            </View>
-          </View>
+          <HomeChallengeCard refreshKey={refreshKey} />
 
           {pendingList.length > 0 && (
             <View style={styles.card}>
