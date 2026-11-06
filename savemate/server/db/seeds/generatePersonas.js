@@ -552,7 +552,7 @@ function main() {
     const output = {
       account: {
         legacyUid: `persona_${persona.key}`,
-        username: `persona_${persona.key}`,
+        username: `${persona.key}id`,
         nickname: persona.account.nickname,
         email: `${persona.key}@persona.savemate.test`,
       },

@@ -85,13 +85,16 @@ router.post('/', async (req, res) => {
 // 만족도평가를 위해 미평가 지출을 불러오기
 router.get('/unrated', async (req, res) => {
   try {
-    const { uid, limit = 50 } = req.query;
+    const { uid, limit = 50, before } = req.query;
     if (!uid) return res.status(400).json({ ok: false, error: 'uid required' });
+    if (before != null && !/^\d{4}-\d{2}-\d{2}$/.test(String(before))) {
+      return res.status(400).json({ ok: false, error: 'before must be YYYY-MM-DD' });
+    }
 
     const userId = await userOr404(res, uid);
     if (!userId) return;
 
-    const items = await tx.listUnrated(userId, Math.min(Math.max(Number(limit) || 50, 1), 500));
+    const items = await tx.listUnrated(userId, Math.min(Math.max(Number(limit) || 50, 1), 500), before ?? null);
     res.json({ ok: true, items });
   } catch (e) {
     fail(res, '[GET /api/transactions/unrated Error]', e);

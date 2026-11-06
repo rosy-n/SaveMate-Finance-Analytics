@@ -104,7 +104,7 @@ export default function SignupScreen() {
             <TextInput
               value={password}
               onChangeText={setPassword}
-              placeholder="8자 이상"
+              placeholder="6자 이상"
               placeholderTextColor={BRAND.gray4}
               style={styles.input}
               secureTextEntry
