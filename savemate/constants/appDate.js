@@ -10,3 +10,10 @@ export function getAppNow() {
   const dt = new Date(y, (m || 1) - 1, d || 1, real.getHours(), real.getMinutes(), real.getSeconds());
   return Number.isNaN(dt.getTime()) ? real : dt;
 }
+
+// getAppNow() 의 날짜를 'YYYY-MM-DD' 로 반환한다.
+export function getAppToday() {
+  const now = getAppNow();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
