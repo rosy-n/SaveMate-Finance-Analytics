@@ -34,6 +34,8 @@ import { SaveMateStyles as styles } from './styles/SaveMateStyles';
 import { useApi } from './hooks/useApi';
 import useMonthlyTransactionsFromApi from './hooks/useMonthlyTransactionsFromApi';
 import { useAuth } from './state/AuthContext';
+import useTodayTip from './hooks/useTodayTip';
+import { Ionicons } from '@expo/vector-icons';
 
 
 const NOW = getAppNow();
@@ -53,6 +55,27 @@ const toLocalDateString = (d) => {
   const m = String(dt.getMonth() + 1).padStart(2, '0');
   const day = String(dt.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
+};
+
+// 달력에서 지출이 많은 날의 기준: 일별 지출의 Q3 + 1.5*IQR (리포트의 이상치 기준과 동일)
+const MIN_DAYS_FOR_HIGH_EXPENSE = 10;
+
+const highExpenseThreshold = (totalsByDay) => {
+  const amounts = Object.values(totalsByDay || {})
+    .map((t) => t.expense)
+    .filter((v) => v > 0)
+    .sort((a, b) => a - b);
+  if (amounts.length < 4) return Infinity;
+
+  const quantile = (q) => {
+    const pos = (amounts.length - 1) * q;
+    const lower = Math.floor(pos);
+    const upper = amounts[lower + 1] ?? amounts[lower];
+    return amounts[lower] + (pos - lower) * (upper - amounts[lower]);
+  };
+  const q1 = quantile(0.25);
+  const q3 = quantile(0.75);
+  return q3 + 1.5 * (q3 - q1);
 };
 
 // 만족도 평가 박스 UI 표시용: "M월 D일"
@@ -244,55 +267,7 @@ export default function SaveMateApp() {
       });
     const totalExpenseThisMonth = homeMonthlyTotals?.expense ?? 0;
 
-    // 🔥 오늘의 절약팁 (여러 개)
-    const [todayTips, setTodayTips] = useState([]);
-    const [tipIndex, setTipIndex] = useState(0);
-    const [tipLoading, setTipLoading] = useState(true);
-    const [tipError, setTipError] = useState(null);
-
-    // 🔥 오늘의 절약팁 로드 (refreshKey에 묶어야 거래 입력 후 자동 갱신)
-    useEffect(() => {
-      let mounted = true;
-
-      (async () => {
-        try {
-          setTipLoading(true);
-          setTipError(null);
-
-          const res = await api.get(`/api/tips/today?uid=${homeData.userId}`);
-          const tips = res?.tip?.tips ?? [];
-
-          if (!mounted) return;
-          setTodayTips(tips);
-
-          // 홈 입장마다 랜덤한 팁부터 시작 (첫 팁 고정 방지)
-          if (tips.length > 0) {
-            setTipIndex(Math.floor(Math.random() * tips.length));
-          }
-        } catch (e) {
-          if (!mounted) return;
-          setTipError("절약팁 불러오지 못했어요.");
-          setTodayTips([]);
-        } finally {
-          mounted && setTipLoading(false);
-        }
-      })();
-
-      return () => { mounted = false; };
-    }, [api, homeData.userId, refreshKey]);
-
-    // 🔥 3초마다 자동으로 다음 팁으로 순환
-    useEffect(() => {
-      if (!todayTips || todayTips.length <= 1) return;
-
-      const timer = setInterval(() => {
-        setTipIndex(i => (i + 1) % todayTips.length);
-      }, 5000);
-
-      return () => clearInterval(timer);
-    }, [todayTips]);
-
-
+    const todayTip = useTodayTip(homeData.userId);
 
     // 만족도 평가 안한 지출내역들을 넣는 미평가 큐
     useEffect(() => {
@@ -331,22 +306,7 @@ export default function SaveMateApp() {
           <View style={[styles.card, styles.tipCard]}>
             <Text style={styles.cardTitle}>오늘의 절약팁</Text>
 
-            {/* 로딩 */}
-            {tipLoading ? (
-              <Text style={styles.cardText}>불러오는 중…</Text>
-            ) : tipError ? (
-              <Text style={[styles.cardText, { color: '#B43A22' }]}>
-                {tipError}
-              </Text>
-            ) : todayTips.length === 0 ? (
-              <Text style={styles.cardText}>표시할 팁이 없어요.</Text>
-            ) : (
-              <>
-                <Text style={styles.cardText}>
-                  {todayTips[tipIndex]?.content}
-                </Text>                
-              </>
-            )}
+            <Text style={styles.cardText}>{todayTip.content}</Text>
           </View>
 
 
@@ -420,7 +380,7 @@ export default function SaveMateApp() {
           style={styles.fab}
           onPress={() => setEntryModal({ visible: true, step: 'amount' })}
         >
-          <Text style={styles.fabPlus}>＋</Text>
+          <Ionicons name="add" size={36} color="#FFFFFF" />
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -435,7 +395,7 @@ export default function SaveMateApp() {
         month: selectedMonth,
         refresh: 0,
       });
-    const { monthlyTotals: prevTotals } =
+    const { monthlyTotals: prevTotals, totalsByDay: prevTotalsByDay } =
       useMonthlyTransactionsFromApi({
         userId: homeData.userId,
         year: selectedMonth === 1 ? CURRENT_YEAR - 1 : CURRENT_YEAR,
@@ -459,6 +419,12 @@ export default function SaveMateApp() {
       Object.keys(effectiveGrouped).forEach((k) => { map[Number(k)] = true; });
       return map;
     }, [effectiveGrouped]);
+
+    // 지출이 많은 날 기준. 월초처럼 기록이 적은 달은 지난달 기준을 쓴다.
+    const expenseDayCount = Object.values(totalsByDay || {}).filter((t) => t.expense > 0).length;
+    const highExpense = highExpenseThreshold(
+      expenseDayCount >= MIN_DAYS_FOR_HIGH_EXPENSE ? totalsByDay : prevTotalsByDay
+    );
 
     const handlePrevMonth = () => setSelectedMonth((prev) => Math.max(1, prev - 1));
     const handleNextMonth = () => setSelectedMonth((prev) => Math.min(CURRENT_MONTH, prev + 1));
@@ -545,6 +511,7 @@ export default function SaveMateApp() {
                 const isToday = dateNum === TODAY && selectedMonth === CURRENT_MONTH;
                 const isSelected = dateNum === selectedDate;
                 const hasTransaction = transactionsByDate[dateNum];
+                const dayTotals = totalsByDay?.[dateNum];
 
                 return (
                   <TouchableOpacity
@@ -565,6 +532,29 @@ export default function SaveMateApp() {
                     >
                       {dateNum}
                     </Text>
+                    {dayTotals?.income > 0 && (
+                      <Text
+                        allowFontScaling={false}
+                        style={[styles.dayAmount, styles.income]}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                      >
+                        +{dayTotals.income.toLocaleString('ko-KR')}
+                      </Text>
+                    )}
+                    {dayTotals?.expense > 0 && (
+                      <Text
+                        allowFontScaling={false}
+                        style={[
+                          styles.dayAmount,
+                          dayTotals.expense > highExpense ? styles.expense : styles.dayAmountExpense,
+                        ]}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                      >
+                        -{dayTotals.expense.toLocaleString('ko-KR')}
+                      </Text>
+                    )}
                   </TouchableOpacity>
                 );
               })}
