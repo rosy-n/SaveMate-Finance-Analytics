@@ -168,10 +168,7 @@ export default function SaveMateApp() {
   // API 헬스체크로 대체
   const api = useApi();
   useEffect(() => {
-    console.log('🔗 BASE_URL:', api.baseURL);
-    api.get('/api/health')
-      .then(() => console.log('✅ API 연결 OK'))
-      .catch(e => console.error('❌ API 연결 실패:', e));
+    api.get('/api/health').catch(e => console.error('❌ API 연결 실패:', api.baseURL, e));
   }, [api]);
 
   const handleSatisfactionSubmit = async (payload) => {
@@ -270,16 +267,12 @@ export default function SaveMateApp() {
 
     // 만족도 평가 안한 지출내역들을 넣는 미평가 큐
     useEffect(() => {
-      //console.log("🎯 useEffect 실행됨. refreshKey=", refreshKey);
       let mounted = true;
       (async () => {
         try {
-          //console.log("🌐 loadPendingByCreatedAt 호출 직전");
-
           // 새 함수 사용: createdAt 기준 최신순 + 미평가만 반환
           const pending = await loadPendingByCreatedAt({ api, uid: homeData.userId, cap: 50 });
-          //console.log("📥 loadPending 결과:", pending);
-          
+
           if (!mounted) return;
           setPendingList(pending);
           setPendingIndex(0);

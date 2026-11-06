@@ -62,7 +62,6 @@ export default function useMonthlyTransactionsFromApi({ userId, year, month, ref
         // 3) 실제 호출
         const controller = new AbortController();
         const p = (async () => {
-          console.log('📡 GET', baseURLRef.current + path);
           const json = await getRef.current(path, { signal: controller.signal });
           if (!json || json.ok === false) {
             throw new Error(json?.error || '응답 형식이 올바르지 않습니다');
@@ -78,7 +77,6 @@ export default function useMonthlyTransactionsFromApi({ userId, year, month, ref
         monthCache.set(key, { ts: Date.now(), json });
 
         if (!alive) return;
-        console.log('✅ items:', json.items?.length ?? 0);
         setItems(Array.isArray(json.items) ? json.items : []);
       } catch (e) {
         inflight.delete(key);

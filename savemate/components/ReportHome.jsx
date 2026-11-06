@@ -225,7 +225,6 @@ export default function ReportHome() {
         if (!uid) return; // 로그인 정보가 없으면 요청하지 않음
 
         const path = `/api/reports/consumption?year=${year}&month=${month}`;
-        console.log('📡 GET', api.baseURL + path);
 
         // (선택) 8초 타임아웃: 네트워크 지연 시 무한 대기 방지
         const ac = new AbortController();
@@ -362,8 +361,6 @@ export default function ReportHome() {
 
   // 이번달 Worst 3 계산 useEffect
   useEffect(() => {
-    console.log("🔍 Worst3 시작");
-
     if (!uid) return; // 로그인 정보가 없으면 요청하지 않음
     let mounted = true;
 
@@ -413,10 +410,6 @@ export default function ReportHome() {
 
         // 8) Top 3 추출
         mounted && setWorst3(monthFiltered.slice(0, 3));
-        console.log("🧪 disliked:", disliked.length);
-        console.log("🧪 bulk tx:", txList.length);
-        console.log("🧪 expenses:", expenses.length);
-        console.log("🧪 monthFiltered:", monthFiltered.length);
 
         // 9) satisfaction 정보 합치기
         const reasonsMap = {};
