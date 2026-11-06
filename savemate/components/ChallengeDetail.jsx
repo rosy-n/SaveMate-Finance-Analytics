@@ -24,7 +24,6 @@ const BRAND = {
   card: "#FFFFFF",
   track: "#D1D5DB",
   trackLight: "#E5E7EB",
-  pillBorder: "#D8B4FE", // 연보라 테두리
 };
 
 const PREVIEW_COUNT = 3;
@@ -42,6 +41,7 @@ export default function ChallengeDetail() {
   const [monthlyExpenses, setMonthlyExpenses] = useState([]);
   const [loadFailed, setLoadFailed] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [givingUp, setGivingUp] = useState(false); // 포기 확인 팝업이 떠 있는 동안 버튼을 실패 색으로 표시
 
   useEffect(() => {
     let mounted = true;
@@ -71,6 +71,7 @@ export default function ChallengeDetail() {
   }, [challenge]);
 
   const pctForBar = Math.min(pctRaw, 100);
+  const visibleExpenses = showAll ? monthlyExpenses : monthlyExpenses.slice(0, PREVIEW_COUNT);
   const remaining = Math.max(
     (challenge?.targetAmount ?? 0) - (challenge?.currentAmount ?? 0),
     0
@@ -79,8 +80,9 @@ export default function ChallengeDetail() {
   const isEnded = challenge ? challenge.periodEnd < getAppToday() : false;
 
   const onGiveUp = async () => {
+    setGivingUp(true);
     Alert.alert("챌린지 포기", "정말 포기하시겠어요?", [
-      { text: "취소", style: "cancel" },
+      { text: "취소", style: "cancel", onPress: () => setGivingUp(false) },
       {
         text: "포기하기",
         style: "destructive",
@@ -89,6 +91,7 @@ export default function ChallengeDetail() {
             await api.post(`/api/challenges/${id}/giveup`, { uid, today: getAppToday() });
             router.back();
           } catch {
+            setGivingUp(false);
             Alert.alert("챌린지 포기", "포기 처리에 실패했어요. 다시 시도해 주세요.");
           }
         },
@@ -163,8 +166,11 @@ export default function ChallengeDetail() {
             <Text style={styles.emptyText}>아직 지출 내역이 없어요.</Text>
           )}
 
-          {(showAll ? monthlyExpenses : monthlyExpenses.slice(0, PREVIEW_COUNT)).map((e) => (
-            <View key={e.id} style={styles.expensePill}>
+          {visibleExpenses.map((e, index) => (
+            <View
+              key={e.id}
+              style={[styles.expensePill, index < visibleExpenses.length - 1 && styles.expenseDivider]}
+            >
               <View style={{ flex: 1 }}>
                 <Text style={styles.storeText} numberOfLines={1}>
                   {e.store}
@@ -190,8 +196,12 @@ export default function ChallengeDetail() {
 
         {/* 포기하기 버튼 (이미 끝난 챌린지에는 표시하지 않음) */}
         {!isEnded && (challenge.status === "active" || challenge.status === "failed") && (
-          <TouchableOpacity style={styles.giveUpBtn} onPress={onGiveUp} activeOpacity={0.85}>
-            <Text style={styles.giveUpBtnText}>포기하기</Text>
+          <TouchableOpacity
+            style={[styles.giveUpBtn, givingUp && styles.giveUpBtnActive]}
+            onPress={onGiveUp}
+            activeOpacity={0.85}
+          >
+            <Text style={[styles.giveUpBtnText, givingUp && styles.giveUpBtnTextActive]}>포기하기</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
@@ -295,60 +305,66 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
-  // 시안의 라운드 박스 형태 지출 row
+  // 리포트 탭의 '관련 지출 내역'과 같은 형태의 지출 row
   expensePill: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: BRAND.pillBorder,
-    marginBottom: 8,
+    gap: 12,
+    paddingVertical: 11,
+  },
+  expenseDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#EFEFF2",
   },
   storeText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: BRAND.tint,
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#222",
   },
   dateText: {
-    fontSize: 10.5,
-    color: BRAND.sub,
+    fontSize: 12,
+    color: "#8a8f9c",
     marginTop: 3,
   },
   amountText: {
-    fontSize: 13,
-    fontWeight: "800",
+    fontSize: 15,
+    fontWeight: "700",
     color: BRAND.text,
-    marginLeft: 8,
   },
 
   fullListBtn: {
-    marginTop: 4,
-    borderWidth: 1.5,
-    borderColor: BRAND.pillBorder,
-    borderRadius: 999,
-    paddingVertical: 10,
+    marginTop: 6,
+    paddingVertical: 8,
     alignItems: "center",
   },
   fullListBtnText: {
     fontSize: 13,
-    fontWeight: "800",
-    color: BRAND.tint,
+    fontWeight: "500",
+    color: BRAND.sub,
+    textDecorationLine: "underline",
   },
 
   giveUpBtn: {
     marginTop: 14,
+    alignSelf: "center",
     borderWidth: 1.5,
-    borderColor: BRAND.pillBorder,
+    borderColor: "#D1D5DB",
     borderRadius: 999,
-    paddingVertical: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 28,
     alignItems: "center",
     backgroundColor: BRAND.bg,
   },
+  giveUpBtnActive: {
+    borderColor: "#DC2626",
+    backgroundColor: "#FEE2E2",
+  },
   giveUpBtnText: {
     fontSize: 14,
-    fontWeight: "800",
-    color: BRAND.tint,
+    fontWeight: "700",
+    color: "#6B7280",
+  },
+  giveUpBtnTextActive: {
+    color: "#DC2626",
   },
 });
