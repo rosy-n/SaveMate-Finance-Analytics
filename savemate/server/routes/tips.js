@@ -3,7 +3,6 @@ const express = require('express');
 const router = express.Router();
 const txRepo = require('../db/transactions');
 const tipCache = require('../db/cache');
-const { userOr404 } = require('../lib/http');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -59,17 +58,13 @@ async function withRetries(fn, { tries = 3, base = 500 } = {}) {
 }
 
 /**
- * GET /api/tips/today?uid=...
+ * GET /api/tips/today
  * return:
  * { ok: true, tip: { title, tips:[{content, reason}, ...] }, meta:{cached, model} }
  */
 router.get('/today', async (req, res) => {
   try {
-    const { uid } = req.query;
-    if (!uid) return res.status(400).json({ ok: false, error: 'uid required' });
-
-    const userId = await userOr404(res, uid);
-    if (!userId) return;
+    const userId = req.userId;
 
     const today = new Date();
     const tipKey = toYMD(today);

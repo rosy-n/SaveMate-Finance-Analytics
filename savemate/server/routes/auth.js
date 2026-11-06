@@ -81,13 +81,13 @@ router.get('/me', async (req, res) => {
   try {
     const authHeader = req.headers.authorization || '';
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-    if (!token) throw badRequest('토큰이 없어요.');
+    if (!token) return res.status(401).json({ ok: false, error: '토큰이 없어요.' });
 
     let userId;
     try {
       userId = verifyToken(token);
     } catch {
-      throw badRequest('토큰이 유효하지 않아요.');
+      return res.status(401).json({ ok: false, error: '토큰이 유효하지 않아요.' });
     }
 
     const user = await users.findPublicById(userId);

@@ -1,20 +1,5 @@
 // server/lib/http.js
 // 라우트 공통 헬퍼
-const { resolveUserId } = require('../db/users');
-
-/**
- * uid 를 사용자 id 로 변환한다. 없으면 404 를 응답하고 null 을 반환한다.
- * (로그인 기능이 붙으면 이 함수 대신 인증된 사용자(req.user.id)를 사용하면 된다.)
- */
-async function userOr404(res, uid) {
-  const id = await resolveUserId(uid);
-  if (!id) {
-    res.status(404).json({ ok: false, error: 'user not found' });
-    return null;
-  }
-  return id;
-}
-
 // 잘못된 입력값 때문에 DB 제약에 걸린 경우는 400, 그 외는 500
 const PG_CLIENT_ERRORS = {
   '23514': 'invalid value (check constraint)',
@@ -38,4 +23,4 @@ function fail(res, tag, e) {
 
 const badRequest = (message) => Object.assign(new Error(message), { status: 400 });
 
-module.exports = { userOr404, fail, badRequest };
+module.exports = { fail, badRequest };

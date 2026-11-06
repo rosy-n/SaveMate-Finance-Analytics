@@ -1,7 +1,6 @@
 // server/routes/reports.js
 const express = require('express');
 const router = express.Router();
-const { resolveUserId } = require('../db/users');
 const txRepo = require('../db/transactions');
 const ratingRepo = require('../db/satisfaction');
 const reportCache = require('../db/cache');
@@ -67,11 +66,11 @@ async function withRetries(fn, { tries = 3, base = 500 } = {}) {
 
 router.get('/consumption', async (req, res) => {
   try {
-    const { uid, year, month } = req.query;
-    if (!uid || !year || !month) {
+    const { year, month } = req.query;
+    if (!year || !month) {
       return res
         .status(400)
-        .json({ ok: false, error: 'uid/year/month required' });
+        .json({ ok: false, error: 'year/month required' });
     }
 
     const y = Number(year), m = Number(month);
@@ -79,10 +78,7 @@ router.get('/consumption', async (req, res) => {
       return res.status(400).json({ ok: false, error: 'invalid year/month' });
     }
 
-    const userId = await resolveUserId(uid);
-    if (!userId) {
-      return res.status(404).json({ ok: false, error: 'user not found' });
-    }
+    const userId = req.userId;
 
     // 0) 캐시 체크
     const cached = await reportCache.getReport(userId, y, m);

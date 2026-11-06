@@ -11,6 +11,10 @@ const satisfactionRoutes = require('./routes/satisfaction');
 const authRoutes = require('./routes/auth');
 const feedbackRoutes = require('./routes/feedback');
 const alarmSettingsRoutes = require('./routes/alarmSettings');
+const reportRoutes = require('./routes/reports');
+const tipsRouter = require('./routes/tips');
+const challengeRoutes = require('./routes/challenges');
+const { requireAuth } = require('./lib/requireAuth');
 
 const app = express();
 
@@ -33,12 +37,17 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', time: new Date().toISOString() });
 });
 
-// 기존 라우트 마운트 (경로 정확히 /api/transactions)
-app.use('/api/transactions', transactionRoutes);
-app.use('/api/satisfaction', satisfactionRoutes);
+// 인증 불필요: 회원가입/로그인 (/me 는 라우트 안에서 토큰을 직접 검증)
 app.use('/api/auth', authRoutes);
-app.use('/api/feedback', feedbackRoutes);
-app.use('/api/alarm-settings', alarmSettingsRoutes);
+
+// 이하 모든 라우트는 로그인(JWT) 필수. 사용자는 req.userId 로만 식별한다.
+app.use('/api/transactions', requireAuth, transactionRoutes);
+app.use('/api/satisfaction', requireAuth, satisfactionRoutes);
+app.use('/api/feedback', requireAuth, feedbackRoutes);
+app.use('/api/alarm-settings', requireAuth, alarmSettingsRoutes);
+app.use('/api/reports', requireAuth, reportRoutes);
+app.use('/api/tips', requireAuth, tipsRouter);
+app.use('/api/challenges', requireAuth, challengeRoutes);
 
 const port = Number(process.env.PORT || 8080);
 // 외부(폰) 접근 가능하도록 0.0.0.0 바인딩
@@ -46,13 +55,3 @@ app.listen(port, '0.0.0.0', () => {
   console.log(`API listening on http://0.0.0.0:${port}`);
   console.log(`Health check: http://0.0.0.0:${port}/api/health`);
 });
-
-const reportRoutes = require('./routes/reports');
-app.use('/api/reports', reportRoutes);
-
-const tipsRouter = require('./routes/tips');
-app.use('/api/tips', tipsRouter);
-
-const challengeRoutes = require('./routes/challenges');
-app.use('/api/challenges', challengeRoutes);
-

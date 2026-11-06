@@ -5,12 +5,11 @@ const router = express.Router();
 const tx = require('../db/transactions');
 const cache = require('../db/cache');
 const { toKstDateString } = require('../lib/dates');
-const { userOr404, fail } = require('../lib/http');
+const { fail } = require('../lib/http');
 
 /**
  * POST /api/transactions
  * Body (앱에서 보내는 값 기준):
- *  - uid          (필수)
  *  - type         'income' | 'expense' (필수)
  *  - amount       숫자 (필수)
  *  - category     (선택)
@@ -24,7 +23,6 @@ const { userOr404, fail } = require('../lib/http');
 router.post('/', async (req, res) => {
   try {
     const {
-      uid,
       amount,
       type,
       category,
@@ -39,8 +37,8 @@ router.post('/', async (req, res) => {
       incomeSource,
     } = req.body;
 
-    if (!uid || !amount || !type) {
-      return res.status(400).json({ ok: false, error: 'missing fields (uid, amount, type)' });
+    if (!amount || !type) {
+      return res.status(400).json({ ok: false, error: 'missing fields (amount, type)' });
     }
     if (type !== 'income' && type !== 'expense') {
       return res.status(400).json({ ok: false, error: "type must be 'income' or 'expense'" });
@@ -58,8 +56,7 @@ router.post('/', async (req, res) => {
     }
     const occurredOn = toKstDateString(base);
 
-    const userId = await userOr404(res, uid);
-    if (!userId) return;
+    const userId = req.userId;
 
     const id = await tx.create({
       userId,
@@ -85,14 +82,12 @@ router.post('/', async (req, res) => {
 // 만족도평가를 위해 미평가 지출을 불러오기
 router.get('/unrated', async (req, res) => {
   try {
-    const { uid, limit = 50, before } = req.query;
-    if (!uid) return res.status(400).json({ ok: false, error: 'uid required' });
+    const { limit = 50, before } = req.query;
     if (before != null && !/^\d{4}-\d{2}-\d{2}$/.test(String(before))) {
       return res.status(400).json({ ok: false, error: 'before must be YYYY-MM-DD' });
     }
 
-    const userId = await userOr404(res, uid);
-    if (!userId) return;
+    const userId = req.userId;
 
     const items = await tx.listUnrated(userId, Math.min(Math.max(Number(limit) || 50, 1), 500), before ?? null);
     res.json({ ok: true, items });
@@ -103,24 +98,23 @@ router.get('/unrated', async (req, res) => {
 
 /**
  * GET /api/transactions
- * 쿼리스트링: uid, year, month(1~12), expand(무시)
+ * 쿼리스트링: year, month(1~12), expand(무시)
  * useMonthlyTransactionsFromApi, ReportHome 에서 사용
  */
 router.get('/', async (req, res) => {
   try {
-    const { uid, year, month } = req.query;
+    const { year, month } = req.query;
     const y = Number(year);
     const m = Number(month);
 
-    if (!uid || !y || !m) {
-      return res.status(400).json({ ok: false, error: 'uid, year, month are required' });
+    if (!y || !m) {
+      return res.status(400).json({ ok: false, error: 'year, month are required' });
     }
     if (m < 1 || m > 12) {
       return res.status(400).json({ ok: false, error: 'month must be 1-12' });
     }
 
-    const userId = await userOr404(res, uid);
-    if (!userId) return;
+    const userId = req.userId;
 
     const items = await tx.listByMonth(userId, y, m);
     res.json({ ok: true, items });
@@ -131,22 +125,21 @@ router.get('/', async (req, res) => {
 
 /**
  * GET /api/transactions/monthly-sum
- * 쿼리스트링: uid, months(기본 4), endYear, endMonth, day(선택, 매월 1일~day 합계용)
+ * 쿼리스트링: months(기본 4), endYear, endMonth, day(선택, 매월 1일~day 합계용)
  * ReportHome 의 "월별 지출 추이" 꺾은선 그래프에서 사용
  */
 router.get('/monthly-sum', async (req, res) => {
   try {
-    const { uid, months = '4', endYear, endMonth, day } = req.query;
+    const { months = '4', endYear, endMonth, day } = req.query;
     const count = Math.min(Math.max(Number(months) || 4, 1), 36);
     const y0 = Number(endYear);
     const m0 = Number(endMonth);
 
-    if (!uid || !y0 || !m0) {
-      return res.status(400).json({ ok: false, error: 'uid, endYear, endMonth are required' });
+    if (!y0 || !m0) {
+      return res.status(400).json({ ok: false, error: 'endYear, endMonth are required' });
     }
 
-    const userId = await userOr404(res, uid);
-    if (!userId) return;
+    const userId = req.userId;
 
     const throughDay = Math.min(Math.max(Number(day) || 31, 1), 31);
     const items = await tx.monthlyExpenseSums(userId, y0, m0, count, throughDay);
@@ -159,15 +152,13 @@ router.get('/monthly-sum', async (req, res) => {
 // transactions bulk 조회 (지출배경 분석에서 사용)
 router.post('/bulk', async (req, res) => {
   try {
-    const { ids, uid } = req.body;
+    const { ids } = req.body;
 
-    if (!uid) return res.status(400).json({ ok: false, error: 'uid required' });
     if (!Array.isArray(ids)) {
       return res.status(400).json({ ok: false, error: 'ids must be an array' });
     }
 
-    const userId = await userOr404(res, uid);
-    if (!userId) return;
+    const userId = req.userId;
 
     const items = await tx.listByIds(userId, ids);
     res.json({ ok: true, items });
@@ -177,31 +168,28 @@ router.post('/bulk', async (req, res) => {
 });
 
 /**
- * (기존) 특정 사용자 거래 전체 조회
- * GET /api/transactions/:uid
+ * 로그인한 사용자의 거래 전체 조회
+ * GET /api/transactions/all
  */
-router.get('/:uid', async (req, res) => {
+router.get('/all', async (req, res) => {
   try {
-    const userId = await userOr404(res, req.params.uid);
-    if (!userId) return;
+    const userId = req.userId;
 
     const items = await tx.listAll(userId);
     res.json({ ok: true, items });
   } catch (e) {
-    fail(res, '[GET /api/transactions/:uid Error]', e);
+    fail(res, '[GET /api/transactions/all Error]', e);
   }
 });
 
 /**
- * DELETE /api/transactions/:uid/:tid
+ * DELETE /api/transactions/:tid
  * 단일 거래 삭제 + 해당 월 LLM 리포트 캐시 무효화
  */
-router.delete('/:uid/:tid', async (req, res) => {
+router.delete('/:tid', async (req, res) => {
   try {
-    const { uid, tid } = req.params;
-
-    const userId = await userOr404(res, uid);
-    if (!userId) return;
+    const { tid } = req.params;
+    const userId = req.userId;
 
     const occurredOn = await tx.remove(userId, tid);
     if (occurredOn) {
