@@ -75,6 +75,8 @@ export default function ChallengeDetail() {
     0
   );
 
+  const isEnded = challenge ? challenge.periodEnd < getAppToday() : false;
+
   const onGiveUp = async () => {
     Alert.alert("챌린지 포기", "정말 포기하시겠어요?", [
       { text: "취소", style: "cancel" },
@@ -147,7 +149,7 @@ export default function ChallengeDetail() {
         {/* 이번 달 지출 카드 */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>
-            이번 달 {challenge.category} 지출
+            {isEnded ? "기간 내" : "이번 달"} {challenge.category} 지출
           </Text>
 
           {monthlyExpenses.length === 0 && (
@@ -180,7 +182,7 @@ export default function ChallengeDetail() {
         </View>
 
         {/* 포기하기 버튼 (이미 끝난 챌린지에는 표시하지 않음) */}
-        {(challenge.status === "active" || challenge.status === "failed") && (
+        {!isEnded && (challenge.status === "active" || challenge.status === "failed") && (
           <TouchableOpacity style={styles.giveUpBtn} onPress={onGiveUp} activeOpacity={0.85}>
             <Text style={styles.giveUpBtnText}>포기하기</Text>
           </TouchableOpacity>

@@ -66,6 +66,17 @@ async function listCurrent(userId, today) {
   return rows.map((r) => toApi(r, today));
 }
 
+/** 기간이 끝났거나 포기한 챌린지 (최근에 끝난 순) */
+async function listPast(userId, today) {
+  const { rows } = await query(
+    `${SELECT_CHALLENGE}
+     WHERE ch.user_id = $1 AND (ch.status = 'given_up' OR ch.period_end < $2::date)
+     ORDER BY ch.period_end DESC, ch.id DESC`,
+    [userId, today]
+  );
+  return rows.map((r) => toApi(r, today));
+}
+
 /** 내 챌린지 1건과 기간 내 지출 내역(최신순). 없으면 null */
 async function getWithExpenses(userId, id, today) {
   const { rows } = await query(
@@ -186,4 +197,4 @@ async function recommend(userId, today) {
   };
 }
 
-module.exports = { listCategories, listCurrent, getWithExpenses, create, giveUp, recommend };
+module.exports = { listCategories, listCurrent, listPast, getWithExpenses, create, giveUp, recommend };

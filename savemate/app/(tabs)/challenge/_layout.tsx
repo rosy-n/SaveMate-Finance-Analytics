@@ -25,6 +25,15 @@ export default function ChallengeStackLayout() {
         }} 
       />
 
+      {/* history.tsx (지난 챌린지): 챌린지 홈의 버튼으로 들어갑니다. */}
+      <Stack.Screen
+        name="history"
+        options={{
+          title: '지난 챌린지',
+          headerShown: false, // ChallengeHistory.jsx 컴포넌트 내부에 헤더가 포함되어 있어 숨김
+        }}
+      />
+
       {/* [id].tsx (챌린지 상세): 일반적인 Stack 화면 전환입니다. */}
       <Stack.Screen 
         name="[id]" 

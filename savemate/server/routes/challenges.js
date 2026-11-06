@@ -64,6 +64,22 @@ router.get('/', async (req, res) => {
 });
 
 /**
+ * GET /api/challenges/history?uid=&today=
+ * 기간이 끝났거나 포기한 챌린지 목록
+ */
+router.get('/history', async (req, res) => {
+  try {
+    const today = resolveToday(req.query.today);
+    const userId = await userOr404(res, req.query.uid);
+    if (!userId) return;
+
+    return res.json({ ok: true, challenges: await challenges.listPast(userId, today) });
+  } catch (e) {
+    return fail(res, '[GET /api/challenges/history Error]', e);
+  }
+});
+
+/**
  * POST /api/challenges
  * Body: { uid, category, targetAmount, today? }
  * 기간은 오늘부터 그달 말일까지. 같은 카테고리에 끝나지 않은 챌린지가 있으면 409.

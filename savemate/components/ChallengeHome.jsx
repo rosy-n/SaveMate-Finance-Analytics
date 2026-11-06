@@ -210,6 +210,22 @@ const ChallengeHome = () => {
             {failed.map(renderCard)}
           </>
         )}
+
+        <TouchableOpacity
+          onPress={() => router.push("/challenge/history")}
+          activeOpacity={0.8}
+          style={{
+            marginTop: 16,
+            marginBottom: 24,
+            paddingVertical: 14,
+            alignItems: "center",
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: "#D8B4FE",
+          }}
+        >
+          <Text style={{ fontSize: 15, fontWeight: "600", color: "#7C3AED" }}>지난 챌린지 보기</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
