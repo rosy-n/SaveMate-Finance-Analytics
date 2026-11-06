@@ -70,7 +70,8 @@ export default function ReportHome() {
   const [items, setItems] = useState([]);
 
   const [seriesLoading, setSeriesLoading] = useState(true);
-  const [monthlySeries, setMonthlySeries] = useState({ labels: [], values: [] });
+  const [monthlySeries, setMonthlySeries] = useState({ labels: [], values: [], sameDayValues: [] });
+  const trendDay = now.getDate(); // 회색 그래프: 매월 1일부터 오늘과 같은 날짜까지의 지출
 
   // 🔹 LLM 소비 리포트 상태
   const [llmReport, setLlmReport] = useState(null);
@@ -317,22 +318,26 @@ export default function ReportHome() {
     (async () => {
       try {
         setSeriesLoading(true);
-        const path = `/api/transactions/monthly-sum?uid=${uid}&months=4&endYear=${year}&endMonth=${month}`;
+        const path = `/api/transactions/monthly-sum?uid=${uid}&months=4&endYear=${year}&endMonth=${month}&day=${trendDay}`;
         const res = await api.get(path); // useApi() 사용
         const arr = Array.isArray(res?.items) ? res.items : [];
 
         // 라벨(가로축)과 값(세로데이터) 구성: 과거→현재 순
         const labels = arr.map(x => `${x.month}월`);
         const values = arr.map(x => Number(x.totalExpense || 0));
-        mounted && setMonthlySeries({ labels, values });
+        // 값을 주지 않는 서버에서는 0 으로 그리지 않고 회색 그래프를 숨긴다.
+        const sameDayValues = arr.every(x => Number.isFinite(x.expenseThroughDay))
+          ? arr.map(x => x.expenseThroughDay)
+          : [];
+        mounted && setMonthlySeries({ labels, values, sameDayValues });
       } catch {
-        mounted && setMonthlySeries({ labels: [], values: [] });
+        mounted && setMonthlySeries({ labels: [], values: [], sameDayValues: [] });
       } finally {
         mounted && setSeriesLoading(false);
       }
     })();
     return () => (mounted = false);
-  }, [api, uid, year, month, refreshKey]);
+  }, [api, uid, year, month, trendDay, refreshKey]);
 
   // 카테고리 집계 (지출만)
   const { total, top5, displayChartData } = useMemo(() => {
@@ -734,10 +739,29 @@ export default function ReportHome() {
           ) : monthlySeries.values.length === 0 ? (
             <Text style={[reportStyles.cardText, { marginTop: 8 }]}>지출 데이터가 충분하지 않습니다.</Text>
           ) : (
+            <>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 8 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#7D4BD6' }} />
+                <Text style={reportStyles.caption}>월 전체</Text>
+              </View>
+              {monthlySeries.sameDayValues.length > 0 && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#9CA3AF' }} />
+                  <Text style={reportStyles.caption}>매월 1일~{trendDay}일</Text>
+                </View>
+              )}
+            </View>
             <LineChart
               data={{
                 labels: monthlySeries.labels,               // 예: ['7','8','9','10'] 또는 ['7월','8월','9월','10월']
-                datasets: [{ data: monthlySeries.values }], // 예: [0, 210000, 700000, 20000]
+                datasets: [
+                  // 라이브러리가 선을 투명도 0.2 로 그려서, 흰 배경에서 보이도록 불투명도를 고정한다.
+                  ...(monthlySeries.sameDayValues.length > 0
+                    ? [{ data: monthlySeries.sameDayValues, color: () => '#9CA3AF' }]
+                    : []),
+                  { data: monthlySeries.values },           // 예: [0, 210000, 700000, 20000]
+                ],
               }}
               width={screenWidth - 48}
               height={220}
@@ -761,7 +785,7 @@ export default function ReportHome() {
                 decimalPlaces: 0,
                 color: (o = 1) => `rgba(125, 75, 214, ${o})`,
                 labelColor: (o = 1) => `rgba(0,0,0,${o})`,
-                propsForDots: { r: '4', strokeWidth: '2', stroke: '#BFA6F2' },
+                propsForDots: { r: '4' },
                 propsForBackgroundLines: { stroke: '#E9E9EF', strokeDasharray: '4 6' },
               }}
               style={{ marginTop: 12, borderRadius: 8, backgroundColor: '#FFFFFF' }}
@@ -771,13 +795,24 @@ export default function ReportHome() {
                 const v = Number(indexData || 0);
                 const man = Math.round(v / 10000);
                 const label = man > 0 ? `${man}만원` : `${v.toLocaleString('ko-KR')}원`;
+                // 라이브러리가 데이터셋을 알려주지 않아 값으로 구분한다. 두 값이 같으면 보라색 라벨만 보인다.
+                const isTotal = v === monthlySeries.values[index];
+                if (!isTotal && v === 0) return null; // x축 라벨과 겹치지 않도록
                 return (
-                  <SvgText key={`val-${index}`} x={x} y={y - 8} fontSize="11" fill="#7D4BD6" textAnchor="middle">
+                  <SvgText
+                    key={`val-${index}`}
+                    x={x}
+                    y={isTotal ? y - 8 : y + 16}
+                    fontSize="11"
+                    fill={isTotal ? '#7D4BD6' : '#6B7280'}
+                    textAnchor="middle"
+                  >
                     {label}
                   </SvgText>
                 );
               }}
             />
+            </>
           )}
         </View>
 

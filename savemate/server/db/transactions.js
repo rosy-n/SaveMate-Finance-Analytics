@@ -147,27 +147,35 @@ async function listByIds(userId, ids) {
   return rows.map(toApi);
 }
 
-/** 최근 count 개월(endYear/endMonth 포함)의 월별 지출 합계 */
-async function monthlyExpenseSums(userId, endYear, endMonth, count) {
+/**
+ * 최근 count 개월(endYear/endMonth 포함)의 월별 지출 합계.
+ * throughDay 를 주면 매월 1일부터 그 날짜까지의 합계(expenseThroughDay)도 함께 돌려준다.
+ */
+async function monthlyExpenseSums(userId, endYear, endMonth, count, throughDay = 31) {
   const months = [];
   for (let i = count - 1; i >= 0; i--) months.push(shiftYearMonth(endYear, endMonth, -i));
 
   const first = months[0];
   const last = months[months.length - 1];
   const { rows } = await query(
-    `SELECT to_char(occurred_on, 'YYYY-MM') AS ym, SUM(amount)::int AS total
+    `SELECT to_char(occurred_on, 'YYYY-MM') AS ym, SUM(amount)::int AS total,
+            COALESCE(SUM(amount) FILTER (WHERE EXTRACT(DAY FROM occurred_on) <= $4), 0)::int AS through_day
      FROM transactions
      WHERE user_id = $1 AND type = 'expense' AND occurred_on >= $2::date AND occurred_on < $3::date
      GROUP BY 1`,
-    [userId, monthStart(first.year, first.month), nextMonthStart(last.year, last.month)]
+    [userId, monthStart(first.year, first.month), nextMonthStart(last.year, last.month), throughDay]
   );
-  const byMonth = new Map(rows.map((r) => [r.ym, r.total]));
+  const byMonth = new Map(rows.map((r) => [r.ym, r]));
 
-  return months.map(({ year, month }) => ({
-    year,
-    month,
-    totalExpense: byMonth.get(`${year}-${String(month).padStart(2, '0')}`) ?? 0,
-  }));
+  return months.map(({ year, month }) => {
+    const row = byMonth.get(`${year}-${String(month).padStart(2, '0')}`);
+    return {
+      year,
+      month,
+      totalExpense: row?.total ?? 0,
+      expenseThroughDay: row?.through_day ?? 0,
+    };
+  });
 }
 
 module.exports = {

@@ -128,12 +128,12 @@ router.get('/', async (req, res) => {
 
 /**
  * GET /api/transactions/monthly-sum
- * 쿼리스트링: uid, months(기본 4), endYear, endMonth
+ * 쿼리스트링: uid, months(기본 4), endYear, endMonth, day(선택, 매월 1일~day 합계용)
  * ReportHome 의 "월별 지출 추이" 꺾은선 그래프에서 사용
  */
 router.get('/monthly-sum', async (req, res) => {
   try {
-    const { uid, months = '4', endYear, endMonth } = req.query;
+    const { uid, months = '4', endYear, endMonth, day } = req.query;
     const count = Math.min(Math.max(Number(months) || 4, 1), 36);
     const y0 = Number(endYear);
     const m0 = Number(endMonth);
@@ -145,7 +145,8 @@ router.get('/monthly-sum', async (req, res) => {
     const userId = await userOr404(res, uid);
     if (!userId) return;
 
-    const items = await tx.monthlyExpenseSums(userId, y0, m0, count);
+    const throughDay = Math.min(Math.max(Number(day) || 31, 1), 31);
+    const items = await tx.monthlyExpenseSums(userId, y0, m0, count, throughDay);
     res.json({ ok: true, items });
   } catch (e) {
     fail(res, '[GET /api/transactions/monthly-sum Error]', e);
