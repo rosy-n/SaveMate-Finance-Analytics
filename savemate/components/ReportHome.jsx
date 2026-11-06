@@ -2,14 +2,144 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { getAppNow } from '../constants/appDate';
 import { View, Text, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LineChart, PieChart } from 'react-native-chart-kit';
-import { Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Line, Polyline, Text as SvgText } from 'react-native-svg';
 import { useApi } from '../hooks/useApi';
 import { ReportStyles as reportStyles } from './styles/ReportStyles';
 import { appBus } from '../app/eventBus';
 import { useAuth } from '../state/AuthContext';
 
 const screenWidth = Dimensions.get('window').width;
+// 월별 지출 추이: 화면 - 콘텐츠 여백(32) - 카드 안쪽 여백(32) - 카드 테두리(2)
+const TREND_WIDTH = screenWidth - 66;
+const TREND_HEIGHT = 204;
+const TREND_SIDE = 28; // 첫 달/마지막 달 점과 좌우 끝 사이 간격 (대칭)
+const TREND_GRID_TOP = 10;
+const TREND_GRID_BOTTOM = 160;
+const TREND_GRID_ROWS = 4;
+const TREND_MONTH_Y = 196;
+// 최댓값 위 금액이 잘리지 않도록 세로축 상단을 최댓값보다 여유 있게 잡는다.
+const TREND_HEADROOM = 1.2;
+const TREND_LINE_COLOR = '#E5DBF7';
+const TREND_DOT_COLOR = '#7D4BD6';
+const TREND_SAME_DAY_COLOR = '#9CA3AF';
+const TREND_GRID_PROPS = { stroke: '#E9E9EF', strokeDasharray: '4 6', strokeWidth: 1 };
+
+const formatTrendAmount = (value) => {
+  const man = Math.round(value / 10000);
+  return man > 0 ? `${man}만원` : `${value.toLocaleString('ko-KR')}원`;
+};
+
+const TrendAmountLabel = ({ x, y, color, children }) => (
+  <SvgText x={x} y={y} fontSize="11" fontWeight="600" textAnchor="middle" fill={color}>
+    {children}
+  </SvgText>
+);
+
+// 그리는 순서: 격자 → 선 → 점 → 글자
+function TrendChart({ labels, values, sameDayValues }) {
+  const scale = Math.max(0, ...values, ...sameDayValues) * TREND_HEADROOM;
+  const step = values.length > 1 ? (TREND_WIDTH - TREND_SIDE * 2) / (values.length - 1) : 0;
+  const pointX = (i) => (values.length > 1 ? TREND_SIDE + step * i : TREND_WIDTH / 2);
+  const pointY = (v) => TREND_GRID_BOTTOM - (scale > 0 ? v / scale : 0) * (TREND_GRID_BOTTOM - TREND_GRID_TOP);
+  const toPoints = (series) => series.map((v, i) => `${pointX(i)},${pointY(v)}`).join(' ');
+  const rowGap = (TREND_GRID_BOTTOM - TREND_GRID_TOP) / TREND_GRID_ROWS;
+
+  return (
+    <Svg width={TREND_WIDTH} height={TREND_HEIGHT} style={{ marginTop: 12 }}>
+      {Array.from({ length: TREND_GRID_ROWS + 1 }, (_, i) => (
+        <Line key={`row-${i}`} x1={0} x2={TREND_WIDTH} y1={TREND_GRID_TOP + rowGap * i} y2={TREND_GRID_TOP + rowGap * i} {...TREND_GRID_PROPS} />
+      ))}
+      {values.map((_, i) => (
+        <Line key={`col-${i}`} x1={pointX(i)} x2={pointX(i)} y1={TREND_GRID_TOP} y2={TREND_GRID_BOTTOM} {...TREND_GRID_PROPS} />
+      ))}
+
+      {sameDayValues.length > 0 && (
+        <Polyline points={toPoints(sameDayValues)} fill="none" stroke={TREND_SAME_DAY_COLOR} strokeWidth={3} strokeLinejoin="round" />
+      )}
+      <Polyline points={toPoints(values)} fill="none" stroke={TREND_LINE_COLOR} strokeWidth={3} strokeLinejoin="round" />
+
+      {sameDayValues.map((v, i) => (
+        <Circle key={`same-day-dot-${i}`} cx={pointX(i)} cy={pointY(v)} r={4} fill={TREND_SAME_DAY_COLOR} />
+      ))}
+      {values.map((v, i) => (
+        <Circle key={`total-dot-${i}`} cx={pointX(i)} cy={pointY(v)} r={4} fill={TREND_DOT_COLOR} />
+      ))}
+
+      {sameDayValues.map((v, i) => (
+        v === values[i] ? null : (
+          <TrendAmountLabel key={`same-day-${i}`} x={pointX(i)} y={pointY(v) + 15} color="#4B5563">
+            {formatTrendAmount(v)}
+          </TrendAmountLabel>
+        )
+      ))}
+      {values.map((v, i) => (
+        <TrendAmountLabel key={`total-${i}`} x={pointX(i)} y={pointY(v) - 8} color={TREND_DOT_COLOR}>
+          {formatTrendAmount(v)}
+        </TrendAmountLabel>
+      ))}
+
+      {labels.map((label, i) => (
+        <SvgText key={`month-${i}`} x={pointX(i)} y={TREND_MONTH_Y} fontSize="12" textAnchor="middle" fill="#333333">
+          {String(label).endsWith('월') ? label : `${label}월`}
+        </SvgText>
+      ))}
+    </Svg>
+  );
+}
+
+const DONUT_SIZE = 170;
+const DONUT_STROKE = 28;
+const DONUT_GAP = 2; // 조각 사이 간격
+
+// 지출 도넛 그래프: 중앙에 총 지출, 오른쪽에 범례
+function DonutChart({ data, total }) {
+  const center = DONUT_SIZE / 2;
+  const radius = (DONUT_SIZE - DONUT_STROKE) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const ratios = data.map((d) => (total > 0 ? d.population / total : 0));
+
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 28, marginTop: 12 }}>
+      <Svg width={DONUT_SIZE} height={DONUT_SIZE}>
+        {data.map((d, i) => {
+          const gap = data.length > 1 ? DONUT_GAP : 0;
+          const length = Math.max(ratios[i] * circumference - gap, 1);
+          // 앞선 조각들의 비율만큼 돌려서 12시 방향부터 이어 그린다.
+          const startRatio = ratios.slice(0, i).reduce((sum, ratio) => sum + ratio, 0);
+          const rotation = startRatio * 360 - 90;
+          return (
+            <Circle
+              key={d.name}
+              cx={center}
+              cy={center}
+              r={radius}
+              fill="none"
+              stroke={d.color}
+              strokeWidth={DONUT_STROKE}
+              strokeDasharray={`${length} ${circumference - length}`}
+              transform={`rotate(${rotation} ${center} ${center})`}
+            />
+          );
+        })}
+        <SvgText x={center} y={center - 8} fontSize="12" textAnchor="middle" fill="#8B8495">총 지출</SvgText>
+        <SvgText x={center} y={center + 12} fontSize="15" fontWeight="800" textAnchor="middle" fill="#25212D">
+          {formatKRW(total)}
+        </SvgText>
+      </Svg>
+
+      <View style={{ flex: 1, gap: 8 }}>
+        {data.map((d) => (
+          <View key={d.name} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View style={[reportStyles.dot, { backgroundColor: d.color }]} />
+            <Text style={{ flex: 1, fontSize: d.legendFontSize, color: d.legendFontColor }}>
+              {pct(d.population, total)}% {d.name}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
 
 // 카테고리 색상 팔레트
 const PALETTE = ['#F8A8A8', '#F6C27A', '#A8E6A1', '#A8C6F8', '#C7A8F8', '#D5D7DB', '#8DD3E0', '#F5A7C0', '#F3D37A', '#9BD2A4', '#8FA7E4', '#C0B1E8', '#B9BDC6', '#7FD1C5'];
@@ -403,6 +533,7 @@ export default function ReportHome() {
       }));
   }, [displayChartData]);
 
+
   const renderLlmItem = (item) => {
     if (item == null) return null;
 
@@ -587,6 +718,7 @@ export default function ReportHome() {
       })}
       style={reportStyles.analyticsRow}
     >
+      <View style={tone === 'worst' ? reportStyles.statusDotNegative : reportStyles.statusDotPositive} />
       <View style={{ flex: 1 }}>
         <Text style={reportStyles.listTitle}>{item.category}</Text>
         <Text style={reportStyles.caption}>평가 {item.ratedCount}건 · 평균 지출 {formatKRW(item.averageAmount)}</Text>
@@ -680,29 +812,9 @@ export default function ReportHome() {
             <Text style={[reportStyles.cardText, { marginTop: 8 }]}>이번 달 지출 데이터가 없어요.</Text>
           ) : (
             <>
-              <View style={reportStyles.chartWrap}>
-                <PieChart
-                  data={pieData}
-                  width={screenWidth - 48}
-                  height={200}
-                  accessor="population"
-                  backgroundColor="transparent"
-                  paddingLeft="12"
-                  hasLegend={true}
-                  center={[0, 0]}
-                  chartConfig={{
-                    backgroundGradientFrom: '#FFFFFF',
-                    backgroundGradientTo: '#FFFFFF',
-                    backgroundGradientFromOpacity: 1,
-                    backgroundGradientToOpacity: 1,
-                    color: () => '#999999',     // 임의 색 (조각 색은 data.color가 사용됨)
-                    labelColor: () => '#333333', // 범례/라벨 색
-                  }}
-                />
+              <DonutChart data={pieData} total={total} />
 
-              </View>
-
-              <View style={{ marginTop: 8 }}>
+              <View style={{ marginTop: 14, borderTopWidth: 1, borderTopColor: '#F0EDF3' }}>
                 {top5.map(([cat, sum]) => (
                   <TouchableOpacity
                     key={cat}
@@ -753,64 +865,10 @@ export default function ReportHome() {
                 </View>
               )}
             </View>
-            <LineChart
-              data={{
-                labels: monthlySeries.labels,               // 예: ['7','8','9','10'] 또는 ['7월','8월','9월','10월']
-                datasets: [
-                  ...(monthlySeries.sameDayValues.length > 0
-                    ? [{ data: monthlySeries.sameDayValues, color: (o = 1) => `rgba(156, 163, 175, ${o})` }]
-                    : []),
-                  { data: monthlySeries.values },           // 예: [0, 210000, 700000, 20000]
-                ],
-              }}
-              width={screenWidth - 48}
-              height={220}
-              withShadow={false}
-              withInnerLines={true}
-              withOuterLines={false}
-
-              // y축 라벨은 형식 지정자로 비워 없애기
-              withVerticalLabels={true}
-              formatYLabel={() => ''}
-
-              // x축 라벨 기본 표시 (라이브러리에게 맡김)
-              withHorizontalLabels={true}
-              formatXLabel={(s) => (String(s).endsWith('월') ? s : `${s}월`)}
-
-              fromZero                         // 0부터 시작              
-
-              chartConfig={{
-                backgroundGradientFrom: '#fff',
-                backgroundGradientTo: '#fff',
-                decimalPlaces: 0,
-                color: (o = 1) => `rgba(125, 75, 214, ${o})`,
-                labelColor: (o = 1) => `rgba(0,0,0,${o})`,
-                propsForDots: { r: '4' },
-                propsForBackgroundLines: { stroke: '#E9E9EF', strokeDasharray: '4 6' },
-              }}
-              style={{ marginTop: 12, borderRadius: 8, backgroundColor: '#FFFFFF' }}
-
-              // 점 위 금액 라벨만 간단히 표시
-              renderDotContent={({ x, y, indexData, index }) => {
-                const v = Number(indexData || 0);
-                const man = Math.round(v / 10000);
-                const label = man > 0 ? `${man}만원` : `${v.toLocaleString('ko-KR')}원`;
-                // 라이브러리가 데이터셋을 알려주지 않아 값으로 구분한다. 두 값이 같으면 보라색 라벨만 보인다.
-                const isTotal = v === monthlySeries.values[index];
-                if (!isTotal && v === 0) return null; // x축 라벨과 겹치지 않도록
-                return (
-                  <SvgText
-                    key={`val-${index}`}
-                    x={x}
-                    y={isTotal ? y - 8 : y + 16}
-                    fontSize="11"
-                    fill={isTotal ? '#7D4BD6' : '#6B7280'}
-                    textAnchor="middle"
-                  >
-                    {label}
-                  </SvgText>
-                );
-              }}
+            <TrendChart
+              labels={monthlySeries.labels}
+              values={monthlySeries.values}
+              sameDayValues={monthlySeries.sameDayValues}
             />
             </>
           )}
@@ -839,7 +897,7 @@ export default function ReportHome() {
               <Text style={[reportStyles.caption, { marginTop: 4 }]}>평균 만족도 × (10,000원 ÷ 평균 지출액)으로 계산하며 최대 5.0점입니다.</Text>
               {efficiencyItems.length ? (
                 <>
-                  <Text style={reportStyles.efficiencyGroupTitle}>만족 효율 BEST 3</Text>
+                  <Text style={[reportStyles.efficiencyGroupTitle, reportStyles.efficiencyBestTitle]}>만족 효율 BEST 3</Text>
                   {efficiencyBestItems.map((item) => renderEfficiencyRow(item, 'best'))}
                   {efficiencyBestGroup.length > 3 && (
                     <TouchableOpacity
@@ -866,7 +924,7 @@ export default function ReportHome() {
               )}
 
               <Text style={[reportStyles.listTitle, { marginTop: 18 }]}>평소보다 큰 지출</Text>
-              <Text style={[reportStyles.caption, { marginTop: 4 }]}>같은 카테고리의 평소 지출 범위를 넘은 기록입니다. ×값은 평소 금액 대비 지출 배수입니다.</Text>
+              <Text style={[reportStyles.caption, { marginTop: 4 }]}>같은 카테고리의 평소 지출 범위를 넘은 기록입니다.</Text>
               {outlierItems.length ? (
                 <>
                   {visibleOutliers.map((item) => (
@@ -876,13 +934,14 @@ export default function ReportHome() {
                       onPress={() => setSelectedTransaction({ ...item, detailType: '이상 지출' })}
                       style={reportStyles.outlierRow}
                     >
+                      <View style={reportStyles.statusDotCaution} />
                       <View style={{ flex: 1 }}>
                         <Text style={reportStyles.listTitle}>{item.category}</Text>
                         {!!item.memo && <Text style={reportStyles.caption}>{item.memo}</Text>}
                       </View>
                       <View style={{ alignItems: 'flex-end' }}>
                         <Text style={reportStyles.outlierAmount}>{formatKRW(item.amount)}</Text>
-                        <Text style={reportStyles.outlierRatio}>×{item.medianRatio} · 평소 {formatKRW(item.medianAmount)}</Text>
+                        <Text style={reportStyles.outlierRatio}>{item.medianRatio != null ? `${item.medianRatio}배 · ` : ''}평소 {formatKRW(item.medianAmount)}</Text>
                       </View>
                     </TouchableOpacity>
                   ))}
@@ -909,6 +968,7 @@ export default function ReportHome() {
                       onPress={() => setSelectedPattern(group)}
                       style={reportStyles.patternRow}
                     >
+                      <View style={reportStyles.statusDotReview} />
                       <View style={{ flex: 1 }}>
                         <View style={reportStyles.reflectiveTitleRow}>
                           <Text style={reportStyles.patternTitle}>{group.label}</Text>
@@ -1098,8 +1158,14 @@ export default function ReportHome() {
             <View>
 
               {/* 1) summary + persona */}
-              <View style={reportStyles.card}>
-                <Text style={reportStyles.cardTitle}>AI 소비 요약</Text>
+              <View style={[reportStyles.card, reportStyles.aiReportCard, reportStyles.aiSummaryCard]}>
+                <View style={reportStyles.aiTitleRow}>
+                  <Text style={reportStyles.cardTitle}>AI 소비 요약</Text>
+                  <View style={reportStyles.aiBadge}>
+                    <Text style={reportStyles.aiBadgeText}>AI 해석</Text>
+                  </View>
+                </View>
+                <Text style={reportStyles.aiDescription}>이번 달 소비 기록을 바탕으로 핵심 내용만 정리했어요.</Text>
                 {llmLoading ? (
                   <LoadingBlock />
                 ) : llmError ? (
@@ -1111,12 +1177,12 @@ export default function ReportHome() {
                 ) : (
                   <>
                     {!!rep.persona && (
-                      <Text style={[reportStyles.cardText, { marginTop: 8, lineHeight: 20, fontWeight: '700' }]}>
+                      <Text style={reportStyles.aiPersona}>
                         {renderLlmText(rep.persona)}
                       </Text>
                     )}
                     {!!rep.summary && (
-                      <Text style={[reportStyles.cardText, { marginTop: 8, lineHeight: 20 }]}>
+                      <Text style={reportStyles.aiSummaryText}>
                         {renderLlmText(rep.summary)}
                       </Text>
                     )}
@@ -1127,44 +1193,47 @@ export default function ReportHome() {
 
               {/* 2) key_insights */}
               {Array.isArray(rep?.insights?.key_insights) && rep.insights.key_insights.length > 0 && (
-                <View style={[reportStyles.card, { marginTop: 12 }]}>
-                  <Text style={reportStyles.cardTitle}>[ 핵심 인사이트 ]</Text>
+                <View style={[reportStyles.card, reportStyles.aiReportCard, { marginTop: 12 }]}>
+                  <Text style={reportStyles.cardTitle}>핵심 인사이트</Text>
                   {rep.insights.key_insights.map((x, i) => (
-                    <Text key={i} style={[reportStyles.cardText, { marginTop: 6 }]}>
-                      • {renderLlmText(x)}
-                    </Text>
+                    <View key={i} style={reportStyles.aiInsightRow}>
+                      <View style={reportStyles.aiBullet} />
+                      <Text style={reportStyles.aiInsightText}>{renderLlmText(x)}</Text>
+                    </View>
                   ))}
                 </View>
               )}
 
               {/* 3) cost_efficiency */}
               {Array.isArray(rep?.insights?.cost_efficiency) && rep.insights.cost_efficiency.length > 0 && (
-                <View style={[reportStyles.card, { marginTop: 12 }]}>
-                  <Text style={reportStyles.cardTitle}>[ 비용 대비 만족 효율 ]</Text>
+                <View style={[reportStyles.card, reportStyles.aiReportCard, { marginTop: 12 }]}>
+                  <Text style={reportStyles.cardTitle}>비용 대비 만족 효율</Text>
                   {rep.insights.cost_efficiency.map((x, i) => (
-                    <Text key={i} style={[reportStyles.cardText, { marginTop: 6 }]}>
-                      • {renderLlmText(x)}
-                    </Text>
+                    <View key={i} style={reportStyles.aiInsightRow}>
+                      <View style={reportStyles.aiBullet} />
+                      <Text style={reportStyles.aiInsightText}>{renderLlmText(x)}</Text>
+                    </View>
                   ))}
                 </View>
               )}
 
               {/* 4) emotion_patterns */}
               {rep?.insights?.emotion_patterns && (
-                <View style={[reportStyles.card, { marginTop: 12 }]}>
-                  <Text style={reportStyles.cardTitle}>[ 감정 패턴 ]</Text>
+                <View style={[reportStyles.card, reportStyles.aiReportCard, { marginTop: 12 }]}>
+                  <Text style={reportStyles.cardTitle}>감정 패턴</Text>
 
                   {Array.isArray(rep.insights.emotion_patterns.dissatisfied) &&
                     rep.insights.emotion_patterns.dissatisfied.length > 0 && (
                       <>
-                        <Text style={[reportStyles.listTitle, { marginTop: 8 }]}>
+                        <Text style={reportStyles.aiSubsectionTitle}>
                           <Text style={reportStyles.highlightText1}>불만족</Text>
                         </Text>
 
                         {rep.insights.emotion_patterns.dissatisfied.map((e, i) => (
-                          <Text key={`d-${i}`} style={reportStyles.cardText}>
-                            • {renderLlmText(e, reportStyles.highlightText1)}
-                          </Text>
+                          <View key={`d-${i}`} style={reportStyles.aiInsightRow}>
+                            <View style={[reportStyles.aiBullet, reportStyles.aiBulletDissatisfied]} />
+                            <Text style={reportStyles.aiInsightText}>{renderLlmText(e, reportStyles.highlightText1)}</Text>
+                          </View>
                         ))}
                       </>
                     )}
@@ -1173,14 +1242,15 @@ export default function ReportHome() {
                   {Array.isArray(rep.insights.emotion_patterns.neutral) &&
                     rep.insights.emotion_patterns.neutral.length > 0 && (
                       <>
-                        <Text style={[reportStyles.listTitle, { marginTop: 10 }]}>
+                        <Text style={reportStyles.aiSubsectionTitle}>
                           <Text style={reportStyles.highlightText2}>보통</Text>
                         </Text>
 
                         {rep.insights.emotion_patterns.neutral.map((e, i) => (
-                          <Text key={`n-${i}`} style={reportStyles.cardText}>
-                            • {renderLlmText(e, reportStyles.highlightText2)}
-                          </Text>
+                          <View key={`n-${i}`} style={reportStyles.aiInsightRow}>
+                            <View style={[reportStyles.aiBullet, reportStyles.aiBulletNeutral]} />
+                            <Text style={reportStyles.aiInsightText}>{renderLlmText(e, reportStyles.highlightText2)}</Text>
+                          </View>
                         ))}
                       </>
                     )}
@@ -1189,14 +1259,15 @@ export default function ReportHome() {
                   {Array.isArray(rep.insights.emotion_patterns.satisfied) &&
                     rep.insights.emotion_patterns.satisfied.length > 0 && (
                       <>
-                        <Text style={[reportStyles.listTitle, { marginTop: 10 }]}>
+                        <Text style={reportStyles.aiSubsectionTitle}>
                           <Text style={reportStyles.highlightText3}>만족</Text>
                         </Text>
 
                         {rep.insights.emotion_patterns.satisfied.map((e, i) => (
-                          <Text key={`s-${i}`} style={reportStyles.cardText}>
-                            • {renderLlmText(e, reportStyles.highlightText3)}
-                          </Text>
+                          <View key={`s-${i}`} style={reportStyles.aiInsightRow}>
+                            <View style={[reportStyles.aiBullet, reportStyles.aiBulletSatisfied]} />
+                            <Text style={reportStyles.aiInsightText}>{renderLlmText(e, reportStyles.highlightText3)}</Text>
+                          </View>
                         ))}
                       </>
                     )}
@@ -1206,38 +1277,41 @@ export default function ReportHome() {
 
               {/* 5) actions */}
               {rep?.actions && (
-                <View style={[reportStyles.card, { marginTop: 12 }]}>
-                  <Text style={reportStyles.cardTitle}>[ 다음 행동 제안 ]</Text>
+                <View style={[reportStyles.card, reportStyles.aiReportCard, { marginTop: 12 }]}>
+                  <Text style={reportStyles.cardTitle}>다음 행동 제안</Text>
 
                   {Array.isArray(rep.actions.improvements) && rep.actions.improvements.length > 0 && (
                     <>
-                      <Text style={[reportStyles.listTitle, { marginTop: 8 }]}>개선 제안</Text>
+                      <Text style={reportStyles.aiSubsectionTitle}>개선 제안</Text>
                       {rep.actions.improvements.map((a, i) => (
-                        <Text key={`imp-${i}`} style={reportStyles.cardText}>
-                          • {renderLlmText(a)}
-                        </Text>
+                        <View key={`imp-${i}`} style={reportStyles.aiInsightRow}>
+                          <View style={reportStyles.aiBullet} />
+                          <Text style={reportStyles.aiInsightText}>{renderLlmText(a)}</Text>
+                        </View>
                       ))}
                     </>
                   )}
 
                   {Array.isArray(rep.actions.saving_opportunities) && rep.actions.saving_opportunities.length > 0 && (
                     <>
-                      <Text style={[reportStyles.listTitle, { marginTop: 10 }]}>절약 기회</Text>
+                      <Text style={reportStyles.aiSubsectionTitle}>절약 기회</Text>
                       {rep.actions.saving_opportunities.map((a, i) => (
-                        <Text key={`sav-${i}`} style={reportStyles.cardText}>
-                          • {renderLlmText(a)}
-                        </Text>
+                        <View key={`sav-${i}`} style={reportStyles.aiInsightRow}>
+                          <View style={reportStyles.aiBullet} />
+                          <Text style={reportStyles.aiInsightText}>{renderLlmText(a)}</Text>
+                        </View>
                       ))}
                     </>
                   )}
 
                   {Array.isArray(rep.actions.challenge_suggestions) && rep.actions.challenge_suggestions.length > 0 && (
                     <>
-                      <Text style={[reportStyles.listTitle, { marginTop: 10 }]}>챌린지 추천</Text>
+                      <Text style={reportStyles.aiSubsectionTitle}>챌린지 추천</Text>
                       {rep.actions.challenge_suggestions.map((a, i) => (
-                        <Text key={`ch-${i}`} style={reportStyles.cardText}>
-                          • {renderLlmText(a)}
-                        </Text>
+                        <View key={`ch-${i}`} style={reportStyles.aiInsightRow}>
+                          <View style={reportStyles.aiBullet} />
+                          <Text style={reportStyles.aiInsightText}>{renderLlmText(a)}</Text>
+                        </View>
                       ))}
                     </>
                   )}
@@ -1276,7 +1350,7 @@ export default function ReportHome() {
               <Text style={reportStyles.reflectiveDetailMessage}>{selectedTransaction.characterMessage}</Text>
             )}
             {selectedTransaction?.medianRatio != null && (
-              <Text style={reportStyles.detailRatio}>평소보다 높은 지출 ×{selectedTransaction.medianRatio}</Text>
+              <Text style={reportStyles.detailRatio}>평소의 {selectedTransaction.medianRatio}배 지출</Text>
             )}
 
             <View style={reportStyles.detailDivider} />
