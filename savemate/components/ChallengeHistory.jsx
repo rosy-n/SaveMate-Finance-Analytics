@@ -14,6 +14,7 @@ import { router, useFocusEffect } from "expo-router";
 import { getAppToday } from "../constants/appDate";
 import { formatFailedOn, formatPeriod } from "../constants/challengeFormat";
 import { useApi } from "../hooks/useApi";
+import { useAuth } from "../state/AuthContext";
 import { SaveMateStyles } from "../styles/SaveMateStyles";
 
 const STATUS = {
@@ -24,7 +25,8 @@ const STATUS = {
 
 export default function ChallengeHistory() {
   const api = useApi();
-  const uid = process.env.EXPO_PUBLIC_UID;
+  const { user } = useAuth();
+  const uid = user?.id;
 
   const [challenges, setChallenges] = useState([]);
   const [loading, setLoading] = useState(true);

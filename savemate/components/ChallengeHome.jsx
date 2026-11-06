@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { useApi } from "../hooks/useApi";
+import { useAuth } from "../state/AuthContext";
 import { SaveMateStyles as styles } from "../styles/SaveMateStyles";
 import { formatFailedOn } from "../constants/challengeFormat";
 
@@ -20,7 +21,8 @@ const ChallengeHome = () => {
   const [sortOption, setSortOption] = useState("위험도순");
 
   const api = useApi();
-  const uid = process.env.EXPO_PUBLIC_UID;
+  const { user } = useAuth();
+  const uid = user?.id;
 
   const [challenges, setChallenges] = useState([]);
   const [loading, setLoading] = useState(true);

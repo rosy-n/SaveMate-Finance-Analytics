@@ -7,6 +7,7 @@ import { appBus } from '../app/eventBus';
 import { getAppToday } from '../constants/appDate';
 import { formatFailedOn } from '../constants/challengeFormat';
 import { useApi } from '../hooks/useApi';
+import { useAuth } from '../state/AuthContext';
 import { SaveMateStyles as styles } from '../styles/SaveMateStyles';
 
 const highestProgress = (list) =>
@@ -14,7 +15,8 @@ const highestProgress = (list) =>
 
 export default function HomeChallengeCard({ refreshKey }) {
   const api = useApi();
-  const uid = process.env.EXPO_PUBLIC_UID;
+  const { user } = useAuth();
+  const uid = user?.id;
 
   const [challenges, setChallenges] = useState(null);
   const [loadError, setLoadError] = useState(false);

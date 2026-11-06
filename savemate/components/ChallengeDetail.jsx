@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useApi } from "../hooks/useApi";
+import { useAuth } from "../state/AuthContext";
 import { getAppToday } from "../constants/appDate";
 import { formatFailedOn, formatPeriod } from "../constants/challengeFormat";
 import { SafeAreaView } from "react-native";
@@ -34,7 +35,8 @@ const formatKRW = (n) =>
 export default function ChallengeDetail() {
   const { id } = useLocalSearchParams();
   const api = useApi();
-  const uid = process.env.EXPO_PUBLIC_UID;
+  const { user } = useAuth();
+  const uid = user?.id;
 
   const [loading, setLoading] = useState(true);
   const [challenge, setChallenge] = useState(null);

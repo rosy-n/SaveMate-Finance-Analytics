@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { useApi } from "../hooks/useApi";
+import { useAuth } from "../state/AuthContext";
 import { getAppToday } from "../constants/appDate";
 import { formatChallengeRange } from "../constants/challengeFormat";
 
@@ -29,7 +30,8 @@ const BRAND = {
 
 export default function ChallengeAdd() {
   const api = useApi();
-  const uid = process.env.EXPO_PUBLIC_UID;
+  const { user } = useAuth();
+  const uid = user?.id;
 
   const [categories, setCategories] = useState([]);
   const [category, setCategory] = useState("");
