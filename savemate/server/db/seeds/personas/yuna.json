@@ -16,6 +16,1002 @@
   },
   "transactions": [
     {
+      "type": "expense",
+      "amount": 380000,
+      "category": "공과금(주거/세금/통신/보험)",
+      "memo": "전세대출 이자",
+      "date": "2026-07-01",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-01T09:04:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "대안 없음"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-03T17:40:00+09:00"
+      }
+    },
+    {
+      "type": "income",
+      "amount": 3400000,
+      "category": "수입",
+      "memo": "월급",
+      "date": "2026-07-01",
+      "incomeSource": "월급",
+      "createdAt": "2026-07-01T12:34:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 15900,
+      "category": "카페/간식",
+      "memo": "팀원들 커피 돌림",
+      "date": "2026-07-02",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-02T15:22:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-03T17:25:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 17100,
+      "category": "경조/선물/후원",
+      "memo": "부서 경조사 회비",
+      "date": "2026-07-03",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-03T10:46:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "사회적 유대"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-05T12:45:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 24000,
+      "category": "술/유흥",
+      "memo": "회식 후 노래방 N빵",
+      "date": "2026-07-03",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-03T13:49:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "사회적 유대"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-04T16:25:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 500000,
+      "category": "투자/저축",
+      "memo": "적금과 펀드 자동이체",
+      "date": "2026-07-03",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "투자(저축)/미래지향",
+      "createdAt": "2026-07-03T14:15:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "필요 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-03T11:44:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 12800,
+      "category": "카페/간식",
+      "memo": "거래처 미팅 커피",
+      "date": "2026-07-03",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-03T15:26:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "감정 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-04T12:28:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 16600,
+      "category": "패션/쇼핑",
+      "memo": "구두 굽 수선과 스타킹",
+      "date": "2026-07-04",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "자기표현/이미지·SNS",
+      "createdAt": "2026-07-04T13:24:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "필요 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-06T10:05:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 50000,
+      "category": "경조/선물/후원",
+      "memo": "조의금",
+      "date": "2026-07-05",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-05T10:53:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "기타"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-05T16:14:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 15300,
+      "category": "카페/간식",
+      "memo": "거래처 미팅 커피",
+      "date": "2026-07-06",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-06T10:36:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-07T10:57:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 6100,
+      "category": "식비",
+      "memo": "퇴근길 김밥",
+      "date": "2026-07-06",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-06T13:48:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "평범함"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-08T12:24:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 16500,
+      "category": "식비",
+      "memo": "집밥 재료 장보기",
+      "date": "2026-07-07",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-07T11:19:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "필요 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-09T12:30:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 15100,
+      "category": "술/유흥",
+      "memo": "회식 후 노래방 N빵",
+      "date": "2026-07-08",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-08T11:28:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "사회적 유대"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-08T10:59:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 35900,
+      "category": "식비",
+      "memo": "후배들 점심 사줌",
+      "date": "2026-07-08",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-08T12:32:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "사회적 유대"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-10T17:12:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 19300,
+      "category": "식비",
+      "memo": "집밥 재료 장보기",
+      "date": "2026-07-08",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-08T15:57:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "필요 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-09T12:42:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 11900,
+      "category": "식비",
+      "memo": "팀 점심 더치페이",
+      "date": "2026-07-09",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-09T10:19:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "평범함"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-11T09:12:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 22100,
+      "category": "식비",
+      "memo": "집밥 재료 장보기",
+      "date": "2026-07-10",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-10T11:19:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "평범함"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-11T13:01:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 118000,
+      "category": "교통/자동차",
+      "memo": "교통비와 외근 주유",
+      "date": "2026-07-10",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-10T12:39:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "대안 없음"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-10T11:09:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 16200,
+      "category": "카페/간식",
+      "memo": "팀원들 커피 돌림",
+      "date": "2026-07-10",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-10T12:39:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-12T16:41:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 27500,
+      "category": "경조/선물/후원",
+      "memo": "동료 생일 카카오톡 선물",
+      "date": "2026-07-10",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-10T16:33:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "경제적 / 사회적 압박"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-11T17:56:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 100000,
+      "category": "경조/선물/후원",
+      "memo": "거래처 대리님 결혼 축의금",
+      "date": "2026-07-11",
+      "paymentMethod": "현금",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-11T09:22:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "경제적 / 사회적 압박"
+        ],
+        "memo": "잘 모르는 분인데 빠질 수가 없었다",
+        "createdAt": "2026-07-13T12:22:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 118000,
+      "category": "공과금(주거/세금/통신/보험)",
+      "memo": "관리비와 공과금",
+      "date": "2026-07-12",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-12T17:20:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "대안 없음"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-14T11:50:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 58100,
+      "category": "식비",
+      "memo": "거래처 점심 내가 계산",
+      "date": "2026-07-13",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-13T11:39:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 27400,
+      "category": "카페/간식",
+      "memo": "팀원들 커피 돌림",
+      "date": "2026-07-13",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-13T14:55:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-15T11:17:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 32600,
+      "category": "술/유흥",
+      "memo": "팀 회식 2차 더치페이",
+      "date": "2026-07-14",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-14T16:43:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "사회적 유대"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-15T12:46:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 14900,
+      "category": "카페/간식",
+      "memo": "거래처 미팅 커피",
+      "date": "2026-07-15",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-15T10:43:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 15900,
+      "category": "경조/선물/후원",
+      "memo": "부서 경조사 회비",
+      "date": "2026-07-15",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-15T12:12:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "경제적 / 사회적 압박"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-15T13:26:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 15000,
+      "category": "카페/간식",
+      "memo": "팀원들 커피 돌림",
+      "date": "2026-07-16",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-16T12:29:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "경제적 / 사회적 압박"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-17T09:39:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 31600,
+      "category": "식비",
+      "memo": "후배들 점심 사줌",
+      "date": "2026-07-17",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-17T11:01:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "사회적 유대"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-18T16:02:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 60000,
+      "category": "술/유흥",
+      "memo": "부서 여름 회식 회비",
+      "date": "2026-07-17",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-17T11:22:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "경제적 / 사회적 압박"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-19T10:02:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 16000,
+      "category": "카페/간식",
+      "memo": "거래처 미팅 커피",
+      "date": "2026-07-17",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-17T14:06:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "사회적 유대",
+          "감정 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-18T13:01:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 32700,
+      "category": "문화/여가",
+      "memo": "요가 원데이 클래스",
+      "date": "2026-07-18",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "여가",
+      "createdAt": "2026-07-18T11:01:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "감정 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-19T12:26:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 64800,
+      "category": "패션/쇼핑",
+      "memo": "외근용 블라우스",
+      "date": "2026-07-18",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "자기표현/이미지·SNS",
+      "createdAt": "2026-07-18T14:24:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "대안 없음"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-19T16:28:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 16200,
+      "category": "식비",
+      "memo": "집밥 재료 장보기",
+      "date": "2026-07-19",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-19T11:31:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "평범함"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-20T15:26:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 21500,
+      "category": "카페/간식",
+      "memo": "팀원들 커피 돌림",
+      "date": "2026-07-20",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-20T10:06:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-21T17:14:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 34200,
+      "category": "식비",
+      "memo": "후배들 점심 사줌",
+      "date": "2026-07-20",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-20T11:39:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "가격 불만"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-20T16:02:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 142000,
+      "category": "공과금(주거/세금/통신/보험)",
+      "memo": "휴대폰 요금과 보험료",
+      "date": "2026-07-20",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-20T13:31:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-22T16:03:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 11100,
+      "category": "카페/간식",
+      "memo": "거래처 미팅 커피",
+      "date": "2026-07-21",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-21T11:11:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "경제적 / 사회적 압박"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-22T17:26:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 23000,
+      "category": "술/유흥",
+      "memo": "회식 후 노래방 N빵",
+      "date": "2026-07-21",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-21T11:27:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "사회적 유대"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-21T16:18:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 57900,
+      "category": "식비",
+      "memo": "거래처 점심 내가 계산",
+      "date": "2026-07-21",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-21T17:31:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 16200,
+      "category": "카페/간식",
+      "memo": "팀원들 커피 돌림",
+      "date": "2026-07-22",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-22T12:32:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-22T12:35:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 53300,
+      "category": "술/유흥",
+      "memo": "대학 동기 모임 술값",
+      "date": "2026-07-22",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-22T15:22:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 11100,
+      "category": "카페/간식",
+      "memo": "거래처 미팅 커피",
+      "date": "2026-07-23",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-23T14:06:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-25T10:11:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 53400,
+      "category": "식비",
+      "memo": "거래처 점심 내가 계산",
+      "date": "2026-07-23",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-23T15:14:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "사회적 유대"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-25T15:33:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 32200,
+      "category": "술/유흥",
+      "memo": "동료들이랑 치맥",
+      "date": "2026-07-23",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-23T15:25:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "과소비 / 불필요"
+        ],
+        "memo": "2차는 빠지고 싶었는데 눈치 보여서 결제",
+        "createdAt": "2026-07-24T11:02:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 18300,
+      "category": "식비",
+      "memo": "집밥 재료 장보기",
+      "date": "2026-07-23",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-23T16:59:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "가성비 만족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-24T17:59:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 50000,
+      "category": "경조/선물/후원",
+      "memo": "조의금",
+      "date": "2026-07-23",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-23T17:39:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 4700,
+      "category": "식비",
+      "memo": "퇴근길 김밥",
+      "date": "2026-07-24",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-24T12:05:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "가성비 만족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-25T10:49:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 100000,
+      "category": "경조/선물/후원",
+      "memo": "친한 친구 결혼 축의금",
+      "date": "2026-07-25",
+      "paymentMethod": "현금",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-25T11:30:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "사회적 유대"
+        ],
+        "memo": "오랜 친구라 기쁜 마음으로 냈다",
+        "createdAt": "2026-07-27T14:21:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 16300,
+      "category": "카페/간식",
+      "memo": "거래처 미팅 커피",
+      "date": "2026-07-28",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-28T11:06:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-28T11:37:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 55000,
+      "category": "식비",
+      "memo": "거래처 점심 내가 계산",
+      "date": "2026-07-28",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-28T17:46:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-28T15:46:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 17300,
+      "category": "카페/간식",
+      "memo": "팀원들 커피 돌림",
+      "date": "2026-07-29",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-29T14:18:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-31T15:56:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 13300,
+      "category": "식비",
+      "memo": "팀 점심 더치페이",
+      "date": "2026-07-29",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-29T17:11:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "가격 불만"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-29T11:52:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 17900,
+      "category": "카페/간식",
+      "memo": "거래처 미팅 커피",
+      "date": "2026-07-30",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-30T09:09:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-31T14:13:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 39600,
+      "category": "술/유흥",
+      "memo": "대학 동기 모임 술값",
+      "date": "2026-07-30",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-30T16:07:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "과소비 / 불필요"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-31T11:01:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 45200,
+      "category": "식비",
+      "memo": "거래처 점심 내가 계산",
+      "date": "2026-07-31",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-31T12:55:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-08-02T13:12:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 62900,
+      "category": "술/유흥",
+      "memo": "거래처 미팅 뒤풀이",
+      "date": "2026-07-31",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-31T16:11:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-31T10:14:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 3800,
+      "category": "카페/간식",
+      "memo": "혼자 아메리카노",
+      "date": "2026-07-31",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-31T17:13:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "감정 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-31T17:25:00+09:00"
+      }
+    },
+    {
       "type": "income",
       "amount": 3400000,
       "category": "수입",

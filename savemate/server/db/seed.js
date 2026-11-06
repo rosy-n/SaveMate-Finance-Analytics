@@ -2,6 +2,7 @@
 // 페르소나 더미데이터를 DB 에 넣는다. (db/seeds/personas/*.json)
 //   npm run seed                전체 다시 넣기 (계정 유지, 거래/만족도/챌린지/캐시 교체)
 //   npm run seed:accounts       계정 정보만 갱신 (로그인 방식이 확정됐을 때 사용)
+//   npm run seed -- --month=2026-07   그 달의 거래/만족도만 교체 (다른 달과 계정, 챌린지는 유지)
 // legacy_uid 가 persona_ 로 시작하는 계정만 건드리며, 전체가 하나의 트랜잭션으로 실행된다.
 //
 // 저장소가 공개이므로 비밀번호는 커밋하지 않는다. db/seeds/passwords.local.json (gitignore) 에
@@ -20,6 +21,7 @@ const PERSONAS_DIR = path.join(__dirname, 'seeds', 'personas');
 const PASSWORDS_FILE = path.join(__dirname, 'seeds', 'passwords.local.json');
 const BCRYPT_ROUNDS = 10;
 const accountsOnly = process.argv.includes('--accounts-only');
+const month = process.argv.find((arg) => arg.startsWith('--month='))?.slice('--month='.length) ?? null;
 
 function loadPersonas() {
   return fs.readdirSync(PERSONAS_DIR)
@@ -56,12 +58,8 @@ async function upsertUser(client, account, password) {
   return rows[0].id;
 }
 
-async function replaceData(client, userId, persona, categoryIds) {
-  for (const table of ['transactions', 'challenges', 'report_cache', 'tip_cache']) {
-    await client.query(`DELETE FROM ${table} WHERE user_id = $1`, [userId]);
-  }
-
-  for (const t of persona.transactions) {
+async function insertTransactions(client, userId, transactions, categoryIds) {
+  for (const t of transactions) {
     const { rows } = await client.query(
       `INSERT INTO transactions
          (user_id, type, amount, category_id, memo, occurred_on,
@@ -83,6 +81,33 @@ async function replaceData(client, userId, persona, categoryIds) {
       [rating.rows[0].id, t.rating.reasons]
     );
   }
+}
+
+/** 한 달치 거래/만족도만 교체한다. 계정이 없으면 실패한다. */
+async function replaceMonth(client, persona, categoryIds) {
+  const { rows } = await client.query('SELECT id FROM users WHERE legacy_uid = $1', [persona.account.legacyUid]);
+  if (!rows[0]) throw new Error(`계정이 없습니다: ${persona.account.legacyUid}`);
+  const userId = rows[0].id;
+  const firstDay = `${month}-01`;
+
+  await client.query(
+    `DELETE FROM transactions
+     WHERE user_id = $1 AND occurred_on >= $2::date AND occurred_on < ($2::date + interval '1 month')`,
+    [userId, firstDay]
+  );
+  await client.query('DELETE FROM report_cache WHERE user_id = $1 AND year_month = $2::date', [userId, firstDay]);
+
+  const transactions = persona.transactions.filter((t) => t.date.startsWith(month));
+  await insertTransactions(client, userId, transactions, categoryIds);
+  return transactions.length;
+}
+
+async function replaceData(client, userId, persona, categoryIds) {
+  for (const table of ['transactions', 'challenges', 'report_cache', 'tip_cache']) {
+    await client.query(`DELETE FROM ${table} WHERE user_id = $1`, [userId]);
+  }
+
+  await insertTransactions(client, userId, persona.transactions, categoryIds);
 
   // status 는 'active' 로 두고 완료/실패는 조회 시 계산한다. (db/challenges.js)
   for (const c of persona.challenges) {
@@ -95,6 +120,9 @@ async function replaceData(client, userId, persona, categoryIds) {
 }
 
 async function main() {
+  if (month && !/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+    throw new Error(`--month 형식이 잘못됐습니다: ${month} (예: 2026-07)`);
+  }
   const personas = loadPersonas();
   const passwords = loadPasswords();
   const client = await pool.connect();
@@ -104,6 +132,11 @@ async function main() {
     const categoryIds = new Map(rows.map((r) => [r.name, r.id]));
 
     for (const persona of personas) {
+      if (month) {
+        const count = await replaceMonth(client, persona, categoryIds);
+        console.log(`[seed] ${persona.account.legacyUid}: ${month} 거래 ${count}건`);
+        continue;
+      }
       const userId = await upsertUser(client, persona.account, passwords[persona.account.legacyUid]);
       if (!accountsOnly) await replaceData(client, userId, persona, categoryIds);
       console.log(

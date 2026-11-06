@@ -17,6 +17,869 @@
   "transactions": [
     {
       "type": "expense",
+      "amount": 16500,
+      "category": "식비",
+      "memo": "혼자 파스타",
+      "date": "2026-07-01",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-01T09:28:00+09:00"
+    },
+    {
+      "type": "income",
+      "amount": 400000,
+      "category": "수입",
+      "memo": "부모님 용돈",
+      "date": "2026-07-01",
+      "incomeSource": "용돈",
+      "createdAt": "2026-07-01T14:00:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 3500,
+      "category": "카페/간식",
+      "memo": "컴포즈 바닐라라떼",
+      "date": "2026-07-01",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-01T14:31:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "평범함"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-03T10:28:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 50000,
+      "category": "교통/자동차",
+      "memo": "교통카드 충전",
+      "date": "2026-07-02",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-02T09:46:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-04T09:30:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 2300,
+      "category": "카페/간식",
+      "memo": "편의점 에너지드링크",
+      "date": "2026-07-02",
+      "paymentMethod": "현금",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-02T17:07:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-04T15:55:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 11400,
+      "category": "뷰티/미용",
+      "memo": "마스크팩 세트",
+      "date": "2026-07-03",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "자기표현/이미지·SNS",
+      "createdAt": "2026-07-03T15:42:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "감정 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-04T09:53:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 33000,
+      "category": "공과금(주거/세금/통신/보험)",
+      "memo": "휴대폰 요금",
+      "date": "2026-07-03",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-03T17:10:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "대안 없음"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-03T10:31:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 6900,
+      "category": "카페/간식",
+      "memo": "스타벅스 프라푸치노",
+      "date": "2026-07-03",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-03T17:30:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "평범함"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-04T16:27:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 22500,
+      "category": "경조/선물/후원",
+      "memo": "친구 생일 선물",
+      "date": "2026-07-04",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-04T09:13:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "사회적 유대"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-05T09:42:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 21400,
+      "category": "식비",
+      "memo": "배달 치킨 반반",
+      "date": "2026-07-04",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-04T16:02:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "과소비 / 불필요"
+        ],
+        "memo": "집에 밥 있었는데 시켰다",
+        "createdAt": "2026-07-06T15:58:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 10300,
+      "category": "카페/간식",
+      "memo": "친구랑 디저트 카페",
+      "date": "2026-07-04",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-04T17:59:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-05T15:03:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 6200,
+      "category": "카페/간식",
+      "memo": "올리브영 앞 버블티",
+      "date": "2026-07-05",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-05T12:10:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-06T12:56:00+09:00"
+      }
+    },
+    {
+      "type": "income",
+      "amount": 400000,
+      "category": "수입",
+      "memo": "카페 아르바이트 급여",
+      "date": "2026-07-05",
+      "incomeSource": "기타",
+      "createdAt": "2026-07-05T15:56:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 16800,
+      "category": "식비",
+      "memo": "과 친구들이랑 삼겹살",
+      "date": "2026-07-05",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-05T16:45:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "사회적 유대"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-05T13:36:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 2000,
+      "category": "카페/간식",
+      "memo": "메가커피 아이스 아메리카노",
+      "date": "2026-07-06",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-06T12:14:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "감정 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-08T12:58:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 4600,
+      "category": "카페/간식",
+      "memo": "편의점 과자랑 젤리",
+      "date": "2026-07-07",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-07T12:42:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "감정 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-07T11:41:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 14500,
+      "category": "식비",
+      "memo": "혼자 파스타",
+      "date": "2026-07-07",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-07T14:50:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "평범함"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-07T11:38:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 4000,
+      "category": "카페/간식",
+      "memo": "아이스크림 할인점",
+      "date": "2026-07-08",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-08T14:31:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 2700,
+      "category": "카페/간식",
+      "memo": "아이스크림 할인점",
+      "date": "2026-07-09",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-09T14:51:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "평범함"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-11T12:23:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 4200,
+      "category": "문화/여가",
+      "memo": "인생네컷",
+      "date": "2026-07-09",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "여가",
+      "createdAt": "2026-07-09T17:24:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "평범함"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-10T09:26:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 5200,
+      "category": "카페/간식",
+      "memo": "공강 시간 카페 라떼",
+      "date": "2026-07-10",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-10T15:34:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 50000,
+      "category": "투자/저축",
+      "memo": "청년 적금 자동이체",
+      "date": "2026-07-10",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "투자(저축)/미래지향",
+      "createdAt": "2026-07-10T16:33:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "필요 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-12T17:21:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 2100,
+      "category": "카페/간식",
+      "memo": "붕어빵",
+      "date": "2026-07-11",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-11T09:48:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 28600,
+      "category": "교통/자동차",
+      "memo": "친구들이랑 바다 당일치기 기차표",
+      "date": "2026-07-11",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "여가",
+      "createdAt": "2026-07-11T14:58:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "경험 / 성장",
+          "사회적 유대"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-11T13:14:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 14900,
+      "category": "문화/여가",
+      "memo": "유튜브 프리미엄 구독",
+      "date": "2026-07-12",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "여가",
+      "createdAt": "2026-07-12T09:55:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적",
+          "기타"
+        ],
+        "memo": "잘 안 보는데 계속 나가는 중",
+        "createdAt": "2026-07-14T16:00:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 13100,
+      "category": "카페/간식",
+      "memo": "친구랑 디저트 카페",
+      "date": "2026-07-12",
+      "paymentMethod": "현금",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-12T13:10:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "과소비 / 불필요"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-14T14:38:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 2800,
+      "category": "카페/간식",
+      "memo": "편의점 에너지드링크",
+      "date": "2026-07-13",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-13T16:13:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 3100,
+      "category": "카페/간식",
+      "memo": "편의점 과자랑 젤리",
+      "date": "2026-07-14",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-14T10:37:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "과소비 / 불필요"
+        ],
+        "memo": "안 마셔도 되는 커피였음",
+        "createdAt": "2026-07-14T17:34:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 2600,
+      "category": "카페/간식",
+      "memo": "편의점 에너지드링크",
+      "date": "2026-07-15",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-15T10:29:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적",
+          "평범함"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-15T12:17:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 5000,
+      "category": "카페/간식",
+      "memo": "편의점 과자랑 젤리",
+      "date": "2026-07-16",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-16T14:07:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 11900,
+      "category": "뷰티/미용",
+      "memo": "올리브영 틴트",
+      "date": "2026-07-16",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "자기표현/이미지·SNS",
+      "createdAt": "2026-07-16T16:34:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "감정 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-18T15:24:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 3600,
+      "category": "카페/간식",
+      "memo": "아이스크림 할인점",
+      "date": "2026-07-17",
+      "paymentMethod": "현금",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-17T11:53:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "평범함"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-19T15:13:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 11000,
+      "category": "교통/자동차",
+      "memo": "늦어서 탄 택시",
+      "date": "2026-07-18",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-18T11:04:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "대안 없음"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-20T16:26:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 6400,
+      "category": "카페/간식",
+      "memo": "올리브영 앞 버블티",
+      "date": "2026-07-18",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-18T15:52:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "과소비 / 불필요"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-20T15:46:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 28000,
+      "category": "패션/쇼핑",
+      "memo": "에이블리 가방",
+      "date": "2026-07-18",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-18T16:15:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "품질 불만"
+        ],
+        "memo": "필요 없는데 할인해서 샀다",
+        "createdAt": "2026-07-18T14:06:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 35000,
+      "category": "패션/쇼핑",
+      "memo": "에이블리 여름 샌들",
+      "date": "2026-07-18",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-18T16:40:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "과소비 / 불필요"
+        ],
+        "memo": "비슷한 샌들이 이미 있는데 세일이라 샀다",
+        "createdAt": "2026-07-20T09:30:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 12100,
+      "category": "생활(마트 잡화)",
+      "memo": "올리브영 샴푸",
+      "date": "2026-07-20",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-20T09:15:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 6900,
+      "category": "카페/간식",
+      "memo": "스타벅스 프라푸치노",
+      "date": "2026-07-20",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-20T12:48:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "감정 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-21T11:15:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 30200,
+      "category": "패션/쇼핑",
+      "memo": "에이블리 가방",
+      "date": "2026-07-21",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-21T14:27:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "평범함"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-22T11:16:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 6900,
+      "category": "카페/간식",
+      "memo": "스타벅스 프라푸치노",
+      "date": "2026-07-21",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-21T16:55:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "감정 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-23T15:08:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 4400,
+      "category": "카페/간식",
+      "memo": "편의점 과자랑 젤리",
+      "date": "2026-07-22",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-22T09:55:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "과소비 / 불필요"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-24T11:39:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 5100,
+      "category": "카페/간식",
+      "memo": "공강 시간 카페 라떼",
+      "date": "2026-07-23",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-23T10:56:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 39000,
+      "category": "교육",
+      "memo": "방학 코딩 온라인 강의",
+      "date": "2026-07-24",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "자아실현/자기계발",
+      "createdAt": "2026-07-24T14:02:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "평범함"
+        ],
+        "memo": "방학 끝나기 전에 다 듣기",
+        "createdAt": "2026-07-26T12:04:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 3200,
+      "category": "카페/간식",
+      "memo": "아이스크림 할인점",
+      "date": "2026-07-24",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-24T17:53:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 12300,
+      "category": "생활(마트 잡화)",
+      "memo": "올리브영 샴푸",
+      "date": "2026-07-25",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-25T13:05:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 13900,
+      "category": "교통/자동차",
+      "memo": "늦어서 탄 택시",
+      "date": "2026-07-25",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-25T13:42:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "과소비 / 불필요"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-27T10:38:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 12000,
+      "category": "뷰티/미용",
+      "memo": "올리브영 틴트",
+      "date": "2026-07-25",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "자기표현/이미지·SNS",
+      "createdAt": "2026-07-25T17:18:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 16400,
+      "category": "식비",
+      "memo": "친구랑 브런치",
+      "date": "2026-07-26",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-26T15:45:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 20500,
+      "category": "식비",
+      "memo": "배달 치킨 반반",
+      "date": "2026-07-26",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-26T16:58:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "과소비 / 불필요"
+        ],
+        "memo": "배달비가 더 아까움",
+        "createdAt": "2026-07-28T17:21:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 2000,
+      "category": "카페/간식",
+      "memo": "메가커피 아이스 아메리카노",
+      "date": "2026-07-27",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-27T13:43:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "과소비 / 불필요"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-28T11:22:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 6900,
+      "category": "카페/간식",
+      "memo": "스타벅스 프라푸치노",
+      "date": "2026-07-28",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-28T12:26:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 7400,
+      "category": "카페/간식",
+      "memo": "학교 앞 크로플",
+      "date": "2026-07-29",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-29T11:03:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "평범함"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-30T13:42:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 4500,
+      "category": "카페/간식",
+      "memo": "아이스크림 할인점",
+      "date": "2026-07-30",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-30T14:15:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 6800,
+      "category": "카페/간식",
+      "memo": "학교 앞 크로플",
+      "date": "2026-07-31",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-31T09:31:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "과소비 / 불필요"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-31T12:33:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 8800,
+      "category": "교통/자동차",
+      "memo": "늦어서 탄 택시",
+      "date": "2026-07-31",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-31T13:04:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "대안 없음"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-31T15:28:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
       "amount": 17700,
       "category": "식비",
       "memo": "친구랑 브런치",

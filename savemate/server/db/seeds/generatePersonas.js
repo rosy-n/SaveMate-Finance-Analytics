@@ -6,6 +6,9 @@ const path = require('path');
 
 const START = '2026-08-01';
 const END = '2026-11-06';
+// 나중에 추가한 달. 난수를 따로 써서 START 이후 데이터가 바뀌지 않게 한다.
+const ADDED_MONTHS = [{ start: '2026-07-01', end: '2026-07-31' }];
+const FIRST_DATE = ADDED_MONTHS[0].start;
 const OUT_DIR = path.join(__dirname, 'personas');
 const UNRATED_RECENT_DAYS = 4; // 최근 거래는 아직 평가 전 상태로 둔다.
 
@@ -90,6 +93,9 @@ const PERSONAS = [
       fixed(2, '교통/자동차', '교통카드 충전', 50000, '필수/생존', '체크카드', r('neutral', ['일상적 / 습관적'])),
       fixed(12, '문화/여가', '유튜브 프리미엄 구독', 14900, '여가', '체크카드', r('neutral', ['일상적 / 습관적', '기타'], '잘 안 보는데 계속 나가는 중')),
       fixed(10, '투자/저축', '청년 적금 자동이체', 50000, '투자(저축)/미래지향', '체크카드', r('satisfied', ['필요 충족'])),
+      fixed('2026-07-11', '교통/자동차', '친구들이랑 바다 당일치기 기차표', 28600, '여가', '체크카드', r('satisfied', ['경험 / 성장', '사회적 유대'])),
+      fixed('2026-07-18', '패션/쇼핑', '에이블리 여름 샌들', 35000, '쾌락/감정', '체크카드', r('dissatisfied', ['과소비 / 불필요'], '비슷한 샌들이 이미 있는데 세일이라 샀다')),
+      fixed('2026-07-24', '교육', '방학 코딩 온라인 강의', 39000, '자아실현/자기계발', '체크카드', r('neutral', ['평범함'], '방학 끝나기 전에 다 듣기')),
       fixed('2026-08-22', '패션/쇼핑', '에이블리 원피스', 39000, '자기표현/이미지·SNS', '체크카드', r('dissatisfied', ['과소비 / 불필요'], '한 번 입고 안 입음')),
       fixed('2026-09-03', '교육', '전공 교재 중고 구매', 18000, '자아실현/자기계발', '현금', r('satisfied', ['필요 충족', '가성비 만족'])),
       fixed('2026-09-07', '교육', '토익 인강 수강권', 49000, '자아실현/자기계발', '체크카드', r('neutral', ['평범함'], '아직 3강밖에 못 들음')),
@@ -185,6 +191,9 @@ const PERSONAS = [
       fixed(20, '공과금(주거/세금/통신/보험)', '휴대폰 요금', 62000, '필수/생존', '신용카드', r('neutral', ['일상적 / 습관적'])),
       fixed(6, '투자/저축', '적금 자동이체', 300000, '투자(저축)/미래지향', '체크카드', null),
       fixed(10, '교통/자동차', '교통비 후불 결제', 68000, '필수/생존', '신용카드', r('neutral', ['대안 없음'])),
+      fixed('2026-07-10', '패션/쇼핑', '여름 세일 충동구매 샌들', 129000, '쾌락/감정', '신용카드', r('dissatisfied', ['감정 후회'], '야근하고 기분 풀려고 샀는데 후회')),
+      fixed('2026-07-18', '여행/숙박', '혼자 떠난 강릉 1박 숙소', 148000, '쾌락/감정', '신용카드', r('neutral', ['평범함'], '쉬긴 했는데 카드값이 걱정됨')),
+      fixed('2026-07-24', '패션/쇼핑', '마감 끝나고 산 린넨 원피스', 168000, '쾌락/감정', '신용카드', r('dissatisfied', ['감정 후회', '과소비 / 불필요'], '보상 심리로 샀다')),
       fixed('2026-08-13', '패션/쇼핑', '새벽에 산 여름 원피스 2벌', 148000, '쾌락/감정', '신용카드', r('dissatisfied', ['감정 후회', '과소비 / 불필요'], '야근 끝나고 스트레스 받아서 샀는데 태그도 안 뗌')),
       fixed('2026-08-28', '뷰티/미용', '백화점 향수', 189000, '쾌락/감정', '신용카드', r('dissatisfied', ['감정 후회'], '기분 풀려고 샀는데 카드값 보고 후회')),
       fixed('2026-09-11', '패션/쇼핑', '마감 주 충동구매 트렌치코트', 279000, '쾌락/감정', '신용카드', r('dissatisfied', ['감정 후회', '가격 불만'], '보상 심리로 샀다. 아직 한 번도 안 입음')),
@@ -267,6 +276,9 @@ const PERSONAS = [
       fixed(20, '공과금(주거/세금/통신/보험)', '휴대폰 요금과 보험료', 142000, '필수/생존', '신용카드', r('neutral', ['일상적 / 습관적'])),
       fixed(3, '투자/저축', '적금과 펀드 자동이체', 500000, '투자(저축)/미래지향', '체크카드', r('satisfied', ['필요 충족'])),
       fixed(10, '교통/자동차', '교통비와 외근 주유', 118000, '필수/생존', '신용카드', r('neutral', ['대안 없음'])),
+      fixed('2026-07-11', '경조/선물/후원', '거래처 대리님 결혼 축의금', 100000, '사회/관계', '현금', r('dissatisfied', ['경제적 / 사회적 압박'], '잘 모르는 분인데 빠질 수가 없었다')),
+      fixed('2026-07-17', '술/유흥', '부서 여름 회식 회비', 60000, '사회/관계', '체크카드', r('dissatisfied', ['경제적 / 사회적 압박'])),
+      fixed('2026-07-25', '경조/선물/후원', '친한 친구 결혼 축의금', 100000, '사회/관계', '현금', r('satisfied', ['사회적 유대'], '오랜 친구라 기쁜 마음으로 냈다')),
       fixed('2026-08-08', '경조/선물/후원', '대학 선배 결혼 축의금', 100000, '사회/관계', '현금', r('neutral', ['기타'], '연락 끊겼던 선배인데 거절을 못 했다')),
       fixed('2026-08-22', '경조/선물/후원', '거래처 과장님 결혼 축의금', 100000, '사회/관계', '현금', r('dissatisfied', ['경제적 / 사회적 압박'])),
       fixed('2026-08-27', '여행/숙박', '회사 워크숍 개인 부담금', 120000, '사회/관계', '체크카드', r('dissatisfied', ['경제적 / 사회적 압박'], '안 간다고 말할 분위기가 아니었음')),
@@ -345,6 +357,9 @@ const PERSONAS = [
       fixed(2, '교통/자동차', '교통카드 충전', 55000, '필수/생존', '체크카드', r('neutral', ['일상적 / 습관적'])),
       fixed(14, '문화/여가', '음원 스트리밍 구독', 11900, '여가', '체크카드', r('satisfied', ['감정 충족'])),
       fixed(9, '투자/저축', '다음 콘서트 비상금 저축', 50000, '투자(저축)/미래지향', '체크카드', r('satisfied', ['필요 충족'])),
+      fixed('2026-07-07', '문화/여가', '여름 앨범 공구 2장', 52000, '쾌락/감정', '체크카드', r('satisfied', ['감정 충족'])),
+      fixed('2026-07-18', '문화/여가', '팝업스토어 한정 굿즈', 74000, '쾌락/감정', '체크카드', r('satisfied', ['감정 충족', '경험 / 성장'], '오픈런 성공, 후회 없음')),
+      fixed('2026-07-25', '문화/여가', '여름 음악 페스티벌 티켓', 99000, '여가', '체크카드', r('satisfied', ['경험 / 성장', '감정 충족'])),
       fixed('2026-08-03', '문화/여가', '팬클럽 정기 가입비', 33000, '자기표현/이미지·SNS', '체크카드', r('satisfied', ['감정 충족'])),
       fixed('2026-08-11', '문화/여가', '가을 콘서트 티켓 예매', 165000, '쾌락/감정', '체크카드', r('satisfied', ['감정 충족', '경험 / 성장'], '피켓팅 성공! 후회 없음')),
       fixed('2026-08-29', '문화/여가', '컴백 앨범 공구 3장', 58000, '쾌락/감정', '체크카드', r('satisfied', ['감정 충족'])),
@@ -416,8 +431,8 @@ function timestampOn(rng, ymd) {
   return `${ymd}T${pad(hour)}:${pad(min)}:00+09:00`;
 }
 
-function eachDate(fn) {
-  for (let d = START; d <= END; d = addDays(d, 1)) fn(d);
+function eachDate(start, end, fn) {
+  for (let d = start; d <= end; d = addDays(d, 1)) fn(d);
 }
 
 function occursOn(when, ymd) {
@@ -451,12 +466,12 @@ const roundPrice = (rng, min, max) => {
   return Math.round((min + rng() * (max - min)) / 100) * 100;
 };
 
-function generate(persona) {
-  const rng = makeRng(persona.key);
+function generate(persona, start = START, end = END, rngKey = persona.key) {
+  const rng = makeRng(rngKey);
   const list = [];
   const recentFrom = addDays(END, -UNRATED_RECENT_DAYS + 1);
 
-  eachDate((ymd) => {
+  eachDate(start, end, (ymd) => {
     for (const inc of persona.incomes) {
       if (!occursOn(inc.when, ymd)) continue;
       list.push({
@@ -534,7 +549,7 @@ function buildChallenges(persona, transactions) {
 
 function validate(persona, transactions) {
   for (const t of transactions) {
-    if (!t.memo.trim() || !t.amount || t.date > END || t.date < START) {
+    if (!t.memo.trim() || !t.amount || t.date > END || t.date < FIRST_DATE) {
       throw new Error(`${persona.key}: 잘못된 거래 ${JSON.stringify(t)}`);
     }
     if (!t.rating) continue;
@@ -547,7 +562,10 @@ function validate(persona, transactions) {
 function main() {
   fs.mkdirSync(OUT_DIR, { recursive: true });
   for (const persona of PERSONAS) {
-    const transactions = generate(persona);
+    const added = ADDED_MONTHS.flatMap(({ start, end }) =>
+      generate(persona, start, end, `${persona.key}:${start}`)
+    );
+    const transactions = [...added, ...generate(persona)];
     validate(persona, transactions);
     const output = {
       account: {

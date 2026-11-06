@@ -17,6 +17,1073 @@
   "transactions": [
     {
       "type": "expense",
+      "amount": 550000,
+      "category": "공과금(주거/세금/통신/보험)",
+      "memo": "오피스텔 월세",
+      "date": "2026-07-01",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-01T14:47:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 10100,
+      "category": "식비",
+      "memo": "샐러드 점심",
+      "date": "2026-07-01",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-01T16:06:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-03T12:28:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 2600,
+      "category": "카페/간식",
+      "memo": "편의점 초콜릿",
+      "date": "2026-07-02",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-02T14:17:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "감정 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-04T16:42:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 62900,
+      "category": "패션/쇼핑",
+      "memo": "심야 온라인 쇼핑 신발",
+      "date": "2026-07-02",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-02T16:14:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "과소비 / 불필요"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-02T12:43:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 10500,
+      "category": "식비",
+      "memo": "샐러드 점심",
+      "date": "2026-07-02",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-02T17:11:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "필요 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-02T16:40:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 40000,
+      "category": "술/유흥",
+      "memo": "대학 친구들 와인바",
+      "date": "2026-07-02",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "사회/관계",
+      "createdAt": "2026-07-02T17:47:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "평범함"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-02T12:39:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 34200,
+      "category": "생활(마트 잡화)",
+      "memo": "마트 장보기",
+      "date": "2026-07-04",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-04T17:15:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-04T16:53:00+09:00"
+      }
+    },
+    {
+      "type": "income",
+      "amount": 2900000,
+      "category": "수입",
+      "memo": "월급",
+      "date": "2026-07-05",
+      "incomeSource": "월급",
+      "createdAt": "2026-07-05T11:26:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 26500,
+      "category": "식비",
+      "memo": "배달 떡볶이 세트",
+      "date": "2026-07-05",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-05T16:31:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "감정 후회"
+        ],
+        "memo": "먹고 나니 더 피곤함",
+        "createdAt": "2026-07-07T10:27:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 4900,
+      "category": "카페/간식",
+      "memo": "오후 라떼",
+      "date": "2026-07-06",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-06T10:43:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 300000,
+      "category": "투자/저축",
+      "memo": "적금 자동이체",
+      "date": "2026-07-06",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "투자(저축)/미래지향",
+      "createdAt": "2026-07-06T16:59:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 6500,
+      "category": "식비",
+      "memo": "구내식당",
+      "date": "2026-07-07",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-07T17:59:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-08T10:15:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 3300,
+      "category": "카페/간식",
+      "memo": "출근길 아메리카노",
+      "date": "2026-07-08",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-08T12:45:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "감정 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-08T09:39:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 9900,
+      "category": "식비",
+      "memo": "김치찌개 점심",
+      "date": "2026-07-08",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-08T13:16:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-08T16:49:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 23100,
+      "category": "식비",
+      "memo": "배달 떡볶이 세트",
+      "date": "2026-07-08",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-08T15:54:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "감정 후회"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-08T14:51:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 14900,
+      "category": "교통/자동차",
+      "memo": "야근 후 택시",
+      "date": "2026-07-09",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-09T15:54:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "대안 없음"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-09T15:52:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 33500,
+      "category": "식비",
+      "memo": "배달 마라샹궈",
+      "date": "2026-07-09",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-09T16:45:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-11T10:41:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 10900,
+      "category": "식비",
+      "memo": "회사 앞 점심",
+      "date": "2026-07-09",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-09T17:39:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "필요 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-09T17:21:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 3500,
+      "category": "카페/간식",
+      "memo": "편의점 초콜릿",
+      "date": "2026-07-10",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-10T10:32:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 68000,
+      "category": "교통/자동차",
+      "memo": "교통비 후불 결제",
+      "date": "2026-07-10",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-10T11:39:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "대안 없음"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-11T17:22:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 129000,
+      "category": "패션/쇼핑",
+      "memo": "여름 세일 충동구매 샌들",
+      "date": "2026-07-10",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-10T15:38:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "감정 후회"
+        ],
+        "memo": "야근하고 기분 풀려고 샀는데 후회",
+        "createdAt": "2026-07-10T17:23:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 97600,
+      "category": "패션/쇼핑",
+      "memo": "심야 온라인 쇼핑 신발",
+      "date": "2026-07-11",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-11T11:13:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "감정 후회"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-11T17:24:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 10300,
+      "category": "의료/건강",
+      "memo": "내과 진료",
+      "date": "2026-07-13",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-13T12:24:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 28300,
+      "category": "식비",
+      "memo": "배달 마라샹궈",
+      "date": "2026-07-13",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-13T13:41:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "과소비 / 불필요"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-14T17:27:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 4400,
+      "category": "카페/간식",
+      "memo": "출근길 아메리카노",
+      "date": "2026-07-13",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-13T17:03:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-13T17:12:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 20600,
+      "category": "교통/자동차",
+      "memo": "야근 후 택시",
+      "date": "2026-07-14",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-14T14:31:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "가격 불만"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-15T17:11:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 2100,
+      "category": "카페/간식",
+      "memo": "편의점 초콜릿",
+      "date": "2026-07-14",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-14T16:40:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "감정 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-14T09:20:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 4000,
+      "category": "카페/간식",
+      "memo": "출근길 아메리카노",
+      "date": "2026-07-15",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-15T10:43:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "감정 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-15T16:29:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 92000,
+      "category": "공과금(주거/세금/통신/보험)",
+      "memo": "관리비와 공과금",
+      "date": "2026-07-15",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-15T10:46:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "대안 없음"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-16T09:59:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 26900,
+      "category": "식비",
+      "memo": "배달 떡볶이 세트",
+      "date": "2026-07-15",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-15T13:25:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-17T13:17:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 10600,
+      "category": "식비",
+      "memo": "샐러드 점심",
+      "date": "2026-07-16",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-16T15:35:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-18T09:01:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 19900,
+      "category": "교통/자동차",
+      "memo": "야근 후 택시",
+      "date": "2026-07-16",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-16T17:31:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "가격 불만"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-16T10:23:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 2100,
+      "category": "카페/간식",
+      "memo": "편의점 초콜릿",
+      "date": "2026-07-16",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-16T17:37:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "감정 충족",
+          "필요 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-16T14:57:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 9300,
+      "category": "식비",
+      "memo": "김치찌개 점심",
+      "date": "2026-07-17",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-17T16:06:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 148000,
+      "category": "여행/숙박",
+      "memo": "혼자 떠난 강릉 1박 숙소",
+      "date": "2026-07-18",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-18T17:35:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "평범함"
+        ],
+        "memo": "쉬긴 했는데 카드값이 걱정됨",
+        "createdAt": "2026-07-19T09:41:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 9100,
+      "category": "식비",
+      "memo": "김치찌개 점심",
+      "date": "2026-07-20",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-20T09:43:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "필요 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-20T10:30:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 91300,
+      "category": "패션/쇼핑",
+      "memo": "심야 온라인 쇼핑 신발",
+      "date": "2026-07-20",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-20T09:48:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "평범함"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-21T17:16:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 62000,
+      "category": "공과금(주거/세금/통신/보험)",
+      "memo": "휴대폰 요금",
+      "date": "2026-07-20",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-20T10:24:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-22T15:19:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 4500,
+      "category": "카페/간식",
+      "memo": "오후 라떼",
+      "date": "2026-07-20",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-20T10:51:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "필요 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-22T14:56:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 26900,
+      "category": "식비",
+      "memo": "늦은 밤 치킨",
+      "date": "2026-07-20",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-20T15:07:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-21T10:49:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 3200,
+      "category": "카페/간식",
+      "memo": "편의점 초콜릿",
+      "date": "2026-07-21",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-21T11:17:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 25400,
+      "category": "식비",
+      "memo": "배달 떡볶이 세트",
+      "date": "2026-07-21",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-21T17:13:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-22T09:41:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 6500,
+      "category": "식비",
+      "memo": "구내식당",
+      "date": "2026-07-22",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-22T11:39:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 30800,
+      "category": "식비",
+      "memo": "배달 마라샹궈",
+      "date": "2026-07-22",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-22T16:32:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "감정 후회"
+        ],
+        "memo": "먹고 나니 더 피곤함",
+        "createdAt": "2026-07-24T12:46:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 5000,
+      "category": "카페/간식",
+      "memo": "오후 라떼",
+      "date": "2026-07-22",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-22T17:48:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-23T09:57:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 3300,
+      "category": "카페/간식",
+      "memo": "편의점 초콜릿",
+      "date": "2026-07-23",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-23T11:25:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-24T10:32:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 9700,
+      "category": "식비",
+      "memo": "김치찌개 점심",
+      "date": "2026-07-23",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-23T13:54:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "필요 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-23T15:38:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 168000,
+      "category": "패션/쇼핑",
+      "memo": "마감 끝나고 산 린넨 원피스",
+      "date": "2026-07-24",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-24T12:04:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "감정 후회",
+          "과소비 / 불필요"
+        ],
+        "memo": "보상 심리로 샀다",
+        "createdAt": "2026-07-25T16:53:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 10600,
+      "category": "식비",
+      "memo": "회사 앞 점심",
+      "date": "2026-07-24",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-24T12:07:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-24T15:04:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 28800,
+      "category": "식비",
+      "memo": "배달 마라샹궈",
+      "date": "2026-07-25",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-25T17:29:00+09:00",
+      "rating": {
+        "emotion": "dissatisfied",
+        "reasons": [
+          "과소비 / 불필요"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-26T15:55:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 36200,
+      "category": "식비",
+      "memo": "배달 초밥",
+      "date": "2026-07-26",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-26T13:59:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-28T09:23:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 3100,
+      "category": "카페/간식",
+      "memo": "출근길 아메리카노",
+      "date": "2026-07-27",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-27T10:21:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "필요 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-29T09:13:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 9900,
+      "category": "식비",
+      "memo": "김치찌개 점심",
+      "date": "2026-07-27",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-27T11:00:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "가성비 만족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-28T12:39:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 29300,
+      "category": "식비",
+      "memo": "배달 초밥",
+      "date": "2026-07-27",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-27T17:10:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-27T15:54:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 3500,
+      "category": "카페/간식",
+      "memo": "출근길 아메리카노",
+      "date": "2026-07-28",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-28T16:12:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-28T09:46:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 9800,
+      "category": "식비",
+      "memo": "김치찌개 점심",
+      "date": "2026-07-29",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-29T10:11:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "필요 충족",
+          "가성비 만족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-31T11:56:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 26000,
+      "category": "식비",
+      "memo": "배달 떡볶이 세트",
+      "date": "2026-07-29",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-29T11:20:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-30T15:24:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 4700,
+      "category": "카페/간식",
+      "memo": "오후 라떼",
+      "date": "2026-07-29",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-29T14:38:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "감정 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-07-31T14:55:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 6500,
+      "category": "식비",
+      "memo": "구내식당",
+      "date": "2026-07-30",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-30T11:22:00+09:00"
+    },
+    {
+      "type": "expense",
+      "amount": 3100,
+      "category": "카페/간식",
+      "memo": "편의점 초콜릿",
+      "date": "2026-07-30",
+      "paymentMethod": "체크카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-30T16:39:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "필요 충족",
+          "감정 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-08-01T10:43:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 34000,
+      "category": "식비",
+      "memo": "야근 후 배달 족발",
+      "date": "2026-07-30",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-30T17:05:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "감정 충족"
+        ],
+        "memo": "",
+        "createdAt": "2026-08-01T14:53:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 55800,
+      "category": "교육",
+      "memo": "마케팅 온라인 강의",
+      "date": "2026-07-31",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "자아실현/자기계발",
+      "createdAt": "2026-07-31T11:00:00+09:00",
+      "rating": {
+        "emotion": "satisfied",
+        "reasons": [
+          "경험 / 성장"
+        ],
+        "memo": "",
+        "createdAt": "2026-08-01T15:51:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 26400,
+      "category": "식비",
+      "memo": "늦은 밤 치킨",
+      "date": "2026-07-31",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "쾌락/감정",
+      "createdAt": "2026-07-31T16:06:00+09:00",
+      "rating": {
+        "emotion": "neutral",
+        "reasons": [
+          "일상적 / 습관적"
+        ],
+        "memo": "",
+        "createdAt": "2026-08-02T15:24:00+09:00"
+      }
+    },
+    {
+      "type": "expense",
+      "amount": 3000,
+      "category": "카페/간식",
+      "memo": "출근길 아메리카노",
+      "date": "2026-07-31",
+      "paymentMethod": "신용카드",
+      "spendingBackground": "필수/생존",
+      "createdAt": "2026-07-31T16:44:00+09:00"
+    },
+    {
+      "type": "expense",
       "amount": 43300,
       "category": "뷰티/미용",
       "memo": "올리브영 스킨케어",
