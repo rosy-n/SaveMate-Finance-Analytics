@@ -5,7 +5,7 @@ const { db, admin } = require('../firebaseAdmin');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const MODEL_ID = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const MODEL_ID = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 
 const model = genAI.getGenerativeModel({ model: MODEL_ID });
 
@@ -276,8 +276,8 @@ router.get('/consumption', async (req, res) => {
     // 5) 모델 페일오버 목록
     const modelIds = [
       MODEL_ID,
-      'gemini-1.5-flash',
-      'gemini-1.5-pro',
+      'gemini-3.5-flash-lite',
+      'gemini-3.1-flash-lite',
     ];
 
     let parsed = null;

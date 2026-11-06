@@ -5,7 +5,7 @@ const { db, admin } = require('../firebaseAdmin');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const MODEL_ID = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const MODEL_ID = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 
 /** YYYY-MM-DD */
 const toYMD = (d) => {
@@ -150,7 +150,7 @@ ${JSON.stringify(llmInput, null, 2)}
 ${JSON.stringify(schema, null, 2)}
 `.trim();
 
-    const modelIds = [MODEL_ID, 'gemini-1.5-flash', 'gemini-1.5-pro'];
+    const modelIds = [MODEL_ID, 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'];
     let parsed = null;
     let usedModel = null;
 
