@@ -1,7 +1,9 @@
 // server/routes/tips.js
 const express = require('express');
 const router = express.Router();
-const { db, admin } = require('../firebaseAdmin');
+const txRepo = require('../db/transactions');
+const tipCache = require('../db/cache');
+const { userOr404 } = require('../lib/http');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -66,16 +68,15 @@ router.get('/today', async (req, res) => {
     const { uid } = req.query;
     if (!uid) return res.status(400).json({ ok: false, error: 'uid required' });
 
+    const userId = await userOr404(res, uid);
+    if (!userId) return;
+
     const today = new Date();
     const tipKey = toYMD(today);
 
-    // 0) 캐시: users/{uid}/cachedTips/{YYYY-MM-DD}
-    const cacheRef = db.collection('users').doc(uid).collection('cachedTips').doc(tipKey);
-    const cachedSnap = await cacheRef.get();
-
-    if (cachedSnap.exists) {
-      const c = cachedSnap.data() || {};
-
+    // 0) 캐시: tip_cache (사용자, YYYY-MM-DD)
+    const c = await tipCache.getTip(userId, tipKey);
+    if (c) {
       if (Array.isArray(c.tips) && c.tips.length > 0) {
         return res.json({ ok: true, tip: c, meta: { cached: true, model: MODEL_ID } });
       }
@@ -85,7 +86,7 @@ router.get('/today', async (req, res) => {
           title: c.title || "오늘의 절약팁",
           tips: [{ content: c.content, reason: c.reason || "" }],
         };
-        await cacheRef.set(migrated, { merge: true });
+        await tipCache.setTip(userId, tipKey, migrated, MODEL_ID);
         return res.json({ ok: true, tip: migrated, meta: { cached: true, model: MODEL_ID } });
       }
     }
@@ -93,26 +94,17 @@ router.get('/today', async (req, res) => {
     // 1) 최근 14일 지출 로드
     const since = new Date(today);
     since.setDate(since.getDate() - 14);
-    const sinceTs = admin.firestore.Timestamp.fromDate(since);
+    const recent = await txRepo.listSince(userId, toYMD(since), 300);
 
-    const snap = await db.collection('users').doc(uid).collection('transactions')
-    .where('date', '>=', sinceTs)
-    .orderBy('date', 'desc')
-    .limit(300)
-    .get();
-
-    const expenses = snap.docs
-    .map(d => {
-        const v = d.data() || {};
-        return {
+    const expenses = recent
+      .map(v => ({
         amount: Number(v.amount || 0),
         category: v.category || '기타',
         memo: v.memo || '',
         type: v.type,
-        date: v.date?.toDate ? v.date.toDate().toISOString() : v.date
-        };
-    })
-    .filter(x => x.type === 'expense');  // 로컬 필터링
+        date: v.date
+      }))
+      .filter(x => x.type === 'expense');  // 로컬 필터링
 
 
     const byCategory = {};
@@ -221,7 +213,7 @@ ${JSON.stringify(schema, null, 2)}
     }
 
     // 3) 캐시 저장
-    await cacheRef.set(parsed, { merge: true });
+    await tipCache.setTip(userId, tipKey, parsed, usedModel || MODEL_ID);
 
     return res.json({
       ok: true,

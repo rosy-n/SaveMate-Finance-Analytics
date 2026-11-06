@@ -1,63 +1,11 @@
 // server/routes/transactions.js
 const express = require('express');
 const router = express.Router();
-const { db, admin } = require('../firebaseAdmin');
 
-const now = admin.firestore.FieldValue.serverTimestamp();
-
-// year, month에서 N개월 전/후 계산용
-function shiftYearMonth(year, month, delta) {
-  // month: 1~12, delta: +/- n개월
-  const base = (month - 1) + delta;
-  const y = year + Math.floor(base / 12);
-  const m = ((base % 12) + 12) % 12; // 0~11
-  return { year: y, month: m + 1 };
-}
-
-// YYYY-MM 포맷
-function monthKey(y, m) {
-  return `${y}-${String(m).padStart(2, '0')}`;
-}
-
-/**
- * 🔁 월별 LLM 소비 리포트 캐시 무효화
- *
- * 현재 reports.js는 다음 경로에 캐시를 저장하고 있습니다.
- *   users/{uid}/cachedReports/{YYYY-MM}
- */
-async function invalidateConsumptionReportCache(uid, baseDate) {
-  try {
-    if (!uid || !baseDate) return;
-
-    const y = baseDate.getFullYear();
-    const m = baseDate.getMonth() + 1;
-    const ym = monthKey(y, m);
-
-    await db
-      .collection('users')
-      .doc(uid)
-      .collection('cachedReports')
-      .doc(ym)
-      .delete();
-
-    console.log(`[REPORT CACHE] invalidated users/${uid}/cachedReports/${ym}`);
-  } catch (e) {
-    // 캐시 삭제 실패 때문에 저장/삭제 자체가 실패하면 안 되므로 경고만
-    console.warn('[REPORT CACHE] invalidate failed:', e.message || e);
-  }
-}
-
-// 공통: 날짜 범위 계산 (UTC 기준)
-function getMonthRange(y, m) {
-  const start = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0, 0));
-  const end   = new Date(Date.UTC(y, m,     1, 0, 0, 0, 0));
-  return {
-    start,
-    end,
-    startTs: admin.firestore.Timestamp.fromDate(start),
-    endTs:   admin.firestore.Timestamp.fromDate(end),
-  };
-}
+const tx = require('../db/transactions');
+const cache = require('../db/cache');
+const { toKstDateString } = require('../lib/dates');
+const { userOr404, fail } = require('../lib/http');
 
 /**
  * POST /api/transactions
@@ -67,7 +15,7 @@ function getMonthRange(y, m) {
  *  - amount       숫자 (필수)
  *  - category     (선택)
  *  - memo         (선택)
- *  - date         'YYYY-MM-DD' 또는 ISO 문자열 (선택, 없으면 서버 현재 시간)
+ *  - date         'YYYY-MM-DD' 또는 ISO 문자열 (선택, 없으면 서버 현재 날짜)
  *  - method       (지출 수단: 현금/신용카드/체크카드) or paymentMethod
  *  - background   (소비 배경) or spendingBackground
  *  - incomeDetail: { incomeSource, memo } (선택)
@@ -94,164 +42,99 @@ router.post('/', async (req, res) => {
     if (!uid || !amount || !type) {
       return res.status(400).json({ ok: false, error: 'missing fields (uid, amount, type)' });
     }
-
-    // 날짜 파싱: occurredAt > date > now 순으로 사용
-    let baseDate =
-      occurredAt ? new Date(occurredAt)
-      : date      ? new Date(date)
-                  : new Date();
-
-    if (!baseDate || !Number.isFinite(baseDate.getTime())) {
-      return res.status(400).json({ ok: false, error: 'invalid date/occurredAt' });
+    if (type !== 'income' && type !== 'expense') {
+      return res.status(400).json({ ok: false, error: "type must be 'income' or 'expense'" });
     }
 
-    const dateTs = admin.firestore.Timestamp.fromDate(baseDate);
+    const amt = Math.round(Number(amount));
+    if (!Number.isFinite(amt)) {
+      return res.status(400).json({ ok: false, error: 'amount must be a number' });
+    }
 
-    const doc = {
-      amount: Number(amount),
-      type,                                    // 'income' | 'expense'
-      category: category ?? null,
-      memo: memo ?? '',
-      date: dateTs,                            // 리포트/훅에서 사용하는 필드
-      occurredAt: dateTs,                      // 호환용 (원래 필드명)
-      createdAt: now,
-      updatedAt: now,
-      isRated: false,
+    // 날짜 파싱: occurredAt > date > now 순으로 사용
+    const base = occurredAt ? new Date(occurredAt) : date ? new Date(date) : new Date();
+    if (!Number.isFinite(base.getTime())) {
+      return res.status(400).json({ ok: false, error: 'invalid date/occurredAt' });
+    }
+    const occurredOn = toKstDateString(base);
 
-      // 수입/지출 상세 정보 매핑
-      incomeSource: incomeSource ?? incomeDetail?.incomeSource ?? null,
+    const userId = await userOr404(res, uid);
+    if (!userId) return;
+
+    const id = await tx.create({
+      userId,
+      type,
+      amount: amt,
+      category,
+      memo,
+      occurredOn,
       paymentMethod: paymentMethod ?? method ?? null,
       spendingBackground: spendingBackground ?? background ?? null,
-    };
-
-    // 최종 경로: users/{uid}/transactions/{tid}
-    const trxRef = await db
-      .collection('users')
-      .doc(uid)
-      .collection('transactions')
-      .add(doc);
+      incomeSource: incomeSource ?? incomeDetail?.incomeSource ?? null,
+    });
 
     // 🔁 이 거래가 속한 월의 LLM 소비 리포트 캐시 무효화
-    invalidateConsumptionReportCache(uid, baseDate).catch(() => {});
+    cache.deleteReportByDate(userId, occurredOn).catch(() => {});
 
-    res.status(201).json({ ok: true, id: trxRef.id });
+    res.status(201).json({ ok: true, id });
   } catch (e) {
-    console.error('[POST /api/transactions Error]', e);
-    res.status(500).json({ ok: false, error: e.message });
+    fail(res, '[POST /api/transactions Error]', e);
   }
 });
 
 // 만족도평가를 위해 미평가 지출을 불러오기
 router.get('/unrated', async (req, res) => {
-  // 만족도 박스 안 보이는 문제 해결하려고 넣은 콘솔 코드 -> 문제 해결하면 지울거임
-  // console.log("🐰 [SERVER] unrated 호출됨:", req.query);
   try {
     const { uid, limit = 50 } = req.query;
     if (!uid) return res.status(400).json({ ok: false, error: 'uid required' });
 
-    const snap = await db
-      .collection('users')
-      .doc(uid)
-      .collection('transactions')
-      .where('type', '==', 'expense')
-      .where('isRated', '==', false)
-      .orderBy('date', 'desc')
-      .limit(Number(limit))
-      .get();
+    const userId = await userOr404(res, uid);
+    if (!userId) return;
 
-    const items = snap.docs.map(d => {
-      const data = d.data() || {};
-      return {
-        id: d.id,
-        ...data,
-        date: data.date?.toDate ? data.date.toDate().toISOString() : data.date
-      };
-    });
-
+    const items = await tx.listUnrated(userId, Math.min(Math.max(Number(limit) || 50, 1), 500));
     res.json({ ok: true, items });
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ ok: false, error: e.message });
+    fail(res, '[GET /api/transactions/unrated Error]', e);
   }
 });
 
 /**
  * GET /api/transactions
- * 쿼리스트링:
- *  - uid   (필수)
- *  - year  (필수, 숫자)
- *  - month (필수, 1~12)
- *  - expand (선택, 현재는 의미 없이 무시)
- *
+ * 쿼리스트링: uid, year, month(1~12), expand(무시)
  * useMonthlyTransactionsFromApi, ReportHome 에서 사용
  */
-
-
 router.get('/', async (req, res) => {
   try {
     const { uid, year, month } = req.query;
-
     const y = Number(year);
     const m = Number(month);
 
     if (!uid || !y || !m) {
-      return res.status(400).json({
-        ok: false,
-        error: 'uid, year, month are required',
-      });
+      return res.status(400).json({ ok: false, error: 'uid, year, month are required' });
+    }
+    if (m < 1 || m > 12) {
+      return res.status(400).json({ ok: false, error: 'month must be 1-12' });
     }
 
-    const { startTs, endTs } = getMonthRange(y, m);
+    const userId = await userOr404(res, uid);
+    if (!userId) return;
 
-    const snap = await db
-      .collection('users')
-      .doc(uid)
-      .collection('transactions')
-      .where('date', '>=', startTs)
-      .where('date', '<', endTs)
-      .orderBy('date', 'desc')
-      .get();
-
-    const items = snap.docs.map((doc) => {
-      const data = doc.data() || {};
-
-      let dateVal = null;
-      if (data.date?.toDate) {
-        dateVal = data.date.toDate().toISOString();
-      } else if (data.occurredAt?.toDate) {
-        dateVal = data.occurredAt.toDate().toISOString();
-      } else if (data.date) {
-        dateVal = data.date;
-      }
-
-      return {
-        id: doc.id,
-        ...data,
-        date: dateVal,
-      };
-    });
-
+    const items = await tx.listByMonth(userId, y, m);
     res.json({ ok: true, items });
   } catch (e) {
-    console.error('[GET /api/transactions Error]', e);
-    res.status(500).json({ ok: false, error: e.message });
+    fail(res, '[GET /api/transactions Error]', e);
   }
 });
 
 /**
  * GET /api/transactions/monthly-sum
- * 쿼리스트링:
- *  - uid      (필수)
- *  - months   (선택, 기본 4) : 최근 N개월
- *  - endYear  (필수)
- *  - endMonth (필수)
- *
+ * 쿼리스트링: uid, months(기본 4), endYear, endMonth
  * ReportHome 의 "월별 지출 추이" 꺾은선 그래프에서 사용
  */
 router.get('/monthly-sum', async (req, res) => {
   try {
     const { uid, months = '4', endYear, endMonth } = req.query;
-    const mCount = Number(months) || 4;
+    const count = Math.min(Math.max(Number(months) || 4, 1), 36);
     const y0 = Number(endYear);
     const m0 = Number(endMonth);
 
@@ -259,39 +142,13 @@ router.get('/monthly-sum', async (req, res) => {
       return res.status(400).json({ ok: false, error: 'uid, endYear, endMonth are required' });
     }
 
-    const tasks = [];
-    for (let i = mCount - 1; i >= 0; i--) {
-      const { year, month } = shiftYearMonth(y0, m0, -i);
-      const { startTs, endTs } = getMonthRange(year, month);
+    const userId = await userOr404(res, uid);
+    if (!userId) return;
 
-      tasks.push(
-        (async () => {
-          const snap = await db
-            .collection('users')
-            .doc(uid)
-            .collection('transactions')
-            .where('date', '>=', startTs)
-            .where('date', '<', endTs)
-            .get();
-
-          let totalExpense = 0;
-          snap.forEach((d) => {
-            const data = d.data() || {};
-            if (String(data.type || '').toLowerCase() === 'expense') {
-              totalExpense += Number(data.amount || 0);
-            }
-          });
-
-          return { year, month, totalExpense };
-        })()
-      );
-    }
-
-    const results = await Promise.all(tasks);
-    res.json({ ok: true, items: results });
+    const items = await tx.monthlyExpenseSums(userId, y0, m0, count);
+    res.json({ ok: true, items });
   } catch (e) {
-    console.error('[GET /api/transactions/monthly-sum Error]', e);
-    res.status(500).json({ ok: false, error: e.message });
+    fail(res, '[GET /api/transactions/monthly-sum Error]', e);
   }
 });
 
@@ -300,57 +157,20 @@ router.post('/bulk', async (req, res) => {
   try {
     const { ids, uid } = req.body;
 
-    if (!uid) {
-      return res.status(400).json({ ok: false, error: 'uid required' });
-    }
-
+    if (!uid) return res.status(400).json({ ok: false, error: 'uid required' });
     if (!Array.isArray(ids)) {
       return res.status(400).json({ ok: false, error: 'ids must be an array' });
     }
 
-    const col = db.collection('users').doc(uid).collection('transactions');
-    const items = [];
+    const userId = await userOr404(res, uid);
+    if (!userId) return;
 
-    // for (const id of ids) {
-    //   const snap = await col.doc(id).get();
-    //   if (snap.exists) {
-    //     items.push({ id, ...snap.data() });
-    //   }
-    // }
-
-    for (const id of ids) {
-      const snap = await col.doc(id).get();
-      if (!snap.exists) continue;
-
-      const data = snap.data() || {};
-
-      // 🔥 date 필드를 확실한 문자열로 변환
-      let dateVal = null;
-      if (data.date?.toDate) {
-        dateVal = data.date.toDate().toISOString();
-      } else if (data.date) {
-        // Timestamp가 JSON 변환되면서 toDate()가 사라진 경우
-        try {
-          dateVal = new Date(data.date._seconds * 1000).toISOString();
-        } catch {
-          dateVal = data.date;
-        }
-      }
-
-      items.push({
-        id,
-        ...data,
-        date: dateVal,
-      });
-    }
-
-    return res.json({ ok: true, items });
+    const items = await tx.listByIds(userId, ids);
+    res.json({ ok: true, items });
   } catch (e) {
-    console.error('[POST /api/transactions/bulk Error]', e);
-    return res.status(500).json({ ok: false, error: e.message });
+    fail(res, '[POST /api/transactions/bulk Error]', e);
   }
 });
-
 
 /**
  * (기존) 특정 사용자 거래 전체 조회
@@ -358,29 +178,13 @@ router.post('/bulk', async (req, res) => {
  */
 router.get('/:uid', async (req, res) => {
   try {
-    const { uid } = req.params;
+    const userId = await userOr404(res, req.params.uid);
+    if (!userId) return;
 
-    const snapshot = await db
-      .collection('users')
-      .doc(uid)
-      .collection('transactions')
-      .orderBy('date', 'desc')
-      .get();
-
-    const items = snapshot.docs.map((doc) => {
-      const data = doc.data() || {};
-      let dateVal = null;
-      if (data.date?.toDate) dateVal = data.date.toDate().toISOString();
-      else if (data.occurredAt?.toDate) dateVal = data.occurredAt.toDate().toISOString();
-      else if (data.date) dateVal = data.date;
-
-      return { id: doc.id, ...data, date: dateVal };
-    });
-
+    const items = await tx.listAll(userId);
     res.json({ ok: true, items });
   } catch (e) {
-    console.error('[GET /api/transactions/:uid Error]', e);
-    res.status(500).json({ ok: false, error: e.message });
+    fail(res, '[GET /api/transactions/:uid Error]', e);
   }
 });
 
@@ -392,39 +196,17 @@ router.delete('/:uid/:tid', async (req, res) => {
   try {
     const { uid, tid } = req.params;
 
-    const trxRef = db
-      .collection('users')
-      .doc(uid)
-      .collection('transactions')
-      .doc(tid);
+    const userId = await userOr404(res, uid);
+    if (!userId) return;
 
-    // 삭제 전 거래 날짜 읽기 → 어느 달인지 계산
-    const snap = await trxRef.get();
-
-    let baseDate = null;
-    if (snap.exists) {
-      const data = snap.data() || {};
-      if (data.date?.toDate) {
-        baseDate = data.date.toDate();
-      } else if (data.occurredAt?.toDate) {
-        baseDate = data.occurredAt.toDate();
-      } else if (data.date) {
-        const tmp = new Date(data.date);
-        if (Number.isFinite(tmp.getTime())) baseDate = tmp;
-      }
-    }
-
-    await trxRef.delete();
-
-    // 🔁 해당 달 리포트 캐시 삭제
-    if (baseDate) {
-      invalidateConsumptionReportCache(uid, baseDate).catch(() => {});
+    const occurredOn = await tx.remove(userId, tid);
+    if (occurredOn) {
+      cache.deleteReportByDate(userId, occurredOn).catch(() => {});
     }
 
     res.json({ ok: true });
   } catch (e) {
-    console.error('[DELETE /api/transactions Error]', e);
-    res.status(500).json({ ok: false, error: e.message });
+    fail(res, '[DELETE /api/transactions Error]', e);
   }
 });
 

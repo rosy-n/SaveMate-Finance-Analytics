@@ -1,23 +1,16 @@
 // server/routes/reports.js
 const express = require('express');
 const router = express.Router();
-const { db, admin } = require('../firebaseAdmin');
+const { resolveUserId } = require('../db/users');
+const txRepo = require('../db/transactions');
+const ratingRepo = require('../db/satisfaction');
+const reportCache = require('../db/cache');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const MODEL_ID = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 
 const model = genAI.getGenerativeModel({ model: MODEL_ID });
-
-const getMonthRange = (year, month) => {
-  const y = Number(year), m = Number(month);
-  const startDate = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0, 0));
-  const endDate = new Date(Date.UTC(y, m, 1, 0, 0, 0, 0));
-  return {
-    start: admin.firestore.Timestamp.fromDate(startDate),
-    end: admin.firestore.Timestamp.fromDate(endDate),
-  };
-};
 
 function redact(text = '') {
   return String(text)
@@ -75,76 +68,40 @@ router.get('/consumption', async (req, res) => {
         .json({ ok: false, error: 'uid/year/month required' });
     }
 
-    const { start, end } = getMonthRange(year, month);
-
-    // 0) 캐시 체크
-    const cKey = monthKey(year, month);
-    const cacheRef = db
-      .collection('users')
-      .doc(uid)
-      .collection('cachedReports')
-      .doc(cKey);
-
-    const cached = await cacheRef.get();
-      if (cached.exists) {
-        const c = cached.data() || {};
-        if (c.summary || c.persona || c.insights) {
-          return res.json({
-            ok: true,
-            report: c,
-            meta: { cached: true, model: MODEL_ID },
-          });
-        }
-      }
-
-    // 1) 월별 거래 읽기
-    const txSnap = await db
-      .collection('users')
-      .doc(uid)
-      .collection('transactions')
-      .get();
-
-    const monthTx = [];
-    for (const d of txSnap.docs) {
-      const v = d.data() || {};
-      const dt = v.date?.toDate
-        ? v.date.toDate()
-        : v.date
-        ? new Date(v.date)
-        : null;
-      if (!dt) continue;
-      if (dt >= start.toDate() && dt < end.toDate())
-        monthTx.push({ id: d.id, ...v, date: dt });
+    const y = Number(year), m = Number(month);
+    if (!Number.isInteger(y) || !Number.isInteger(m) || m < 1 || m > 12) {
+      return res.status(400).json({ ok: false, error: 'invalid year/month' });
     }
 
-    const txIds = new Set(monthTx.map((t) => t.id));
+    const userId = await resolveUserId(uid);
+    if (!userId) {
+      return res.status(404).json({ ok: false, error: 'user not found' });
+    }
 
-    // 2) 만족도 평가 읽기 (users/{uid}/satisfactionRatings)
-    const satSnap = await db
-      .collection('users')
-      .doc(uid)
-      .collection('satisfactionRatings')
-      .get();
+    // 0) 캐시 체크
+    const cached = await reportCache.getReport(userId, y, m);
+    if (cached && (cached.summary || cached.persona || cached.insights)) {
+      return res.json({
+        ok: true,
+        report: cached,
+        meta: { cached: true, model: MODEL_ID },
+      });
+    }
 
-    const monthTxIds = new Set(
-      monthTx.map(
-        (tx) => String(tx.id || tx.tid || tx.transactionId || "")
-      )
+    // 1) 월별 거래 읽기
+    const monthTx = (await txRepo.listByMonth(userId, y, m)).map((t) => ({
+      ...t,
+      date: new Date(t.date),
+    }));
+
+    // 2) 만족도 평가 읽기 (이번 달 거래에 대한 것만)
+    const sats = await ratingRepo.listForTransactions(
+      userId,
+      monthTx.map((t) => t.id)
     );
 
-    const allSats = satSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-
-    const sats = allSats.filter((s) => {
-      const tid = String(
-        s.transactionId || s.tid || s.txnId || ""
-      ).trim();
-
-      if (!tid) return false;
-      return monthTxIds.has(tid);
-    });
-
     const normSats = sats.map((s) => ({
-      transactionId: String(s.transactionId || s.tid || s.txnId),
+      transactionId: String(s.transactionId),
       emotion: (s.emotion || "").toLowerCase(),
       reasons: Array.isArray(s.reasons) ? s.reasons : [],
       memo: s.memo || "",
@@ -345,14 +302,17 @@ router.get('/consumption', async (req, res) => {
       };
 
       // 8) 정상 생성 → 캐시 저장 (✅ 항상 저장 + 메타 포함)
-        await cacheRef.set(
+        await reportCache.setReport(
+          userId,
+          y,
+          m,
           {
             ...parsed,
-            generatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            generatedAt: new Date().toISOString(),
             period: `${year}-${String(month).padStart(2, '0')}`,
             version: 'v2-persona-insights-actions', // 스키마 버전 태그(선택)
           },
-          { merge: true }
+          usedModel || MODEL_ID
         );
 
         return res.json({
@@ -369,7 +329,7 @@ router.get('/consumption', async (req, res) => {
 
 
     // 8) 정상 생성 → 캐시 저장
-    await cacheRef.set(parsed, { merge: true });
+    await reportCache.setReport(userId, y, m, parsed, usedModel || MODEL_ID);
 
     return res.json({
       ok: true,
