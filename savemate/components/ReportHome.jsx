@@ -1075,9 +1075,9 @@ export default function ReportHome() {
 
                 {/* 범례 */}
                 <View style={reportStyles.bgLegendRow}>
-                  <Text style={[reportStyles.bgLegendItem, reportStyles.bgLegendD]}>■ 불만족</Text>
-                  <Text style={[reportStyles.bgLegendItem, reportStyles.bgLegendN]}>■ 보통</Text>
-                  <Text style={[reportStyles.bgLegendItem, reportStyles.bgLegendS]}>■ 만족</Text>
+                  <Text style={reportStyles.bgLegendItem}><Text style={reportStyles.bgLegendD}>■</Text> 불만족</Text>
+                  <Text style={reportStyles.bgLegendItem}><Text style={reportStyles.bgLegendN}>■</Text> 보통</Text>
+                  <Text style={reportStyles.bgLegendItem}><Text style={reportStyles.bgLegendS}>■</Text> 만족</Text>
                 </View>
               </View>
             )}

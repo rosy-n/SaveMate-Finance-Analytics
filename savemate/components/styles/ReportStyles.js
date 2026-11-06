@@ -300,6 +300,7 @@ export const ReportStyles = StyleSheet.create({
   bgLegendItem: {
     fontSize: 12,
     marginHorizontal: 6,
+    color: '#5F5966',
   },
   bgLegendD: { color: '#F4A7A7' },
   bgLegendN: { color: '#F7D8A4' },
