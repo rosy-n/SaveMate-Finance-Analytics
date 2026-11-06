@@ -756,9 +756,8 @@ export default function ReportHome() {
               data={{
                 labels: monthlySeries.labels,               // 예: ['7','8','9','10'] 또는 ['7월','8월','9월','10월']
                 datasets: [
-                  // 라이브러리가 선을 투명도 0.2 로 그려서, 흰 배경에서 보이도록 불투명도를 고정한다.
                   ...(monthlySeries.sameDayValues.length > 0
-                    ? [{ data: monthlySeries.sameDayValues, color: () => '#9CA3AF' }]
+                    ? [{ data: monthlySeries.sameDayValues, color: (o = 1) => `rgba(156, 163, 175, ${o})` }]
                     : []),
                   { data: monthlySeries.values },           // 예: [0, 210000, 700000, 20000]
                 ],
