@@ -4,6 +4,7 @@ const router = express.Router();
 const txRepo = require('../db/transactions');
 const tipCache = require('../db/cache');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { LLM_TIMEOUT_MS } = require('../lib/llmGuard');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const MODEL_ID = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
@@ -147,9 +148,10 @@ ${JSON.stringify(schema, null, 2)}
 
         parsed = await withRetries(async () => {
           const m = genAI.getGenerativeModel({ model: mid });
-          const result = await m.generateContent({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          });
+          const result = await m.generateContent(
+            { contents: [{ role: 'user', parts: [{ text: prompt }] }] },
+            { timeout: LLM_TIMEOUT_MS }
+          );
 
           const text = result.response.text();
           const p = safeParseJSON(text);
