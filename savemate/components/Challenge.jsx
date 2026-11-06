@@ -1,12 +1,19 @@
 import { getAppNow } from '@/constants/appDate';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useNavigation } from 'expo-router';
 import { SaveMateStyles as styles } from '../styles/SaveMateStyles';
 
+// 이번 달 남은 일수(오늘 포함). state 로 두지 않고 렌더링할 때 바로 계산한다.
+const getRemainingDays = () => {
+  const today = getAppNow();
+  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  return lastDay - today.getDate() + 1;
+};
+
 const Challenge = () => {
   const navigation = useNavigation();
-  const [dDay, setDDay] = useState(0);
+  const dDay = getRemainingDays();
   const [sortOption, setSortOption] = useState('위험도순');
 
   // 예시 더미 데이터
@@ -27,15 +34,6 @@ const Challenge = () => {
     },
     // 추가 챌린지 데이터...
   ]);
-
-  useEffect(() => {
-    const today = getAppNow();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth();
-    const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate();
-    const remainingDays = lastDay - today.getDate() + 1;
-    setDDay(remainingDays);
-  }, []);
 
   const toggleSortOption = () => {
     setSortOption(prev => (prev === '위험도순' ? 'ㄱㄴㄷ순' : '위험도순'));

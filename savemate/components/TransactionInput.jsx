@@ -9,6 +9,128 @@ import {
   Modal,
 } from 'react-native';
 
+// 간단한 달력 컴포넌트. 컴포넌트 안에 정의하면 부모가 렌더링될 때마다 새로 만들어져 보던 월이 초기화되므로 밖에 둔다.
+const SimpleDatePicker = ({ selectedDate, onSelect }) => {
+  const today = getAppNow();
+  const [viewMonth, setViewMonth] = useState(selectedDate.getMonth());
+  const [viewYear, setViewYear] = useState(selectedDate.getFullYear());
+
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+
+  const handlePrevMonth = () => {
+    if (viewMonth === 0) {
+      setViewMonth(11);
+      setViewYear(viewYear - 1);
+    } else {
+      setViewMonth(viewMonth - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (viewMonth === 11) {
+      setViewMonth(0);
+      setViewYear(viewYear + 1);
+    } else {
+      setViewMonth(viewMonth + 1);
+    }
+  };
+
+  const handleDateSelect = (day) => {
+    const newDate = new Date(viewYear, viewMonth, day);
+    
+    // 오늘 날짜와 비교 (시간 제외)
+    const todayDateOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const selectedDateOnly = new Date(viewYear, viewMonth, day);
+    
+    // 미래 날짜는 선택 불가
+    if (selectedDateOnly > todayDateOnly) {
+      return;
+    }
+    
+    onSelect(newDate);
+  };
+
+  // 날짜가 미래인지 확인하는 함수
+  const isFutureDate = (day) => {
+    const checkDate = new Date(viewYear, viewMonth, day);
+    const todayDateOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    return checkDate > todayDateOnly;
+  };
+
+  return (
+    <View style={styles.datePickerContainer}>
+      <View style={styles.datePickerHeader}>
+        <TouchableOpacity onPress={handlePrevMonth}>
+          <Text style={styles.datePickerArrow}>‹</Text>
+        </TouchableOpacity>
+        <Text style={styles.datePickerTitle}>
+          {viewYear}년 {viewMonth + 1}월
+        </Text>
+        <TouchableOpacity onPress={handleNextMonth}>
+          <Text style={styles.datePickerArrow}>›</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.weekRow}>
+        {['일', '월', '화', '수', '목', '금', '토'].map((day) => (
+          <Text key={day} style={styles.weekText}>
+            {day}
+          </Text>
+        ))}
+      </View>
+
+      <View style={styles.datesContainer}>
+        {Array.from({ length: firstDay }).map((_, index) => (
+          <View key={`empty-${index}`} style={styles.dateCell} />
+        ))}
+
+        {Array.from({ length: daysInMonth }).map((_, index) => {
+          const day = index + 1;
+          const isSelected =
+            day === selectedDate.getDate() &&
+            viewMonth === selectedDate.getMonth() &&
+            viewYear === selectedDate.getFullYear();
+          const isToday =
+            day === today.getDate() &&
+            viewMonth === today.getMonth() &&
+            viewYear === today.getFullYear();
+          const isFuture = isFutureDate(day);
+
+          return (
+            <TouchableOpacity
+              key={day}
+              style={styles.dateCell}
+              onPress={() => handleDateSelect(day)}
+              disabled={isFuture}
+            >
+              <View
+                style={[
+                  styles.dateButton,
+                  isSelected && styles.dateButtonSelected,
+                  isToday && !isSelected && styles.dateButtonToday,
+                  isFuture && styles.dateButtonDisabled,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.calendarDateText,
+                    isSelected && styles.dateTextSelected,
+                    isToday && !isSelected && styles.dateTextToday,
+                    isFuture && styles.dateTextDisabled,
+                  ]}
+                >
+                  {day}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+};
+
 const TransactionInput = ({ onClose, onSave }) => {
   const [expression, setExpression] = useState('');
   const [transactionType, setTransactionType] = useState('expense');
@@ -128,129 +250,6 @@ const TransactionInput = ({ onClose, onSave }) => {
 
   const formatDisplayDate = (date) => {
     return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
-  };
-
-  // 간단한 달력 컴포넌트
-  const SimpleDatePicker = () => {
-    const today = getAppNow();
-    const [viewMonth, setViewMonth] = useState(selectedDate.getMonth());
-    const [viewYear, setViewYear] = useState(selectedDate.getFullYear());
-
-    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-    const firstDay = new Date(viewYear, viewMonth, 1).getDay();
-
-    const handlePrevMonth = () => {
-      if (viewMonth === 0) {
-        setViewMonth(11);
-        setViewYear(viewYear - 1);
-      } else {
-        setViewMonth(viewMonth - 1);
-      }
-    };
-
-    const handleNextMonth = () => {
-      if (viewMonth === 11) {
-        setViewMonth(0);
-        setViewYear(viewYear + 1);
-      } else {
-        setViewMonth(viewMonth + 1);
-      }
-    };
-
-    const handleDateSelect = (day) => {
-      const newDate = new Date(viewYear, viewMonth, day);
-      
-      // 오늘 날짜와 비교 (시간 제외)
-      const todayDateOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      const selectedDateOnly = new Date(viewYear, viewMonth, day);
-      
-      // 미래 날짜는 선택 불가
-      if (selectedDateOnly > todayDateOnly) {
-        return;
-      }
-      
-      setSelectedDate(newDate);
-      setShowDatePicker(false);
-    };
-
-    // 날짜가 미래인지 확인하는 함수
-    const isFutureDate = (day) => {
-      const checkDate = new Date(viewYear, viewMonth, day);
-      const todayDateOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      return checkDate > todayDateOnly;
-    };
-
-    return (
-      <View style={styles.datePickerContainer}>
-        <View style={styles.datePickerHeader}>
-          <TouchableOpacity onPress={handlePrevMonth}>
-            <Text style={styles.datePickerArrow}>‹</Text>
-          </TouchableOpacity>
-          <Text style={styles.datePickerTitle}>
-            {viewYear}년 {viewMonth + 1}월
-          </Text>
-          <TouchableOpacity onPress={handleNextMonth}>
-            <Text style={styles.datePickerArrow}>›</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.weekRow}>
-          {['일', '월', '화', '수', '목', '금', '토'].map((day) => (
-            <Text key={day} style={styles.weekText}>
-              {day}
-            </Text>
-          ))}
-        </View>
-
-        <View style={styles.datesContainer}>
-          {Array.from({ length: firstDay }).map((_, index) => (
-            <View key={`empty-${index}`} style={styles.dateCell} />
-          ))}
-
-          {Array.from({ length: daysInMonth }).map((_, index) => {
-            const day = index + 1;
-            const isSelected =
-              day === selectedDate.getDate() &&
-              viewMonth === selectedDate.getMonth() &&
-              viewYear === selectedDate.getFullYear();
-            const isToday =
-              day === today.getDate() &&
-              viewMonth === today.getMonth() &&
-              viewYear === today.getFullYear();
-            const isFuture = isFutureDate(day);
-
-            return (
-              <TouchableOpacity
-                key={day}
-                style={styles.dateCell}
-                onPress={() => handleDateSelect(day)}
-                disabled={isFuture}
-              >
-                <View
-                  style={[
-                    styles.dateButton,
-                    isSelected && styles.dateButtonSelected,
-                    isToday && !isSelected && styles.dateButtonToday,
-                    isFuture && styles.dateButtonDisabled,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.calendarDateText,
-                      isSelected && styles.dateTextSelected,
-                      isToday && !isSelected && styles.dateTextToday,
-                      isFuture && styles.dateTextDisabled,
-                    ]}
-                  >
-                    {day}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </View>
-    );
   };
 
   return (
@@ -398,7 +397,13 @@ const TransactionInput = ({ onClose, onSave }) => {
           onPress={() => setShowDatePicker(false)}
         >
           <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
-            <SimpleDatePicker />
+            <SimpleDatePicker
+              selectedDate={selectedDate}
+              onSelect={(date) => {
+                setSelectedDate(date);
+                setShowDatePicker(false);
+              }}
+            />
             <TouchableOpacity
               style={styles.modalCloseBtn}
               onPress={() => setShowDatePicker(false)}
