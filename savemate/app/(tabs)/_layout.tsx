@@ -1,11 +1,12 @@
 // app/(tabs)/_layout.tsx
 
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { appBus } from '@/app/eventBus';
+import { useAuth } from '@/state/AuthContext';
 // import { SaveMateStyles as styles } from '@/styles/SaveMateStyles';
 
 const BRAND = {
@@ -17,6 +18,12 @@ const BRAND = {
 };
 
 export default function TabLayout() {
+  const { user, loading } = useAuth();
+
+  // 로그인 확인 전에는 대기, 로그인하지 않았으면 로그인 화면으로 보낸다
+  if (loading) return null;
+  if (!user) return <Redirect href="/login" />;
+
   return (
     <Tabs
       screenOptions={{

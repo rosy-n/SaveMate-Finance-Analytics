@@ -88,9 +88,7 @@ export default function ReportHome() {
         setLlmLoading(true);
         setLlmError(null);
 
-        if (!uid) {
-          throw new Error('EXPO_PUBLIC_UID가 비어 있습니다 (.env 확인).');
-        }
+        if (!uid) return; // 로그인 정보가 없으면 요청하지 않음
 
         const path = `/api/reports/consumption?uid=${uid}&year=${year}&month=${month}`;
         console.log('📡 GET', api.baseURL + path);
@@ -129,6 +127,7 @@ export default function ReportHome() {
 
   // 지출배경별 만족도 집계 로드
   useEffect(() => {
+    if (!uid) return; // 로그인 정보가 없으면 요청하지 않음
     let mounted = true;
 
     (async () => {
@@ -206,8 +205,7 @@ export default function ReportHome() {
 
 
   if (!uid) {
-    // 개발 단계라면 Alert/console.warn 정도만, 배포에선 로그인 연동 권장
-    console.warn('EXPO_PUBLIC_UID가 설정되지 않았습니다. .env를 확인하세요.');
+    console.warn('로그인한 사용자 정보가 없어 리포트를 불러오지 않습니다.');
   }
 
   useEffect(() => {
@@ -232,6 +230,7 @@ export default function ReportHome() {
   useEffect(() => {
     console.log("🔍 Worst3 시작");
 
+    if (!uid) return; // 로그인 정보가 없으면 요청하지 않음
     let mounted = true;
 
     (async () => {
