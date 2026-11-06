@@ -11,8 +11,6 @@ const { createGenerationGuard, LLM_TIMEOUT_MS } = require('../lib/llmGuard');
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const MODEL_ID = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 
-const model = genAI.getGenerativeModel({ model: MODEL_ID });
-
 // 이보다 평가가 적으면 패턴을 찾기 어려워 숨은 소비 패턴을 만들지 않는다.
 const MIN_RATINGS_FOR_PATTERNS = 5;
 const NO_EXPENSE_NOTICE = '이번 달 지출 내역이 없어요. 지출을 기록하면 AI 인사이트를 볼 수 있어요.';
@@ -44,7 +42,6 @@ function safeParseJSON(s) {
   }
 }
 
-const monthKey = (y, m) => `${y}-${String(m).padStart(2, '0')}`;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function withRetries(fn, { tries = 3, base = 500 } = {}) {

@@ -161,7 +161,7 @@ const ChallengeHome = () => {
         <Text style={styles.appTitle}>챌린지</Text>
 
         <TouchableOpacity
-          onPress={() => router.push("/challenge/add")}
+          onPress={handleAddPress}
           hitSlop={8}
           style={{
             position: "absolute",

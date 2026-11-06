@@ -1,17 +1,8 @@
 import { getAppNow } from './constants/appDate';
-import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { appBus } from './app/eventBus';
-import { loadPendingByCreatedAt } from './hooks/loadPendingByCreatedAt';
-import Challenge from './components/Challenge';
-import ChallengeDetail from './components/ChallengeDetail';
-import HomeChallengeCard from './components/HomeChallengeCard';
-import { getCategoryIcon } from './constants/categoryIcons';
-
-const Stack = createStackNavigator();
-
 import {
   SafeAreaView,
   View,
@@ -24,19 +15,22 @@ import {
   StyleSheet,
   useWindowDimensions,
 } from 'react-native';
-
+import { Ionicons } from '@expo/vector-icons';
+import { appBus } from './app/eventBus';
+import { loadPendingByCreatedAt } from './hooks/loadPendingByCreatedAt';
+import HomeChallengeCard from './components/HomeChallengeCard';
+import { getCategoryIcon } from './constants/categoryIcons';
 import TransactionInput from './components/TransactionInput';
 import SatisfactionRating from './components/SatisfactionRating';
 import IncomeDetail from './components/IncomeDetail';
 import ExpenseDetail from './components/ExpenseDetail';
 import { SaveMateStyles as styles } from './styles/SaveMateStyles';
-
 import { useApi } from './hooks/useApi';
 import useMonthlyTransactionsFromApi from './hooks/useMonthlyTransactionsFromApi';
 import { useAuth } from './state/AuthContext';
 import useTodayTip from './hooks/useTodayTip';
-import { Ionicons } from '@expo/vector-icons';
 
+const Stack = createStackNavigator();
 
 const NOW = getAppNow();
 const CURRENT_YEAR = NOW.getFullYear();
@@ -44,6 +38,9 @@ const CURRENT_MONTH = NOW.getMonth() + 1;
 const TODAY = NOW.getDate();
 
 const WEEK_HEADERS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
+// 데이터가 없을 때 매 렌더링마다 새 객체가 만들어지지 않도록 재사용한다.
+const EMPTY_GROUPS = {};
 
 const formatKRW = (amount) =>
   (typeof amount === 'number' ? amount : 0).toLocaleString('ko-KR') + '원';
@@ -95,7 +92,8 @@ const EntryFlow = ({
   tempIncomeData,
   tempExpenseData,
 }) => {
-  const progress = useRef(new Animated.Value(0)).current; // 0: amount, 1: income, 2: expense
+  // 0: amount, 1: income, 2: expense. 한 번만 만들어 계속 쓰는 Animated.Value
+  const [progress] = useState(() => new Animated.Value(0));
   const { width } = useWindowDimensions();
 
   useEffect(() => {
@@ -105,7 +103,7 @@ const EntryFlow = ({
       duration: 220, // 내부 전환만 살짝 애니메이션
       useNativeDriver: true,
     }).start();
-  }, [step]);
+  }, [step, progress]);
 
   const translateX = progress.interpolate({
     inputRange: [0, 1, 2],
@@ -143,7 +141,6 @@ export default function SaveMateApp() {
   const [currentPage, setCurrentPage] = useState('home');
   const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH);
   const [selectedDate, setSelectedDate] = useState(TODAY);
-  const [showTransactionInput, setShowTransactionInput] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0); // 저장 후 목록 새로고침 트리거
 
   // 만족도 평가용 상태
@@ -200,17 +197,17 @@ export default function SaveMateApp() {
     }
   };
 
+
+  const [entryModal, setEntryModal] = useState({ visible: false, step: 'amount' });
+  const [tempIncomeData, setTempIncomeData] = useState(null);
+  const [tempExpenseData, setTempExpenseData] = useState(null);
+
   useEffect(() => {
     const off = appBus.on('open-entry-modal', (p) => {
       setEntryModal({ visible: true, step: p?.step ?? 'amount' });
     });
     return off;
   }, []);
-
-
-  const [entryModal, setEntryModal] = useState({ visible: false, step: 'amount' });
-  const [tempIncomeData, setTempIncomeData] = useState(null);
-  const [tempExpenseData, setTempExpenseData] = useState(null);
 
   const handleSaveTransaction = (amount, type, pickedDate) => {
     const amt = Number(amount);
@@ -249,9 +246,6 @@ export default function SaveMateApp() {
   );
 
 
-  const getDaysInMonth = (month, year = CURRENT_YEAR) => new Date(year, month, 0).getDate();
-  const getFirstDayOfMonth = (month, year = CURRENT_YEAR) => new Date(year, month - 1, 1).getDay();
-
   const HomePage = () => {
     // 당월 지출 합계 로드
     const { loading: homeLoading, error: homeError, monthlyTotals: homeMonthlyTotals } =
@@ -286,6 +280,9 @@ export default function SaveMateApp() {
         }
       })();
       return () => { mounted = false; };
+    // HomePage 는 SaveMateApp 안에서 정의돼 refreshKey/api 가 바깥 값이라 규칙이 불필요하다고 판단하지만,
+    // 새로고침 트리거와 다시 마운트되는 시점에 미평가 목록을 다시 불러오려면 필요하다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [refreshKey, api]);
 
     return (
@@ -380,7 +377,7 @@ export default function SaveMateApp() {
 
   const DetailPage = () => {
     // 1) 현재 월/이전 월 데이터 불러오기
-    const { loading, error, groupedByDay, totalsByDay, monthlyTotals } =
+    const { groupedByDay, totalsByDay, monthlyTotals } =
       useMonthlyTransactionsFromApi({
         userId: homeData.userId,
         year: CURRENT_YEAR,
@@ -396,7 +393,7 @@ export default function SaveMateApp() {
       });
 
     // 훅이 제공하는 groupedByDay만 사용합니다.
-    const effectiveGrouped = groupedByDay || {};
+    const effectiveGrouped = groupedByDay || EMPTY_GROUPS;
 
     // 2) 달력 계산(일수/시작요일)
     const daysInMonth = new Date(CURRENT_YEAR, selectedMonth, 0).getDate();
