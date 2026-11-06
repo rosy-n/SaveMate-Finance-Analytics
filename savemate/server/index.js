@@ -8,6 +8,9 @@ const morgan = require('morgan');
 const healthRoutes = require('./routes/health');
 const transactionRoutes = require('./routes/transactions');
 const satisfactionRoutes = require('./routes/satisfaction');
+const authRoutes = require('./routes/auth');
+const feedbackRoutes = require('./routes/feedback');
+const alarmSettingsRoutes = require('./routes/alarmSettings');
 
 const app = express();
 
@@ -33,6 +36,9 @@ app.get('/api/health', (req, res) => {
 // 기존 라우트 마운트 (경로 정확히 /api/transactions)
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/satisfaction', satisfactionRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/feedback', feedbackRoutes);
+app.use('/api/alarm-settings', alarmSettingsRoutes);
 
 const port = Number(process.env.PORT || 8080);
 // 외부(폰) 접근 가능하도록 0.0.0.0 바인딩

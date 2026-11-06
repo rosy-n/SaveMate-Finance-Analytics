@@ -59,26 +59,33 @@ export function useApi() {
     }
 
     const req = async (method, path, body) => {
+      let res;
       try {
-        const res = await fetch(`${BASE_URL}${path}`, {
+        res = await fetch(`${BASE_URL}${path}`, {
           method,
           headers: { 'Content-Type': 'application/json' },
           body: body ? JSON.stringify(body) : undefined,
         });
-
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-        // 빈 응답도 허용
-        try {
-          return await res.json();
-        } catch {
-          return null;
-        }
-      } catch (e) {
-        // 네트워크/서버 에러 메시지를 통일
-        if (e?.message?.startsWith('HTTP ')) throw e;
+      } catch {
         throw new Error('네트워크 연결 실패'); // UX 일관화
       }
+
+      // 빈 응답도 허용
+      let data = null;
+      try {
+        data = await res.json();
+      } catch {
+        data = null;
+      }
+
+      if (!res.ok) {
+        // 서버가 { ok:false, error } 형태로 이유를 내려주면 그 메시지를 그대로 쓴다.
+        const err = new Error(data?.error || `HTTP ${res.status}`);
+        err.status = res.status;
+        throw err;
+      }
+
+      return data;
     };
 
     return {

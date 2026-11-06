@@ -10,6 +10,7 @@ import { SaveMateStyles as styles } from '../styles/SaveMateStyles';
 import { ReportStyles as reportStyles } from './styles/ReportStyles';
 import { useFocusEffect } from 'expo-router';
 import { appBus } from '../app/eventBus';
+import { useAuth } from '../state/AuthContext';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -21,7 +22,8 @@ const formatKRW = (n) => `${Number(n || 0).toLocaleString('ko-KR')}원`;
 const pct = (part, total) => (total ? Math.round((part / total) * 100) : 0);
 
 export default function ReportHome() {
-  const uid = process.env.EXPO_PUBLIC_UID;
+  const { user } = useAuth();
+  const uid = user?.id;
 
   const [worst3, setWorst3] = useState([]);
   const api = useApi();

@@ -31,6 +31,7 @@ import { SaveMateStyles as styles } from './styles/SaveMateStyles';
 
 import { useApi } from './hooks/useApi';
 import useMonthlyTransactionsFromApi from './hooks/useMonthlyTransactionsFromApi';
+import { useAuth } from './state/AuthContext';
 
 
 const NOW = getAppNow();
@@ -204,10 +205,11 @@ export default function SaveMateApp() {
 
 
   // 이하 홈/디테일/만족도 화면
-  const UID = process.env.EXPO_PUBLIC_UID; // 반드시 .env에서 주입
+  const { user } = useAuth();
+  const UID = user?.id;
   const homeData = useMemo(
     () => ({
-      userName: '이름',
+      userName: user?.nickname ?? '이름',
       userId: UID,
       motivationalQuote: {
         title: '오늘의 절약팁',
@@ -218,7 +220,7 @@ export default function SaveMateApp() {
         progressRate: 73,
       },
     }),
-    [UID]
+    [UID, user]
   );
 
 

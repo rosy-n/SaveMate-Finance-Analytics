@@ -14,7 +14,6 @@ const BRAND = {
   inactive: '#9CA3AF',    // 비활성 라벨/아이콘 (회색)
   bg: '#FFFFFF',          // 탭바 배경
   border: 'rgba(0,0,0,0.06)',
-  labelFont: 'Pretendard-SemiBold', // 프로젝트에 로드한 폰트명
 };
 
 export default function TabLayout() {
@@ -42,9 +41,12 @@ export default function TabLayout() {
 
         tabBarLabelStyle: {
           fontSize: 12,
-          fontFamily: BRAND.labelFont,
+          lineHeight: 18,
+          minHeight: 18,
+          flexShrink: 0,
+          fontWeight: '600',
         },
-        tabBarItemStyle: { paddingVertical: 4 },
+        tabBarItemStyle: { paddingVertical: 0 },
       }}
     >
       {/* 1. 홈 탭 (home.tsx 파일 필요) */}

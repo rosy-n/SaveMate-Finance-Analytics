@@ -5,6 +5,7 @@ import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity } from 'rea
 import { useLocalSearchParams, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useApi } from '@/hooks/useApi';
+import { useAuth } from '@/state/AuthContext';
 import { ReportStyles as styles } from '@/components/styles/ReportStyles';
 
 const formatKRW = (n) => `${Number(n || 0).toLocaleString('ko-KR')}원`;
@@ -30,7 +31,8 @@ export default function CategoryDetail() {
   const [loading, setLoading] = useState(true);
   const [list, setList] = useState([]);
   const [error, setError] = useState(null);
-  const uid = process.env.EXPO_PUBLIC_UID || '2314513';
+  const { user } = useAuth();
+  const uid = user?.id;
 
   const now = getAppNow();
   const y = Number(year) || now.getFullYear();

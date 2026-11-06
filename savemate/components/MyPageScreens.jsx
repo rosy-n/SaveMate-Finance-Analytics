@@ -1,18 +1,32 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
-  Switch,
   TextInput,
   LayoutAnimation,
   Platform,
   UIManager,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
 import { myPageStyles as styles, BRAND } from "./styles/MyPageStyles";
+import { useAuth } from "../state/AuthContext";
+import { useApi } from "../hooks/useApi";
+import { authStyles as toggleStyles } from "./styles/AuthStyles";
+
+const Toggle = ({ value, onValueChange }) => (
+  <TouchableOpacity
+    activeOpacity={0.8}
+    onPress={() => onValueChange(!value)}
+    style={[toggleStyles.toggleTrack, value && toggleStyles.toggleTrackOn]}
+  >
+    <View style={[toggleStyles.toggleThumb, value && toggleStyles.toggleThumbOn]} />
+  </TouchableOpacity>
+);
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -35,13 +49,22 @@ const RowItem = ({ label, onPress, right, danger }) => (
 
 /* =============== 1) 마이페이지 메인 =============== */
 export function MyPageMain() {
-  const user = useMemo(
-    () => ({
-      name: "유은서",
-      daysTogether: 127,
-    }),
-    []
-  );
+  const { user: authUser, logout } = useAuth();
+  const [mountedAt] = useState(() => Date.now());
+
+  const user = useMemo(() => {
+    const createdAt = authUser?.created_at ? new Date(authUser.created_at) : null;
+    const daysTogether =
+      createdAt && !Number.isNaN(createdAt.getTime())
+        ? Math.max(1, Math.floor((mountedAt - createdAt.getTime()) / 86400000) + 1)
+        : 1;
+    return { name: authUser?.nickname ?? "", daysTogether };
+  }, [authUser, mountedAt]);
+
+  const handleLogout = () => {
+    logout();
+    router.replace("/login");
+  };
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -75,7 +98,7 @@ export function MyPageMain() {
             label="오류나 의견 보내기"
             onPress={() => router.push("/mypage/feedback")}
           />
-          <RowItem label="로그아웃" onPress={() => {}} danger />
+          <RowItem label="로그아웃" onPress={handleLogout} danger />
         </Card>
 
         <View style={{ height: 24 }} />
@@ -86,17 +109,59 @@ export function MyPageMain() {
 
 /* =============== 2) 만족도 알림 설정 =============== */
 export function SatisfactionAlarmSettings() {
+  const { user } = useAuth();
+  const api = useApi();
   const [enabled, setEnabled] = useState(true);
   const [reminderEnabled, setReminderEnabled] = useState(true);
   const [times, setTimes] = useState(["9시"]);
+  const [loading, setLoading] = useState(true);
 
   const TIME_OPTIONS = ["9시", "12시", "15시", "18시", "21시"];
 
-  const toggleTime = (t) => {
-    setTimes((prev) =>
-      prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]
-    );
+  useEffect(() => {
+    if (!user?.id) return;
+    let mounted = true;
+    (async () => {
+      try {
+        const data = await api.get(`/api/alarm-settings?uid=${user.id}`);
+        if (!mounted || !data?.ok) return;
+        setEnabled(data.settings.enabled);
+        setReminderEnabled(data.settings.reminder_enabled);
+        setTimes(data.settings.times);
+      } catch {
+        // 조회 실패 시 기본값 유지
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [user?.id]);
+
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await api.put("/api/alarm-settings", { uid: user?.id, enabled, reminderEnabled, times });
+      Alert.alert("저장 완료", "알림 설정이 저장되었어요 ✅");
+    } catch (e) {
+      Alert.alert("저장 실패", e.message || "설정을 저장하지 못했어요. 다시 시도해주세요.");
+    } finally {
+      setSaving(false);
+    }
   };
+
+  const toggleTime = (t) => {
+    setTimes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.screen, { justifyContent: "center" }]}>
+        <ActivityIndicator color={BRAND.purple} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -115,12 +180,7 @@ export function SatisfactionAlarmSettings() {
               <Text style={styles.sectionTitle}>만족도 알림</Text>
               <Text style={styles.sectionDesc}>구매 다음 날 만족도를 물어봅니다</Text>
             </View>
-            <Switch
-              value={enabled}
-              onValueChange={setEnabled}
-              trackColor={{ false: BRAND.gray3, true: "#C4B5FD" }}
-              thumbColor={enabled ? BRAND.purple : "#fff"}
-            />
+            <Toggle value={enabled} onValueChange={setEnabled} />
           </View>
         </Card>
 
@@ -160,14 +220,24 @@ export function SatisfactionAlarmSettings() {
                 놓친 만족도가 있을 때 다시 알려줍니다
               </Text>
             </View>
-            <Switch
-              value={reminderEnabled}
-              onValueChange={setReminderEnabled}
-              trackColor={{ false: BRAND.gray3, true: "#C4B5FD" }}
-              thumbColor={reminderEnabled ? BRAND.purple : "#fff"}
-            />
+            <Toggle value={reminderEnabled} onValueChange={setReminderEnabled} />
           </View>
         </Card>
+
+        <TouchableOpacity
+          activeOpacity={0.9}
+          style={[styles.submitBtn, saving && { opacity: 0.5 }]}
+          onPress={handleSave}
+          disabled={saving}
+        >
+          {saving ? (
+            <ActivityIndicator color={BRAND.purple} />
+          ) : (
+            <Text style={styles.submitBtnText}>저장하기</Text>
+          )}
+        </TouchableOpacity>
+
+        <View style={{ height: 24 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -345,12 +415,39 @@ export function FAQScreen() {
 
 /* =============== 5) 오류/의견 보내기 =============== */
 export function FeedbackScreen() {
+  const { user } = useAuth();
+  const api = useApi();
   const [category, setCategory] = useState();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [email, setEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const categories = ["오류 신고", "기능 제안", "기타"];
+
+  const canSubmit = !!category && title.trim() && content.trim() && !submitting;
+
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
+    setSubmitting(true);
+    try {
+      await api.post("/api/feedback", {
+        uid: user?.id,
+        category,
+        title: title.trim(),
+        content: content.trim(),
+        email: email.trim() || undefined,
+      });
+
+      Alert.alert("전송 완료", "의견이 전달되었어요. 감사합니다 🙏", [
+        { text: "확인", onPress: () => router.back() },
+      ]);
+    } catch (e) {
+      Alert.alert("전송 실패", e.message || "네트워크 오류가 발생했어요.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -420,8 +517,17 @@ export function FeedbackScreen() {
           />
         </Card>
 
-        <TouchableOpacity activeOpacity={0.9} style={styles.submitBtn}>
-          <Text style={styles.submitBtnText}>의견 보내기</Text>
+        <TouchableOpacity
+          activeOpacity={0.9}
+          style={[styles.submitBtn, !canSubmit && { opacity: 0.5 }]}
+          onPress={handleSubmit}
+          disabled={!canSubmit}
+        >
+          {submitting ? (
+            <ActivityIndicator color={BRAND.purple} />
+          ) : (
+            <Text style={styles.submitBtnText}>의견 보내기</Text>
+          )}
         </TouchableOpacity>
 
         <View style={{ height: 24 }} />
