@@ -73,7 +73,6 @@ export const ReportStyles = StyleSheet.create({
     backgroundColor: '#EDE4FF',
   },
   aiBadgeText: { fontSize: 11, fontWeight: '700', color: '#7C3AED' },
-  aiDescription: { marginTop: 5, fontSize: 12, lineHeight: 18, color: '#8A7FA3' },
   aiPersona: {
     marginTop: 12,
     fontSize: 16,

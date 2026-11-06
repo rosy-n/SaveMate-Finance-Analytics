@@ -855,7 +855,6 @@ export default function ReportHome() {
         {/* 서버 코드가 계산한 재무 분석 */}
         <View style={reportStyles.card} onLayout={saveSectionOffset('analytics')}>
           <Text style={reportStyles.cardTitle}>소비 패턴 분석</Text>
-          <Text style={[reportStyles.caption, { marginTop: 5 }]}>거래와 만족도 기록을 바탕으로 계산한 결과입니다.</Text>
 
           {llmLoading ? (
             <LoadingBlock />
@@ -868,11 +867,9 @@ export default function ReportHome() {
                 <Text style={reportStyles.metricInsight}>
                   {correlationText(llmReport.analytics.satisfactionCorrelation)}
                 </Text>
-                <Text style={[reportStyles.caption, { marginTop: 4 }]}>만족도 평가가 연결된 지출 {llmReport.analytics.satisfactionCorrelation?.sampleSize ?? 0}건을 분석했습니다.</Text>
               </View>
 
               <Text style={[reportStyles.listTitle, { marginTop: 18 }]}>카테고리별 만족 효율</Text>
-              <Text style={[reportStyles.caption, { marginTop: 4 }]}>평균 만족도 × (10,000원 ÷ 평균 지출액)으로 계산하며 최대 5.0점입니다.</Text>
               {efficiencyItems.length ? (
                 <>
                   <Text style={[reportStyles.efficiencyGroupTitle, reportStyles.efficiencyBestTitle]}>만족 효율 BEST 3</Text>
@@ -902,7 +899,6 @@ export default function ReportHome() {
               )}
 
               <Text style={[reportStyles.listTitle, { marginTop: 18 }]}>평소보다 큰 지출</Text>
-              <Text style={[reportStyles.caption, { marginTop: 4 }]}>같은 카테고리의 평소 지출 범위를 넘은 기록입니다.</Text>
               {outlierItems.length ? (
                 <>
                   {visibleOutliers.map((item) => (
@@ -932,13 +928,12 @@ export default function ReportHome() {
                   )}
                 </>
               ) : (
-                <Text style={[reportStyles.cardText, { marginTop: 8 }]}>IQR 기준으로 탐지된 이상 지출이 없습니다. 카테고리마다 최소 4건이 필요합니다.</Text>
+                <Text style={[reportStyles.cardText, { marginTop: 8 }]}>평소보다 큰 지출이 없어요.</Text>
               )}
 
               {reflectiveSpendingGroups.length > 0 && (
                 <>
                   <Text style={[reportStyles.listTitle, { marginTop: 20 }]}>돌아볼 소비 유형</Text>
-                  <Text style={[reportStyles.caption, { marginTop: 4 }]}>만족하지 않은 소비 중 사유 및 메모로 분류된 내역입니다.</Text>
                   {visibleReflectiveGroups.map((group) => (
                     <TouchableOpacity
                       key={group.key}
@@ -1069,7 +1064,6 @@ export default function ReportHome() {
               <Text style={[reportStyles.cardTitle, { fontSize: 18, marginBottom: 6 }]}>
                 불만족 지출 상위 3건
               </Text>
-              <Text style={[reportStyles.caption, { marginBottom: 8 }]}>불만족으로 평가한 지출 중 금액이 큰 3건입니다.</Text>
 
               {worst3.length === 0 ? (
                 <Text style={[reportStyles.cardText, { marginTop: 8 }]}>이번 달 불만족 지출 기록이 없습니다.</Text>
@@ -1146,7 +1140,6 @@ export default function ReportHome() {
             <Text style={[reportStyles.cardText, { marginTop: 8 }]}>AI 인사이트를 불러오지 못했어요.</Text>
           ) : (
             <>
-              <Text style={reportStyles.aiDescription}>이번 달 소비 기록을 바탕으로 AI가 해석했어요.</Text>
               <Text style={reportStyles.aiPersona}>{renderLlmText(llmReport.persona)}</Text>
             </>
           )}
