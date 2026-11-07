@@ -11,6 +11,7 @@ import {
   UIManager,
   Alert,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { router } from "expo-router";
 import { myPageStyles as styles, BRAND } from "./styles/MyPageStyles";
@@ -48,6 +49,11 @@ const RowItem = ({ label, onPress, right, danger }) => (
 );
 
 /* =============== 1) 마이페이지 메인 =============== */
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+// 한국 시간 자정마다 1씩 늘어나는 날짜 번호
+const kstDayNumber = (ms) => Math.floor((ms + KST_OFFSET_MS) / DAY_MS);
+
 export function MyPageMain() {
   const { user: authUser, logout } = useAuth();
   const [mountedAt] = useState(() => Date.now());
@@ -56,7 +62,7 @@ export function MyPageMain() {
     const createdAt = authUser?.created_at ? new Date(authUser.created_at) : null;
     const daysTogether =
       createdAt && !Number.isNaN(createdAt.getTime())
-        ? Math.max(1, Math.floor((mountedAt - createdAt.getTime()) / 86400000) + 1)
+        ? Math.max(1, kstDayNumber(mountedAt) - kstDayNumber(createdAt.getTime()) + 1)
         : 1;
     return { name: authUser?.nickname ?? "", daysTogether };
   }, [authUser, mountedAt]);
@@ -74,7 +80,11 @@ export function MyPageMain() {
 
       <ScrollView contentContainerStyle={styles.content}>
         <Card style={{ alignItems: "center", paddingVertical: 22 }}>
-          <View style={styles.profileCircle} />
+          {authUser?.avatar_url ? (
+            <Image source={{ uri: authUser.avatar_url }} style={styles.profileCircle} />
+          ) : (
+            <View style={styles.profileCircle} />
+          )}
           <Text style={styles.userName}>{user.name}</Text>
           <Text style={styles.userSub}>Save Mate와 함께한지 {user.daysTogether}일</Text>
         </Card>

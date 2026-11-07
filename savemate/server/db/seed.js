@@ -34,26 +34,33 @@ function loadPasswords() {
   return fs.existsSync(PASSWORDS_FILE) ? JSON.parse(fs.readFileSync(PASSWORDS_FILE, 'utf8')) : {};
 }
 
-async function upsertUser(client, account, password) {
+/** 첫 거래일 0시(KST)를 가입 시점으로 쓴다. 거래가 없으면 null. */
+function firstTransactionAt(transactions) {
+  const firstDate = transactions.map((t) => t.date).sort()[0];
+  return firstDate ? `${firstDate}T00:00:00+09:00` : null;
+}
+
+async function upsertUser(client, account, password, joinedAt) {
   if (!account.legacyUid.startsWith('persona_')) {
     throw new Error(`persona_ 로 시작하지 않는 legacy_uid: ${account.legacyUid}`);
   }
   const hash = password ? await bcrypt.hash(password, BCRYPT_ROUNDS) : null;
   const updated = await client.query(
     `UPDATE users
-     SET username = $1, nickname = $2, email = $3, password_hash = COALESCE($4, password_hash)
+     SET username = $1, nickname = $2, email = $3, password_hash = COALESCE($4, password_hash),
+         created_at = COALESCE($6, created_at)
      WHERE legacy_uid = $5
      RETURNING id`,
-    [account.username, account.nickname, account.email, hash, account.legacyUid]
+    [account.username, account.nickname, account.email, hash, account.legacyUid, joinedAt]
   );
   if (updated.rows[0]) return updated.rows[0].id;
 
   if (!hash) throw new Error(`새 계정의 비밀번호가 ${path.basename(PASSWORDS_FILE)} 에 없습니다: ${account.legacyUid}`);
   const { rows } = await client.query(
-    `INSERT INTO users (username, nickname, email, password_hash, legacy_uid)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO users (username, nickname, email, password_hash, legacy_uid, created_at)
+     VALUES ($1, $2, $3, $4, $5, COALESCE($6::timestamptz, now()))
      RETURNING id`,
-    [account.username, account.nickname, account.email, hash, account.legacyUid]
+    [account.username, account.nickname, account.email, hash, account.legacyUid, joinedAt]
   );
   return rows[0].id;
 }
@@ -137,7 +144,12 @@ async function main() {
         console.log(`[seed] ${persona.account.legacyUid}: ${month} 거래 ${count}건`);
         continue;
       }
-      const userId = await upsertUser(client, persona.account, passwords[persona.account.legacyUid]);
+      const userId = await upsertUser(
+        client,
+        persona.account,
+        passwords[persona.account.legacyUid],
+        firstTransactionAt(persona.transactions)
+      );
       if (!accountsOnly) await replaceData(client, userId, persona, categoryIds);
       console.log(
         `[seed] ${persona.account.legacyUid}: ` +
