@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { myPageStyles as styles, BRAND } from "./styles/MyPageStyles";
 import { useAuth } from "../state/AuthContext";
 import { useApi } from "../hooks/useApi";
@@ -245,26 +245,64 @@ export function SatisfactionAlarmSettings() {
 
 /* =============== 3) 과거 챌린지 보기 =============== */
 export function PastChallenges() {
-  const [selectedMonth, setSelectedMonth] = useState("8월");
+  const api = useApi();
+  const { user } = useAuth();
+  const [challenges, setChallenges] = useState([]);
+  const [selectedMonth, setSelectedMonth] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
-  const summary = { success: 3, fail: 2, rate: 60 };
+  useFocusEffect(
+    useCallback(() => {
+      if (!user?.id) return undefined;
+      let mounted = true;
+      setLoading(true);
 
-  const challengeList = [
-    {
-      id: "c1",
-      title: "식비 챌린지",
-      target: 150000,
-      actual: 132400,
-      success: true,
-    },
-    {
-      id: "c2",
-      title: "카페/간식 챌린지",
-      target: 80000,
-      actual: 96000,
-      success: false,
-    },
-  ];
+      api.get("/api/challenges/history")
+        .then((res) => {
+          if (!mounted) return;
+          const nextChallenges = res?.challenges ?? [];
+          const nextMonths = [...new Set(
+            nextChallenges.map((challenge) => challenge.periodStart?.slice(0, 7)).filter(Boolean)
+          )].sort((a, b) => b.localeCompare(a));
+          setChallenges(nextChallenges);
+          setSelectedMonth((current) => nextMonths.includes(current) ? current : nextMonths[0] ?? null);
+          setLoadError(false);
+        })
+        .catch(() => mounted && setLoadError(true))
+        .finally(() => mounted && setLoading(false));
+
+      return () => { mounted = false; };
+    }, [api, user?.id])
+  );
+
+  const monthOptions = useMemo(() => (
+    [...new Set(challenges.map((challenge) => challenge.periodStart?.slice(0, 7)).filter(Boolean))]
+      .sort((a, b) => b.localeCompare(a))
+  ), [challenges]);
+
+  const summary = useMemo(() => {
+    const success = challenges.filter((challenge) => challenge.status === "completed").length;
+    const fail = challenges.filter((challenge) => challenge.status === "failed" || challenge.status === "given_up").length;
+    const total = success + fail;
+    return { success, fail, rate: total ? Math.round((success / total) * 100) : 0 };
+  }, [challenges]);
+
+  const challengeList = useMemo(
+    () => challenges.filter((challenge) => challenge.periodStart?.startsWith(selectedMonth ?? "")),
+    [challenges, selectedMonth]
+  );
+
+  const moveMonth = (direction) => {
+    if (monthOptions.length < 2) return;
+    const current = Math.max(0, monthOptions.indexOf(selectedMonth));
+    const next = Math.min(monthOptions.length - 1, Math.max(0, current + direction));
+    setSelectedMonth(monthOptions[next]);
+  };
+
+  const selectedMonthLabel = selectedMonth
+    ? `${selectedMonth.slice(0, 4)}년 ${Number(selectedMonth.slice(5, 7))}월`
+    : "기록 없음";
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -300,28 +338,49 @@ export function PastChallenges() {
           </View>
         </Card>
 
-        <View style={styles.monthDropRow}>
+        <View style={styles.monthNav}>
           <TouchableOpacity
-            style={styles.monthDrop}
-            activeOpacity={0.9}
-            onPress={() => setSelectedMonth((m) => (m === "8월" ? "7월" : "8월"))}
+            style={styles.monthArrowButton}
+            onPress={() => moveMonth(1)}
+            disabled={!selectedMonth || monthOptions.indexOf(selectedMonth) >= monthOptions.length - 1}
           >
-            <Text style={styles.monthDropText}>{selectedMonth}</Text>
-            <Text style={styles.monthDropChevron}>▾</Text>
+            <Text style={styles.monthArrowText}>‹</Text>
+          </TouchableOpacity>
+          <Text style={styles.monthNavText}>{selectedMonthLabel}</Text>
+          <TouchableOpacity
+            style={styles.monthArrowButton}
+            onPress={() => moveMonth(-1)}
+            disabled={!selectedMonth || monthOptions.indexOf(selectedMonth) <= 0}
+          >
+            <Text style={styles.monthArrowText}>›</Text>
           </TouchableOpacity>
         </View>
 
-        <Card>
+        {loading && <ActivityIndicator color={BRAND.purple} style={{ marginTop: 20 }} />}
+        {!loading && loadError && (
+          <Card><Text style={styles.emptyText}>과거 챌린지를 불러오지 못했어요.</Text></Card>
+        )}
+        {!loading && !loadError && challengeList.length === 0 && (
+          <Card><Text style={styles.emptyText}>이 달에 진행한 챌린지가 없어요.</Text></Card>
+        )}
+        {!loading && !loadError && challengeList.length > 0 && <Card>
           {challengeList.map((c, i) => {
-            const diff = c.actual - c.target;
+            const success = c.status === "completed";
+            const givenUp = c.status === "given_up";
+            const diff = c.currentAmount - c.targetAmount;
             return (
-              <View key={c.id} style={i > 0 && styles.dividerTop}>
+              <TouchableOpacity
+                key={c.id}
+                style={i > 0 && styles.dividerTop}
+                activeOpacity={0.8}
+                onPress={() => router.push(`/challenge/${c.id}`)}
+              >
                 <Text style={styles.challengeTitle}>{c.title}</Text>
 
                 <View style={[styles.rowBetween, { marginTop: 8 }]}>
                   <Text style={styles.caption}>목표</Text>
                   <Text style={styles.captionKRW}>
-                    {c.target.toLocaleString()}원
+                    {c.targetAmount.toLocaleString()}원
                   </Text>
                 </View>
 
@@ -330,27 +389,29 @@ export function PastChallenges() {
                   <Text
                     style={[
                       styles.captionKRW,
-                      c.success ? { color: "#10B981" } : { color: "#EF4444" },
+                      success ? { color: "#10B981" } : { color: "#EF4444" },
                     ]}
                   >
-                    {c.actual.toLocaleString()}원
+                    {c.currentAmount.toLocaleString()}원
                   </Text>
                 </View>
 
                 <Text
                   style={[
                     styles.resultBadge,
-                    c.success ? styles.badgeSuccess : styles.badgeFail,
+                    success ? styles.badgeSuccess : styles.badgeFail,
                   ]}
                 >
-                  {c.success
+                  {givenUp
+                    ? "포기한 챌린지"
+                    : success
                     ? `${Math.abs(diff).toLocaleString()}원 절약 성공`
                     : `${Math.abs(diff).toLocaleString()}원 초과`}
                 </Text>
-              </View>
+              </TouchableOpacity>
             );
           })}
-        </Card>
+        </Card>}
       </ScrollView>
     </SafeAreaView>
   );
