@@ -5,3 +5,6 @@ service-account.json
 
 # 페르소나 시드 비밀번호 (공개 저장소에 올리지 않음)
 db/seeds/passwords.local.json
+
+# 프로필 사진 원본 (저장소에 올리지 않음)
+db/seeds/avatars/

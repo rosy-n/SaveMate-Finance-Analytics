@@ -1,7 +1,7 @@
 // server/db/users.js
 const { query } = require('./pool');
 
-const PUBLIC_FIELDS = 'id, username, nickname, email, created_at';
+const PUBLIC_FIELDS = 'id, username, nickname, email, avatar_url, created_at';
 
 async function createUser({ username, password_hash, nickname, email }) {
   const sql = `
