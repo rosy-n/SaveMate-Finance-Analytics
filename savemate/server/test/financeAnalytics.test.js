@@ -79,6 +79,22 @@ test('카테고리별 만족 효율: 평균 금액, 평균 만족도, 1만원당
   assert.equal(cafe.averageAmount, 20000);
   assert.equal(cafe.averageSatisfaction, 3);
   assert.equal(cafe.satisfactionPer10000Won, 1.5); // 평균 만족도 3 / 평균 금액 2만원 x 1만원
+  assert.equal(cafe.efficiencyGroup, 'worst');
+});
+
+test('만족 효율은 2.5점 이상 BEST, 2.5점 미만 WORST로 분류한다', () => {
+  const transactions = [
+    expense('best', 20000, 'BEST 경계'),
+    expense('worst', 21000, 'WORST 경계'),
+  ];
+  const ratings = [rating('best', 'satisfied'), rating('worst', 'satisfied')];
+  const rows = analyzeFinances(transactions, ratings).categoryEfficiency;
+  const byCategory = Object.fromEntries(rows.map((row) => [row.category, row]));
+
+  assert.equal(byCategory['BEST 경계'].satisfactionPer10000Won, 2.5);
+  assert.equal(byCategory['BEST 경계'].efficiencyGroup, 'best');
+  assert.equal(byCategory['WORST 경계'].satisfactionPer10000Won, 2.4);
+  assert.equal(byCategory['WORST 경계'].efficiencyGroup, 'worst');
 });
 
 test('1만원당 만족도는 만족도 척도의 최대값 5점을 넘지 않고, 높은 순으로 정렬한다', () => {

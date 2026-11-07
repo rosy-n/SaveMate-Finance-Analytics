@@ -624,9 +624,12 @@ export default function ReportHome() {
   const efficiencyItems = Array.isArray(llmReport?.analytics?.categoryEfficiency)
     ? llmReport.analytics.categoryEfficiency
     : [];
-  const efficiencySplitIndex = Math.ceil(efficiencyItems.length / 2);
-  const efficiencyBestGroup = efficiencyItems.slice(0, efficiencySplitIndex);
-  const efficiencyWorstGroup = efficiencyItems.slice(efficiencySplitIndex).reverse();
+  const efficiencyBestGroup = efficiencyItems
+    .filter((item) => Number(item.satisfactionPer10000Won) >= 2.5)
+    .sort((a, b) => Number(b.satisfactionPer10000Won) - Number(a.satisfactionPer10000Won));
+  const efficiencyWorstGroup = efficiencyItems
+    .filter((item) => Number(item.satisfactionPer10000Won) < 2.5)
+    .sort((a, b) => Number(a.satisfactionPer10000Won) - Number(b.satisfactionPer10000Won));
   const efficiencyBestItems = showAllBest ? efficiencyBestGroup : efficiencyBestGroup.slice(0, 3);
   const efficiencyWorstItems = showAllWorst
     ? efficiencyWorstGroup
@@ -863,28 +866,37 @@ export default function ReportHome() {
               </View>
 
               <Text style={[reportStyles.listTitle, { marginTop: 18 }]}>카테고리별 만족 효율</Text>
+              <Text style={[reportStyles.caption, { marginTop: 4 }]}>만족도 점수 합 ÷ 총지출액 × 10,000으로 계산하며 최대 5.0점입니다. 2.5점 이상은 BEST, 미만은 WORST입니다.</Text>
               {efficiencyItems.length ? (
                 <>
-                  <Text style={[reportStyles.efficiencyGroupTitle, reportStyles.efficiencyBestTitle]}>만족 효율 BEST 3</Text>
-                  {efficiencyBestItems.map((item) => renderEfficiencyRow(item, 'best'))}
-                  {efficiencyBestGroup.length > 3 && (
-                    <TouchableOpacity
-                      onPress={() => setShowAllBest((current) => !current)}
-                      style={reportStyles.moreButton}
-                    >
-                      <Text style={reportStyles.moreButtonText}>{showAllBest ? 'BEST 접기' : `BEST 더보기 (${efficiencyBestGroup.length - 3})`}</Text>
-                    </TouchableOpacity>
+                  {efficiencyBestGroup.length > 0 && (
+                    <>
+                      <Text style={[reportStyles.efficiencyGroupTitle, reportStyles.efficiencyBestTitle]}>만족 효율 BEST 3</Text>
+                      {efficiencyBestItems.map((item) => renderEfficiencyRow(item, 'best'))}
+                      {efficiencyBestGroup.length > 3 && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllBest((current) => !current)}
+                          style={reportStyles.moreButton}
+                        >
+                          <Text style={reportStyles.moreButtonText}>{showAllBest ? 'BEST 접기' : `BEST 더보기 (${efficiencyBestGroup.length - 3})`}</Text>
+                        </TouchableOpacity>
+                      )}
+                    </>
                   )}
 
-                  <Text style={[reportStyles.efficiencyGroupTitle, reportStyles.efficiencyWorstTitle]}>만족 효율 WORST 3</Text>
-                  {efficiencyWorstItems.map((item) => renderEfficiencyRow(item, 'worst'))}
-                  {efficiencyWorstGroup.length > 3 && (
-                    <TouchableOpacity
-                      onPress={() => setShowAllWorst((current) => !current)}
-                      style={reportStyles.moreButton}
-                    >
-                      <Text style={reportStyles.moreButtonText}>{showAllWorst ? 'WORST 접기' : `WORST 더보기 (${efficiencyWorstGroup.length - 3})`}</Text>
-                    </TouchableOpacity>
+                  {efficiencyWorstGroup.length > 0 && (
+                    <>
+                      <Text style={[reportStyles.efficiencyGroupTitle, reportStyles.efficiencyWorstTitle]}>만족 효율 WORST 3</Text>
+                      {efficiencyWorstItems.map((item) => renderEfficiencyRow(item, 'worst'))}
+                      {efficiencyWorstGroup.length > 3 && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllWorst((current) => !current)}
+                          style={reportStyles.moreButton}
+                        >
+                          <Text style={reportStyles.moreButtonText}>{showAllWorst ? 'WORST 접기' : `WORST 더보기 (${efficiencyWorstGroup.length - 3})`}</Text>
+                        </TouchableOpacity>
+                      )}
+                    </>
                   )}
                 </>
               ) : (

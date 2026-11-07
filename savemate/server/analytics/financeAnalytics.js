@@ -1,5 +1,6 @@
 // 리포트 구조나 프롬프트가 바뀌면 값을 올린다. 다른 버전의 캐시는 사용하지 않는다.
-const REPORT_VERSION = 'v14-ai-patterns';
+const REPORT_VERSION = 'v15-efficiency-threshold';
+const EFFICIENCY_BEST_THRESHOLD = 2.5;
 
 const EMOTION_SCORE = {
   dissatisfied: 1,
@@ -167,6 +168,10 @@ function analyzeFinances(transactions = [], satisfactionRecords = []) {
   const categoryEfficiency = Array.from(categoryGroups, ([category, records]) => {
     const averageAmount = mean(records.map((record) => record.amount));
     const averageSatisfaction = mean(records.map((record) => record.satisfactionScore));
+    const satisfactionPer10000Won = round(
+      Math.min(5, (averageSatisfaction / averageAmount) * 10000),
+      1
+    );
     return {
       category,
       ratedCount: records.length,
@@ -175,10 +180,8 @@ function analyzeFinances(transactions = [], satisfactionRecords = []) {
       averageSatisfaction: round(averageSatisfaction),
       transactions: records,
       // 1만원 예산으로 얻는 만족 효율. 만족도 척도와 동일하게 최대 5점으로 제한한다.
-      satisfactionPer10000Won: round(
-        Math.min(5, (averageSatisfaction / averageAmount) * 10000),
-        1
-      ),
+      satisfactionPer10000Won,
+      efficiencyGroup: satisfactionPer10000Won >= EFFICIENCY_BEST_THRESHOLD ? 'best' : 'worst',
     };
   }).sort((a, b) => b.satisfactionPer10000Won - a.satisfactionPer10000Won);
 
@@ -229,6 +232,7 @@ function analyzeFinances(transactions = [], satisfactionRecords = []) {
     version: REPORT_VERSION,
     methodology: {
       satisfactionScale: 'dissatisfied=1, neutral=3, satisfied=5 (maximum 5)',
+      categoryEfficiency: 'Satisfaction points per 10,000 KRW, capped at 5; best >= 2.5, worst < 2.5',
       correlation: 'Pearson correlation; requires at least 3 rated expenses',
       outlier: 'Per-category IQR upper fence (Q3 + 1.5*IQR); requires at least 4 expenses',
     },
@@ -245,4 +249,4 @@ function analyzeFinances(transactions = [], satisfactionRecords = []) {
   };
 }
 
-module.exports = { analyzeFinances, REPORT_VERSION };
+module.exports = { analyzeFinances, REPORT_VERSION, EFFICIENCY_BEST_THRESHOLD };
