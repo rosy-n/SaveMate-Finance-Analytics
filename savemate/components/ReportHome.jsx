@@ -169,6 +169,9 @@ export default function ReportHome() {
   const reportScrollRef = useRef(null);
   const [sectionOffsets, setSectionOffsets] = useState({});
   const [activeSection, setActiveSection] = useState('overview');
+  // 상단 섹션 네비게이터(가로 스크롤)의 위치/크기 추적용
+  const sectionNavRef = useRef(null);
+  const sectionNavLayouts = useRef({});
   const [showAllBest, setShowAllBest] = useState(false);
   const [showAllWorst, setShowAllWorst] = useState(false);
   const [showAllOutliers, setShowAllOutliers] = useState(false);
@@ -587,6 +590,13 @@ export default function ReportHome() {
     ['ai', 'AI 인사이트'],
   ];
 
+  // 활성 섹션이 바뀌면 해당 버튼이 네비게이터 왼쪽 끝에 오도록 가로 스크롤
+  useEffect(() => {
+    const layout = sectionNavLayouts.current[activeSection];
+    if (!layout) return;
+    sectionNavRef.current?.scrollTo({ x: Math.max(0, layout.x), animated: true });
+  }, [activeSection]);
+
   const saveSectionOffset = (key) => (event) => {
     const y = event.nativeEvent.layout.y;
     setSectionOffsets((current) => current[key] === y ? current : { ...current, [key]: y });
@@ -728,7 +738,7 @@ export default function ReportHome() {
 
 
   return (
-    <SafeAreaView style={reportStyles.screen}>
+    <SafeAreaView style={reportStyles.screen} edges={['top', 'left', 'right']}>
       <View style={reportStyles.header}><Text style={reportStyles.appTitle}>리포트</Text></View>
 
       <ScrollView
@@ -740,10 +750,16 @@ export default function ReportHome() {
         scrollEventThrottle={32}
       >
         <View style={reportStyles.sectionNavWrap}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={reportStyles.sectionNav}>
+          <ScrollView
+            ref={sectionNavRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={reportStyles.sectionNav}
+          >
             {sectionItems.map(([key, label]) => (
               <TouchableOpacity
                 key={key}
+                onLayout={(e) => { sectionNavLayouts.current[key] = e.nativeEvent.layout; }}
                 onPress={() => moveToSection(key)}
                 style={[reportStyles.sectionNavButton, activeSection === key && reportStyles.sectionNavButtonActive]}
               >

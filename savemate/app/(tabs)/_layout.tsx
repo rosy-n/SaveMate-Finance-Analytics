@@ -2,7 +2,8 @@
 
 import { Redirect, Tabs } from 'expo-router';
 import React from 'react';
-import { Platform } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { appBus } from '@/app/eventBus';
@@ -19,6 +20,9 @@ const BRAND = {
 
 export default function TabLayout() {
   const { user, loading } = useAuth();
+  const insets = useSafeAreaInsets();
+  // 기기 하단 안전영역(제스처 바 등)을 포함해 탭바 높이를 계산한다.
+  const bottomInset = Math.max(insets.bottom, Platform.OS === 'ios' ? 0 : 8);
 
   // 로그인 확인 전에는 대기, 로그인하지 않았으면 로그인 화면으로 보낸다
   if (loading) return null;
@@ -36,24 +40,25 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: BRAND.bg,
           borderTopColor: BRAND.border,
-          height: Platform.OS === 'ios' ? 72 : 64,
-          paddingBottom: Platform.OS === 'ios' ? 12 : 8,
+          height: 56 + bottomInset + 8,
+          paddingBottom: bottomInset,
           paddingTop: 8,
+          borderTopWidth: StyleSheet.hairlineWidth,
           shadowColor: '#000',
-          shadowOpacity: 0.08,
-          shadowRadius: 12,
+          shadowOpacity: 0.05,
+          shadowRadius: 8,
           shadowOffset: { width: 0, height: -2 },
-          elevation: 12,
+          elevation: 8,
         },
 
         tabBarLabelStyle: {
-          fontSize: 12,
-          lineHeight: 18,
-          minHeight: 18,
-          flexShrink: 0,
+          fontSize: 11,
+          lineHeight: 14,
+          marginTop: 2,
           fontWeight: '600',
         },
-        tabBarItemStyle: { paddingVertical: 0 },
+        tabBarIconStyle: { marginTop: 0 },
+        tabBarItemStyle: { paddingVertical: 0, justifyContent: 'center' },
       }}
     >
       {/* 1. 홈 탭 (home.tsx 파일 필요) */}

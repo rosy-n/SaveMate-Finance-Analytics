@@ -90,7 +90,7 @@ export default function CategoryDetail() {
   );
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
       {/* 헤더 + 뒤로가기 */}
       <View
         style={{
