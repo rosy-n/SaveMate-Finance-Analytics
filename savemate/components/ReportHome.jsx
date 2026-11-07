@@ -224,8 +224,7 @@ export default function ReportHome() {
 
         if (!uid) return; // 로그인 정보가 없으면 요청하지 않음
 
-        const path = `/api/reports/consumption?uid=${uid}&year=${year}&month=${month}`;
-        console.log('📡 GET', api.baseURL + path);
+        const path = `/api/reports/consumption?year=${year}&month=${month}`;
 
         // (선택) 8초 타임아웃: 네트워크 지연 시 무한 대기 방지
         const ac = new AbortController();
@@ -269,7 +268,7 @@ export default function ReportHome() {
         setBgLoading(true);
 
         // 1) 만족도 평가 전체 가져오기
-        const satRes = await api.get(`/api/satisfaction/${uid}`);
+        const satRes = await api.get(`/api/satisfaction`);
         const satItems = Array.isArray(satRes?.items) ? satRes.items : [];
 
         if (satItems.length === 0) {
@@ -280,7 +279,7 @@ export default function ReportHome() {
         // 2) transactionId만 추출 → bulk 조회
         const ids = Array.from(new Set(satItems.map(s => s.transactionId)));
 
-        const txRes = await api.post(`/api/transactions/bulk`, { ids, uid });
+        const txRes = await api.post(`/api/transactions/bulk`, { ids });
         const txMap = {};
         (txRes?.items || []).forEach(tx => {
           txMap[tx.id] = tx;
@@ -347,7 +346,7 @@ export default function ReportHome() {
     (async () => {
       try {
         setLoading(true);
-        const path = `/api/transactions?uid=${uid}&year=${year}&month=${month}&expand=true`;
+        const path = `/api/transactions?year=${year}&month=${month}&expand=true`;
         const res = await api.get(path);
         mounted && setItems(Array.isArray(res?.items) ? res.items : []);
       } catch {
@@ -362,15 +361,13 @@ export default function ReportHome() {
 
   // 이번달 Worst 3 계산 useEffect
   useEffect(() => {
-    console.log("🔍 Worst3 시작");
-
     if (!uid) return; // 로그인 정보가 없으면 요청하지 않음
     let mounted = true;
 
     (async () => {
       try {
         // 1) 전체 만족도 가져오기
-        const satRes = await api.get(`/api/satisfaction/${uid}`);
+        const satRes = await api.get(`/api/satisfaction`);
         const satItems = Array.isArray(satRes?.items) ? satRes.items : [];
 
         // 2) 불만족만 추출
@@ -385,7 +382,7 @@ export default function ReportHome() {
         const ids = disliked.map(r => r.transactionId);
 
         // 4) bulk로 모든 트랜잭션 로드
-        const bulk = await api.post(`/api/transactions/bulk`, { ids, uid });
+        const bulk = await api.post(`/api/transactions/bulk`, { ids });
         const txList = Array.isArray(bulk?.items) ? bulk.items : [];
 
         // 5) 지출(expense)만 남기기
@@ -413,10 +410,6 @@ export default function ReportHome() {
 
         // 8) Top 3 추출
         mounted && setWorst3(monthFiltered.slice(0, 3));
-        console.log("🧪 disliked:", disliked.length);
-        console.log("🧪 bulk tx:", txList.length);
-        console.log("🧪 expenses:", expenses.length);
-        console.log("🧪 monthFiltered:", monthFiltered.length);
 
         // 9) satisfaction 정보 합치기
         const reasonsMap = {};
@@ -453,7 +446,7 @@ export default function ReportHome() {
     (async () => {
       try {
         setSeriesLoading(true);
-        const path = `/api/transactions/monthly-sum?uid=${uid}&months=4&endYear=${year}&endMonth=${month}&day=${trendDay}`;
+        const path = `/api/transactions/monthly-sum?months=4&endYear=${year}&endMonth=${month}&day=${trendDay}`;
         const res = await api.get(path); // useApi() 사용
         const arr = Array.isArray(res?.items) ? res.items : [];
 
@@ -631,9 +624,12 @@ export default function ReportHome() {
   const efficiencyItems = Array.isArray(llmReport?.analytics?.categoryEfficiency)
     ? llmReport.analytics.categoryEfficiency
     : [];
-  const efficiencySplitIndex = Math.ceil(efficiencyItems.length / 2);
-  const efficiencyBestGroup = efficiencyItems.slice(0, efficiencySplitIndex);
-  const efficiencyWorstGroup = efficiencyItems.slice(efficiencySplitIndex).reverse();
+  const efficiencyBestGroup = efficiencyItems
+    .filter((item) => Number(item.satisfactionPer10000Won) >= 2.5)
+    .sort((a, b) => Number(b.satisfactionPer10000Won) - Number(a.satisfactionPer10000Won));
+  const efficiencyWorstGroup = efficiencyItems
+    .filter((item) => Number(item.satisfactionPer10000Won) < 2.5)
+    .sort((a, b) => Number(a.satisfactionPer10000Won) - Number(b.satisfactionPer10000Won));
   const efficiencyBestItems = showAllBest ? efficiencyBestGroup : efficiencyBestGroup.slice(0, 3);
   const efficiencyWorstItems = showAllWorst
     ? efficiencyWorstGroup
@@ -872,26 +868,34 @@ export default function ReportHome() {
               <Text style={[reportStyles.listTitle, { marginTop: 18 }]}>카테고리별 만족 효율</Text>
               {efficiencyItems.length ? (
                 <>
-                  <Text style={[reportStyles.efficiencyGroupTitle, reportStyles.efficiencyBestTitle]}>만족 효율 BEST 3</Text>
-                  {efficiencyBestItems.map((item) => renderEfficiencyRow(item, 'best'))}
-                  {efficiencyBestGroup.length > 3 && (
-                    <TouchableOpacity
-                      onPress={() => setShowAllBest((current) => !current)}
-                      style={reportStyles.moreButton}
-                    >
-                      <Text style={reportStyles.moreButtonText}>{showAllBest ? 'BEST 접기' : `BEST 더보기 (${efficiencyBestGroup.length - 3})`}</Text>
-                    </TouchableOpacity>
+                  {efficiencyBestGroup.length > 0 && (
+                    <>
+                      <Text style={[reportStyles.efficiencyGroupTitle, reportStyles.efficiencyBestTitle]}>만족 효율 BEST 3</Text>
+                      {efficiencyBestItems.map((item) => renderEfficiencyRow(item, 'best'))}
+                      {efficiencyBestGroup.length > 3 && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllBest((current) => !current)}
+                          style={reportStyles.moreButton}
+                        >
+                          <Text style={reportStyles.moreButtonText}>{showAllBest ? 'BEST 접기' : `BEST 더보기 (${efficiencyBestGroup.length - 3})`}</Text>
+                        </TouchableOpacity>
+                      )}
+                    </>
                   )}
 
-                  <Text style={[reportStyles.efficiencyGroupTitle, reportStyles.efficiencyWorstTitle]}>만족 효율 WORST 3</Text>
-                  {efficiencyWorstItems.map((item) => renderEfficiencyRow(item, 'worst'))}
-                  {efficiencyWorstGroup.length > 3 && (
-                    <TouchableOpacity
-                      onPress={() => setShowAllWorst((current) => !current)}
-                      style={reportStyles.moreButton}
-                    >
-                      <Text style={reportStyles.moreButtonText}>{showAllWorst ? 'WORST 접기' : `WORST 더보기 (${efficiencyWorstGroup.length - 3})`}</Text>
-                    </TouchableOpacity>
+                  {efficiencyWorstGroup.length > 0 && (
+                    <>
+                      <Text style={[reportStyles.efficiencyGroupTitle, reportStyles.efficiencyWorstTitle]}>만족 효율 WORST 3</Text>
+                      {efficiencyWorstItems.map((item) => renderEfficiencyRow(item, 'worst'))}
+                      {efficiencyWorstGroup.length > 3 && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllWorst((current) => !current)}
+                          style={reportStyles.moreButton}
+                        >
+                          <Text style={reportStyles.moreButtonText}>{showAllWorst ? 'WORST 접기' : `WORST 더보기 (${efficiencyWorstGroup.length - 3})`}</Text>
+                        </TouchableOpacity>
+                      )}
+                    </>
                   )}
                 </>
               ) : (
@@ -905,7 +909,7 @@ export default function ReportHome() {
                     <TouchableOpacity
                       key={item.transactionId}
                       activeOpacity={0.75}
-                      onPress={() => setSelectedTransaction({ ...item, detailType: '이상 지출' })}
+                      onPress={() => setSelectedTransaction({ ...item, detailType: '평소보다 큰 지출' })}
                       style={reportStyles.outlierRow}
                     >
                       <View style={reportStyles.statusDotCaution} />
@@ -922,7 +926,7 @@ export default function ReportHome() {
                   {outlierItems.length > 3 && (
                     <TouchableOpacity onPress={() => setShowAllOutliers((current) => !current)} style={reportStyles.moreButton}>
                       <Text style={reportStyles.moreButtonText}>
-                        {showAllOutliers ? '이상 지출 접기' : `이상 지출 더보기 (${outlierItems.length - 3})`}
+                        {showAllOutliers ? '평소보다 큰 지출 접기' : `평소보다 큰 지출 더보기 (${outlierItems.length - 3})`}
                       </Text>
                     </TouchableOpacity>
                   )}

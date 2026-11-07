@@ -1,5 +1,5 @@
 // styles/MyPageStyles.js
-import { StyleSheet, Platform } from "react-native";
+import { StyleSheet } from "react-native";
 
 export const BRAND = {
   purple: "#7C3AED",
@@ -132,6 +132,22 @@ export const myPageStyles = StyleSheet.create({
   },
   monthDropText: { fontSize: 12, fontWeight: "800", color: BRAND.text },
   monthDropChevron: { fontSize: 12, color: BRAND.gray4 },
+  monthNav: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 18,
+    paddingVertical: 4,
+  },
+  monthArrowButton: {
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  monthArrowText: { fontSize: 26, fontWeight: "700", color: BRAND.purple },
+  monthNavText: { minWidth: 110, textAlign: "center", fontSize: 15, fontWeight: "800", color: BRAND.text },
+  emptyText: { paddingVertical: 16, textAlign: "center", fontSize: 13, color: BRAND.gray4 },
 
   dividerTop: {
     borderTopWidth: 1,

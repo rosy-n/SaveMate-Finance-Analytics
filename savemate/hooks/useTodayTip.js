@@ -23,7 +23,7 @@ let currentIndex = Math.floor(Math.random() * DEFAULT_TIPS.length);
 function fetchTips(api, uid, key) {
   if (!inflight.has(key)) {
     const request = api
-      .get(`/api/tips/today?uid=${encodeURIComponent(uid)}`)
+      .get(`/api/tips/today`)
       .then((res) => {
         const tips = res?.tip?.tips ?? [];
         // 서버 오류 안내 문구는 팁으로 저장하지 않는다.

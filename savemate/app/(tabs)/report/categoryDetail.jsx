@@ -47,7 +47,7 @@ export default function CategoryDetail() {
         setError(null);
 
         // 당월 전체 거래 로드
-        const path = `/api/transactions?uid=${uid}&year=${y}&month=${m}&expand=true`;
+        const path = `/api/transactions?year=${y}&month=${m}&expand=true`;
         const res = await api.get(path);
         const items = Array.isArray(res?.items) ? res.items : [];
 

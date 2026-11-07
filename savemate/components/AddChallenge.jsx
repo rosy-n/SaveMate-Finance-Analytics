@@ -45,7 +45,7 @@ export default function ChallengeAdd() {
     (async () => {
       const [categoryRes, recoRes] = await Promise.allSettled([
         api.get("/api/challenges/categories"),
-        api.get(`/api/challenges/recommendation?uid=${uid}&today=${getAppToday()}`),
+        api.get(`/api/challenges/recommendation?today=${getAppToday()}`),
       ]);
       if (!mounted) return;
 
@@ -73,7 +73,6 @@ export default function ChallengeAdd() {
     setSubmitting(true);
     try {
       await api.post("/api/challenges", {
-        uid,
         category,
         targetAmount: target,
         today: getAppToday(),

@@ -13,6 +13,9 @@ import { SaveMateStyles as styles } from '../styles/SaveMateStyles';
 const highestProgress = (list) =>
   list.reduce((top, c) => (!top || c.progress > top.progress ? c : top), null);
 
+const fetchChallenges = (api) =>
+  api.get(`/api/challenges?today=${getAppToday()}`).then((res) => res?.challenges ?? []);
+
 export default function HomeChallengeCard({ refreshKey }) {
   const api = useApi();
   const { user } = useAuth();
@@ -22,18 +25,32 @@ export default function HomeChallengeCard({ refreshKey }) {
   const [loadError, setLoadError] = useState(false);
 
   const load = useCallback(async () => {
+    if (!uid) return;
     try {
-      const res = await api.get(`/api/challenges?uid=${uid}&today=${getAppToday()}`);
-      setChallenges(res?.challenges ?? []);
+      setChallenges(await fetchChallenges(api));
       setLoadError(false);
     } catch {
       setLoadError(true);
     }
   }, [api, uid]);
 
+  // 처음 보일 때와 refreshKey 가 바뀔 때 불러온다. 화면이 사라진 뒤에는 state 를 바꾸지 않는다.
   useEffect(() => {
-    load();
-  }, [load, refreshKey]);
+    if (!uid) return;
+    let alive = true;
+    fetchChallenges(api)
+      .then((list) => {
+        if (!alive) return;
+        setChallenges(list);
+        setLoadError(false);
+      })
+      .catch(() => {
+        if (alive) setLoadError(true);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [api, uid, refreshKey]);
 
   useEffect(() => appBus.on('home-focused', load), [load]);
 

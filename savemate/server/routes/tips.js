@@ -3,11 +3,17 @@ const express = require('express');
 const router = express.Router();
 const txRepo = require('../db/transactions');
 const tipCache = require('../db/cache');
-const { userOr404 } = require('../lib/http');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { createGenerationGuard, LLM_TIMEOUT_MS } = require('../lib/llmGuard');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const MODEL_ID = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
+
+// 팁은 하루 한 번 생성해 캐시하므로 평소에는 호출이 거의 없다.
+// 실패한 응답은 캐시하지 않기 때문에, 장애 중 홈 화면을 열 때마다 Gemini 를 다시 부르지 않도록 실패 후 쿨다운을 둔다.
+const tipGuard = createGenerationGuard({
+  limit: Number(process.env.LLM_TIPS_PER_HOUR) || 10,
+});
 
 /** YYYY-MM-DD */
 const toYMD = (d) => {
@@ -59,17 +65,13 @@ async function withRetries(fn, { tries = 3, base = 500 } = {}) {
 }
 
 /**
- * GET /api/tips/today?uid=...
+ * GET /api/tips/today
  * return:
  * { ok: true, tip: { title, tips:[{content, reason}, ...] }, meta:{cached, model} }
  */
 router.get('/today', async (req, res) => {
   try {
-    const { uid } = req.query;
-    if (!uid) return res.status(400).json({ ok: false, error: 'uid required' });
-
-    const userId = await userOr404(res, uid);
-    if (!userId) return;
+    const userId = req.userId;
 
     const today = new Date();
     const tipKey = toYMD(today);
@@ -146,15 +148,19 @@ ${JSON.stringify(schema, null, 2)}
     let parsed = null;
     let usedModel = null;
 
-    for (const mid of modelIds) {
+    // 한도 초과 또는 실패 쿨다운 중이면 Gemini 를 부르지 않고 바로 폴백으로 간다.
+    const gate = tipGuard.check(userId);
+
+    for (const mid of gate.ok ? modelIds : []) {
       try {
         usedModel = mid;
 
         parsed = await withRetries(async () => {
           const m = genAI.getGenerativeModel({ model: mid });
-          const result = await m.generateContent({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          });
+          const result = await m.generateContent(
+            { contents: [{ role: 'user', parts: [{ text: prompt }] }] },
+            { timeout: LLM_TIMEOUT_MS }
+          );
 
           const text = result.response.text();
           const p = safeParseJSON(text);
@@ -191,8 +197,11 @@ ${JSON.stringify(schema, null, 2)}
       }
     }
 
-    // 2) 폴백(LLM 실패 시)
-    if (!parsed) {
+    // 2) 폴백(LLM 실패 시). 폴백은 캐시하지 않는다.
+    //    캐시하면 일시적인 장애에도 그날 하루 종일 고정 문구만 보이므로, 다음 요청에서 다시 생성을 시도하게 둔다.
+    const degraded = !parsed;
+    if (degraded) {
+      if (gate.ok) tipGuard.fail(userId); // 쿨다운 중에 막힌 요청이 쿨다운을 연장하지 않도록 직접 시도한 경우만 기록
       parsed = {
         title: "오늘의 절약팁",
         tips: [
@@ -212,7 +221,17 @@ ${JSON.stringify(schema, null, 2)}
       };
     }
 
-    // 3) 캐시 저장
+    if (degraded) {
+      // 앱은 degraded 응답을 저장하지 않고 기본 팁을 보여 주며, 다음에 홈에 들어올 때 다시 시도한다.
+      return res.json({
+        ok: true,
+        tip: parsed,
+        meta: { cached: false, degraded: true, model: usedModel || MODEL_ID }
+      });
+    }
+
+    // 3) 정상 생성한 팁만 캐시 저장
+    tipGuard.success(userId);
     await tipCache.setTip(userId, tipKey, parsed, usedModel || MODEL_ID);
 
     return res.json({

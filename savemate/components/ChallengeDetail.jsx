@@ -8,13 +8,13 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  SafeAreaView,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useApi } from "../hooks/useApi";
 import { useAuth } from "../state/AuthContext";
 import { getAppToday } from "../constants/appDate";
 import { formatFailedOn, formatPeriod } from "../constants/challengeFormat";
-import { SafeAreaView } from "react-native";
 
 const BRAND = {
   tint: "#7C3AED",
@@ -51,11 +51,11 @@ export default function ChallengeDetail() {
       try {
         setLoading(true);
         setLoadFailed(false);
-        const res = await api.get(`/api/challenges/${id}?uid=${uid}&today=${getAppToday()}`);
+        const res = await api.get(`/api/challenges/${id}?today=${getAppToday()}`);
         if (!mounted) return;
         setChallenge(res?.challenge);
         setMonthlyExpenses(res?.monthlyExpenses ?? []);
-      } catch (e) {
+      } catch {
         if (!mounted) return;
         setLoadFailed(true);
       } finally {
@@ -90,7 +90,7 @@ export default function ChallengeDetail() {
         style: "destructive",
         onPress: async () => {
           try {
-            await api.post(`/api/challenges/${id}/giveup`, { uid, today: getAppToday() });
+            await api.post(`/api/challenges/${id}/giveup`, { today: getAppToday() });
             router.back();
           } catch {
             setGivingUp(false);
