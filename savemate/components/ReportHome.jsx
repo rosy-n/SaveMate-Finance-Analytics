@@ -866,7 +866,6 @@ export default function ReportHome() {
               </View>
 
               <Text style={[reportStyles.listTitle, { marginTop: 18 }]}>카테고리별 만족 효율</Text>
-              <Text style={[reportStyles.caption, { marginTop: 4 }]}>만족도 점수 합 ÷ 총지출액 × 10,000으로 계산하며 최대 5.0점입니다. 2.5점 이상은 BEST, 미만은 WORST입니다.</Text>
               {efficiencyItems.length ? (
                 <>
                   {efficiencyBestGroup.length > 0 && (
@@ -910,7 +909,7 @@ export default function ReportHome() {
                     <TouchableOpacity
                       key={item.transactionId}
                       activeOpacity={0.75}
-                      onPress={() => setSelectedTransaction({ ...item, detailType: '이상 지출' })}
+                      onPress={() => setSelectedTransaction({ ...item, detailType: '평소보다 큰 지출' })}
                       style={reportStyles.outlierRow}
                     >
                       <View style={reportStyles.statusDotCaution} />
@@ -927,7 +926,7 @@ export default function ReportHome() {
                   {outlierItems.length > 3 && (
                     <TouchableOpacity onPress={() => setShowAllOutliers((current) => !current)} style={reportStyles.moreButton}>
                       <Text style={reportStyles.moreButtonText}>
-                        {showAllOutliers ? '이상 지출 접기' : `이상 지출 더보기 (${outlierItems.length - 3})`}
+                        {showAllOutliers ? '평소보다 큰 지출 접기' : `평소보다 큰 지출 더보기 (${outlierItems.length - 3})`}
                       </Text>
                     </TouchableOpacity>
                   )}
