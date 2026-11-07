@@ -11,6 +11,7 @@ import {
   UIManager,
   Alert,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { router } from "expo-router";
 import { myPageStyles as styles, BRAND } from "./styles/MyPageStyles";
@@ -74,7 +75,11 @@ export function MyPageMain() {
 
       <ScrollView contentContainerStyle={styles.content}>
         <Card style={{ alignItems: "center", paddingVertical: 22 }}>
-          <View style={styles.profileCircle} />
+          {authUser?.avatar_url ? (
+            <Image source={{ uri: authUser.avatar_url }} style={styles.profileCircle} />
+          ) : (
+            <View style={styles.profileCircle} />
+          )}
           <Text style={styles.userName}>{user.name}</Text>
           <Text style={styles.userSub}>Save Mate와 함께한지 {user.daysTogether}일</Text>
         </Card>
