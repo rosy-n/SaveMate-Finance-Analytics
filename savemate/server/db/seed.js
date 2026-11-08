@@ -48,7 +48,7 @@ async function upsertUser(client, account, password, joinedAt) {
   const updated = await client.query(
     `UPDATE users
      SET username = $1, nickname = $2, email = $3, password_hash = COALESCE($4, password_hash),
-         created_at = COALESCE($6, created_at)
+         created_at = LEAST(created_at, COALESCE($6, created_at))
      WHERE legacy_uid = $5
      RETURNING id`,
     [account.username, account.nickname, account.email, hash, account.legacyUid, joinedAt]

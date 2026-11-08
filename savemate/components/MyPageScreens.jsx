@@ -59,7 +59,8 @@ export function MyPageMain() {
   const [mountedAt] = useState(() => Date.now());
 
   const user = useMemo(() => {
-    const createdAt = authUser?.created_at ? new Date(authUser.created_at) : null;
+    const joinedAt = authUser?.member_since ?? authUser?.created_at;
+    const createdAt = joinedAt ? new Date(joinedAt) : null;
     const daysTogether =
       createdAt && !Number.isNaN(createdAt.getTime())
         ? Math.max(1, kstDayNumber(mountedAt) - kstDayNumber(createdAt.getTime()) + 1)

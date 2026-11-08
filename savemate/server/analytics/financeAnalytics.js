@@ -1,5 +1,5 @@
 // 리포트 구조나 프롬프트가 바뀌면 값을 올린다. 다른 버전의 캐시는 사용하지 않는다.
-const REPORT_VERSION = 'v15-efficiency-threshold';
+const REPORT_VERSION = 'v16-transaction-created-at';
 const EFFICIENCY_BEST_THRESHOLD = 2.5;
 
 const EMOTION_SCORE = {
@@ -106,6 +106,7 @@ function analyzeFinances(transactions = [], satisfactionRecords = []) {
           amount: Number(transaction.amount),
           satisfactionScore: satisfaction.score,
           date: transaction.date instanceof Date ? transaction.date.toISOString() : transaction.date || null,
+          createdAt: transaction.createdAt || null,
           memo: transaction.memo || '',
           paymentMethod: transaction.paymentMethod || null,
           spendingBackground: transaction.spendingBackground || null,
@@ -150,6 +151,7 @@ function analyzeFinances(transactions = [], satisfactionRecords = []) {
       category,
       amount: Number(transaction.amount || 0),
       date: transaction.date instanceof Date ? transaction.date.toISOString() : transaction.date || null,
+      createdAt: transaction.createdAt || null,
       memo: transaction.memo || satisfaction.memo || '',
       paymentMethod: transaction.paymentMethod || null,
       spendingBackground: transaction.spendingBackground || null,
@@ -215,6 +217,7 @@ function analyzeFinances(transactions = [], satisfactionRecords = []) {
         date: transaction.date instanceof Date
           ? transaction.date.toISOString()
           : transaction.date || null,
+        createdAt: transaction.createdAt || null,
         spendingBackground:
           transaction.spendingBackground ||
           transaction.expenseDetail?.spendingBackground ||

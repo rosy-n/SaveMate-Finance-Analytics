@@ -1246,7 +1246,7 @@ export default function ReportHome() {
             </View>
             <View style={reportStyles.detailRow}>
               <Text style={reportStyles.detailLabel}>날짜</Text>
-              <Text style={reportStyles.detailValue}>{formatDetailDate(selectedTransaction?.date)}</Text>
+              <Text style={reportStyles.detailValue}>{formatDetailDate(selectedTransaction?.createdAt || selectedTransaction?.date)}</Text>
             </View>
             <View style={reportStyles.detailRow}>
               <Text style={reportStyles.detailLabel}>결제수단</Text>
@@ -1343,7 +1343,7 @@ export default function ReportHome() {
                 >
                   <View style={{ flex: 1 }}>
                     <Text style={reportStyles.listTitle}>{item.memo || item.category || '지출'}</Text>
-                    <Text style={[reportStyles.caption, { marginTop: 3 }]}>{item.category || '기타'} · {formatDetailDate(item.date)}</Text>
+                    <Text style={[reportStyles.caption, { marginTop: 3 }]}>{item.category || '기타'} · {formatDetailDate(item.createdAt || item.date)}</Text>
                   </View>
                   <Text style={reportStyles.patternTransactionAmount}>{formatKRW(item.amount)}</Text>
                 </TouchableOpacity>
